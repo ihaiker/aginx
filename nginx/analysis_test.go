@@ -1,12 +1,13 @@
 package nginx
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
 
 func TestAnalysis(t *testing.T) {
-	r, err := os.OpenFile("../_test/nginx.nginx", os.O_RDONLY, os.ModeTemporary)
+	r, err := os.OpenFile("../_test/nginx.conf", os.O_RDONLY, os.ModeTemporary)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -14,10 +15,7 @@ func TestAnalysis(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//for _, directive := range *conf {
-	//	t.Log(directive)
-	//}
-	t.Log(conf)
+	fmt.Println(conf)
 }
 
 func TestNginx(t *testing.T) {
@@ -25,5 +23,5 @@ func TestNginx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(conf)
+	fmt.Println(conf.String())
 }
