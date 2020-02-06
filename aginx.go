@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"github.com/ihaiker/aginx/cmd/aginx"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -15,28 +17,45 @@ var (
 	GITLOG_VERSION string = "0000"
 )
 
+func setLogger(cmd *cobra.Command) error {
+	logrus.SetReportCaller(true)
+	if debug, err := cmd.Root().PersistentFlags().GetBool("debug"); err != nil {
+		return err
+	} else if debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else if level, err := cmd.Root().PersistentFlags().GetString("level"); err != nil {
+		return err
+	} else if logrusLevel, err := logrus.ParseLevel(level); err != nil {
+		return err
+	} else {
+		logrus.SetLevel(logrusLevel)
+	}
+	return nil
+}
+
 var rootCmd = &cobra.Command{
-	Use:     filepath.Base(os.Args[0]),
-	Long:    "api for nginx. \tBuild: " + BUILD_TIME + ", Go: " + runtime.Version() + ", GitLog: " + GITLOG_VERSION,
-	Version: VERSION + "",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return nil
+	Use: "aginx",
+	Long: fmt.Sprintf(`api for nginx.
+Build: %s, Go: %s, Commit: %s`, BUILD_TIME, runtime.Version(), GITLOG_VERSION),
+	Version: fmt.Sprint(VERSION),
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+		if err = setLogger(cmd); err != nil {
+			return
+		}
+		return
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return nil
-	},
+	RunE: aginx.Start,
 }
 
 func init() {
 	cobra.OnInitialize(func() {})
-	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Debug模式")
-	rootCmd.PersistentFlags().StringP("level", "l", "info", "日志级别")
-	rootCmd.PersistentFlags().StringP("conf", "f", "", "配置文件")
-	//rootCmd.AddCommand(initd.Cmd)
+	rootCmd.PersistentFlags().BoolP("debug", "d", false, "debug mode")
+	rootCmd.PersistentFlags().StringP("level", "l", "info", "log level")
+	rootCmd.PersistentFlags().StringP("api", "a", ":8011", "restful api port")
+	rootCmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd.")
 }
 
 func main() {
-	//defer logs.CloseAll()
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

@@ -2,6 +2,7 @@ package nginx
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -34,14 +35,6 @@ type client struct {
 	doc *Configuration
 }
 
-func NewDefaultClient() (Client, error) {
-	doc, err := AnalysisNginx()
-	if err != nil {
-		return nil, err
-	}
-	return NewClient(doc), nil
-}
-
 func NewClient(doc *Configuration) Client {
 	return &client{doc: doc}
 }
@@ -49,7 +42,7 @@ func NewClient(doc *Configuration) Client {
 func (client *client) find(directives []*Directive, query string) ([]*Directive, error) {
 	expr, err := Parser(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Search condition error：[%s]", query)
 	}
 	matched := make([]*Directive, 0)
 	for _, directive := range directives {

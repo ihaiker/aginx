@@ -5,7 +5,7 @@ import (
 )
 
 type Arg struct {
-	Comparison string `[@("!" | "@" | "^" | "$"]`
+	Comparison string `[@("!" | "@" | "^" | "$")]`
 	Value      string `@(Ident|String|RawString)`
 }
 

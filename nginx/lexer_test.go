@@ -12,7 +12,8 @@ func TestLexer(t *testing.T) {
 	//str := `@server.server_name('*.renzhen.la' | 'wo.renzhen.la').location("~")`
 	//str := `server.[!server_name('*.renzhen.la' | 'wo.renzhen.la') & listen('80' | '443')]`
 	//str := "*"
-	str := `server.server_name(startWith'www')`
+	str := `server.server_name(^'www')`
+	//str := `server.server_name($'www')`
 	expr, err := Parser(str)
 	if err != nil {
 		t.Fatal(err)

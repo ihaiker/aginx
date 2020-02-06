@@ -73,7 +73,7 @@ func (conf Configuration) String() string {
 	return out.String()
 }
 
-func nginx() (path, file string, err error) {
+func GetInfo() (path, file string, err error) {
 	writer := bytes.NewBufferString("")
 	cmd := exec.Command("nginx", "-h")
 	cmd.Stdout = writer
@@ -96,18 +96,35 @@ func nginx() (path, file string, err error) {
 			file = line[idx+9 : len(line)-1]
 		}
 	}
-	if strings.HasPrefix(file, "/") {
-		path = filepath.Dir(file)
-	}
+	/*
+		if strings.HasPrefix(file, "/") {
+			path = filepath.Dir(file)
+		}
+	*/
 	return
 }
 
 func AnalysisNginx() (*Configuration, error) {
-	path, conf, err := nginx()
+	path, conf, err := GetInfo()
 	if err != nil {
 		return nil, err
 	}
 	return AnalysisFromFile(path, conf)
+}
+
+type nameReader struct {
+	io.Reader
+	namefn func() string
+}
+
+func (n nameReader) Name() string {
+	return n.namefn()
+}
+
+func NamedReader(rd io.Reader, name string) codf.NamedReader {
+	return nameReader{Reader: rd, namefn: func() string {
+		return name
+	}}
 }
 
 func AnalysisFromFile(root, file string) (*Configuration, error) {
@@ -118,7 +135,7 @@ func AnalysisFromFile(root, file string) (*Configuration, error) {
 	if rd, err := os.OpenFile(path, os.O_RDONLY, os.ModeTemporary); err != nil {
 		return nil, err
 	} else {
-		return Analysis(root, rd)
+		return Analysis(root, NamedReader(rd, path))
 	}
 }
 

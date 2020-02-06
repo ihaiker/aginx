@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"github.com/kr/pretty"
 	"os"
-	"path/filepath"
 	"testing"
 )
 
 var api Client
 
 func init() {
-	cwd, _ := os.Getwd()
-	root, _ := filepath.Abs(cwd + "/../_test")
-	doc, err := AnalysisFromFile(root, "nginx.conf")
+	//cwd, _ := os.Getwd()
+	//root, _ := filepath.Abs(cwd + "/../_test")
+	//doc, err := AnalysisFromFile(root, "nginx.conf")
+	doc, err := AnalysisNginx()
 	if err != nil {
 		os.Exit(0)
 	}
@@ -127,7 +127,7 @@ func TestClientAll(t *testing.T) {
 }
 
 func TestSelectInclude(t *testing.T) {
-	servers, _ := api.Select("http", "include", "*", "server.server_name('big.server.com')")
+	servers, _ := api.Select("http", "include", "*", "server.server_name('localhost')")
 
 	for _, server := range servers {
 		fmt.Println(server.Pretty(0))
