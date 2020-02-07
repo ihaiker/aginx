@@ -1,19 +1,17 @@
 package util
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
-	"io"
 	"os/exec"
 )
 
-type ErrStdErr struct {
+type StdError struct {
 	*bytes.Buffer
 }
 
-func (std *ErrStdErr) Error() error {
-	lastLine := ""
+func (std *StdError) Error() error {
+	/*lastLine := ""
 	reader := bufio.NewReader(std)
 	for {
 		line, _, err := reader.ReadLine()
@@ -21,14 +19,14 @@ func (std *ErrStdErr) Error() error {
 			break
 		}
 		lastLine = string(line)
-	}
-	return errors.New(lastLine)
+	}*/
+	return errors.New(std.String())
 }
 
 func CmdAfterWait(cmd *exec.Cmd) error {
 	err := cmd.Wait()
 	if err != nil {
-		return cmd.Stderr.(*ErrStdErr).Error()
+		return cmd.Stderr.(*StdError).Error()
 	}
 	return nil
 }
@@ -43,6 +41,6 @@ func CmdRun(command string, args ...string) error {
 
 func CmdStart(command string, args ...string) (*exec.Cmd, error) {
 	cmd := exec.Command(command, args...)
-	cmd.Stderr = &ErrStdErr{bytes.NewBufferString("")}
+	cmd.Stderr = &StdError{bytes.NewBufferString("")}
 	return cmd, cmd.Start()
 }

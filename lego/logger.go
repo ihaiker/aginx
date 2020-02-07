@@ -1,6 +1,10 @@
 package lego
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/go-acme/lego/v3/log"
+	"github.com/sirupsen/logrus"
+)
 
 type Stdlout struct {
 }
@@ -15,11 +19,15 @@ func (this *Stdlout) Fatalf(format string, args ...interface{}) {
 	panic(fmt.Sprintf(format, args...))
 }
 func (this *Stdlout) Print(args ...interface{}) {
-	fmt.Print(args...)
+	logrus.Print(args...)
 }
 func (this *Stdlout) Println(args ...interface{}) {
-	fmt.Println(args...)
+	logrus.Println(args...)
 }
 func (this *Stdlout) Printf(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	logrus.Printf(format, args...)
+}
+
+func init() {
+	log.Logger = new(Stdlout)
 }

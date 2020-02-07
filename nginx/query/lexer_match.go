@@ -1,8 +1,11 @@
-package nginx
+package query
 
-import "strings"
+import (
+	"github.com/ihaiker/aginx/nginx/configuration"
+	"strings"
+)
 
-func (a Args) Match(directive *Directive) bool {
+func (a Args) Match(directive *configuration.Directive) bool {
 	if !match(a.Arg.Comparison, directive.Args, a.Arg.Value) {
 		return false
 	}
@@ -13,8 +16,6 @@ func (a Args) Match(directive *Directive) bool {
 				ret = ret && match(addition.Arg.Comparison, directive.Args, addition.Arg.Value)
 			} else if addition.Operator == "|" {
 				ret = ret || match(addition.Arg.Comparison, directive.Args, addition.Arg.Value)
-			} else { //fixme 这里用于扩展
-				ret = false
 			}
 		}
 		if ret == false {
@@ -24,7 +25,7 @@ func (a Args) Match(directive *Directive) bool {
 	return true
 }
 
-func (c *Children) Match(directive *Directive) bool {
+func (c *Children) Match(directive *configuration.Directive) bool {
 	if c.Directive != nil {
 		return c.Directive.MatchAny(directive.Body)
 	} else {
@@ -34,8 +35,6 @@ func (c *Children) Match(directive *Directive) bool {
 				ret = ret && addition.Next.MatchAny(directive.Body)
 			} else if addition.Operator == "|" {
 				ret = ret || addition.Next.MatchAny(directive.Body)
-			} else { //fixme 这里用于扩展
-				ret = false
 			}
 		}
 
@@ -46,7 +45,7 @@ func (c *Children) Match(directive *Directive) bool {
 	return false
 }
 
-func (e *DirectiveExpr) Match(directive *Directive) bool {
+func (e *Directive) Match(directive *configuration.Directive) bool {
 
 	if e.Name != "" && !match(e.Comparison, []string{directive.Name}, e.Name) {
 		return false
@@ -63,7 +62,7 @@ func (e *DirectiveExpr) Match(directive *Directive) bool {
 	return true
 }
 
-func (e *DirectiveExpr) MatchAny(directive []*Directive) bool {
+func (e *Directive) MatchAny(directive []*configuration.Directive) bool {
 	for _, d := range directive {
 		if e.Match(d) {
 			return true
@@ -72,15 +71,15 @@ func (e *DirectiveExpr) MatchAny(directive []*Directive) bool {
 	return false
 }
 
-func (e *Expression) Match(directive *Directive) bool {
+func (e *Expression) Match(directive *configuration.Directive) bool {
 	if !e.Directive.Match(directive) {
 		return false
 	}
 
 	if e.Children != nil {
-		search := &Directive{Body: directive.Body}
+		search := &configuration.Directive{Body: directive.Body}
 		for _, child := range e.Children {
-			match := &Directive{Body: make([]*Directive, 0)}
+			match := &configuration.Directive{Body: make([]*configuration.Directive, 0)}
 			if child.Match(search) {
 				match.Body = append(match.Body, search.Body...)
 			}

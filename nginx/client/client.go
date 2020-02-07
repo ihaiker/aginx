@@ -1,8 +1,11 @@
-package nginx
+package client
 
 import (
 	"errors"
 	"fmt"
+	"github.com/ihaiker/aginx/nginx/configuration"
+	queryLexer "github.com/ihaiker/aginx/nginx/query"
+	"github.com/ihaiker/aginx/storage"
 )
 
 var (
@@ -10,41 +13,28 @@ var (
 	ErrRootCannotBeDeleted = errors.New("root cannot be deleted")
 )
 
-type Client interface {
-
-	//查询指令
-	Select(queries ...string) ([]*Directive, error)
-
-	//添加指令
-	Add(queries []string, directives ...*Directive) error
-
-	//删除指令
-	Delete(queries ...string) error
-
-	//更新指令
-	Modify(queries []string, directive *Directive) error
-
-	Configuration() *Configuration
-}
-
 func Queries(query ...string) []string {
 	return query
 }
 
-type client struct {
-	doc *Configuration
+type Client struct {
+	doc *configuration.Configuration
 }
 
-func NewClient(doc *Configuration) Client {
-	return &client{doc: doc}
+func NewClient(store storage.Engine) (*Client, error) {
+	doc, err := Readable(store)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{doc: doc}, nil
 }
 
-func (client *client) find(directives []*Directive, query string) ([]*Directive, error) {
-	expr, err := Parser(query)
+func (client *Client) find(directives []*configuration.Directive, query string) ([]*configuration.Directive, error) {
+	expr, err := queryLexer.Parser(query)
 	if err != nil {
 		return nil, fmt.Errorf("Search condition error：[%s]", query)
 	}
-	matched := make([]*Directive, 0)
+	matched := make([]*configuration.Directive, 0)
 	for _, directive := range directives {
 		for _, body := range directive.Body {
 			if expr.Match(body) {
@@ -55,12 +45,12 @@ func (client *client) find(directives []*Directive, query string) ([]*Directive,
 	return matched, nil
 }
 
-func (client client) Configuration() *Configuration {
+func (client Client) Configuration() *configuration.Configuration {
 	return client.doc
 }
 
-func (client *client) Select(queries ...string) ([]*Directive, error) {
-	current := []*Directive{client.doc.Directive()}
+func (client *Client) Select(queries ...string) ([]*configuration.Directive, error) {
+	current := []*configuration.Directive{client.doc.Directive()}
 	for _, query := range queries {
 		directives, err := client.find(current, query)
 		if err != nil {
@@ -74,18 +64,19 @@ func (client *client) Select(queries ...string) ([]*Directive, error) {
 	return current, nil
 }
 
-func (client *client) Add(queries []string, addDirectives ...*Directive) error {
+func (client *Client) Add(queries []string, addDirectives ...*configuration.Directive) error {
 	if directives, err := client.Select(queries...); err == ErrNotFound {
 		return err
 	} else {
 		for _, directive := range directives {
+			directive.Modify = true
 			directive.Body = append(directive.Body, addDirectives...)
 		}
 		return nil
 	}
 }
 
-func (client *client) Delete(queries ...string) error {
+func (client *Client) Delete(queries ...string) error {
 	if len(queries) == 0 {
 		return ErrRootCannotBeDeleted
 	}
@@ -96,7 +87,7 @@ func (client *client) Delete(queries ...string) error {
 	}
 
 	deleteQuery := queries[len(queries)-1]
-	expr, err := Parser(deleteQuery)
+	expr, err := queryLexer.Parser(deleteQuery)
 	if err != nil {
 		return err
 	}
@@ -111,6 +102,7 @@ func (client *client) Delete(queries ...string) error {
 			}
 		}
 		if len(deleteDirectiveIdx) > 0 {
+			directive.Modify = true
 			err = nil
 		}
 
@@ -122,12 +114,13 @@ func (client *client) Delete(queries ...string) error {
 	return err
 }
 
-func (client *client) Modify(queries []string, directive *Directive) error {
+func (client *Client) Modify(queries []string, directive *configuration.Directive) error {
 	selectDirectives, err := client.Select(queries...)
 	if err != nil {
 		return err
 	}
 	for _, selectDirective := range selectDirectives {
+		selectDirective.Modify = true
 		selectDirective.Name = directive.Name
 		selectDirective.Args = directive.Args
 		selectDirective.Body = directive.Body

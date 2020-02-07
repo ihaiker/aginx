@@ -1,4 +1,4 @@
-package nginx
+package query
 
 import (
 	"github.com/kr/pretty"

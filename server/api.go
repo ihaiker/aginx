@@ -3,81 +3,81 @@ package server
 import (
 	"bytes"
 	"errors"
-	"github.com/ihaiker/aginx/nginx"
+	"github.com/ihaiker/aginx/lego"
+	"github.com/ihaiker/aginx/nginx/client"
+	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/context"
-	"github.com/kataras/iris/v12/hero"
-	"github.com/kataras/iris/v12/middleware/basicauth"
+	"io"
 	"strings"
-	"time"
 )
 
-func Routers(vister *Supervister, auth string) func(*iris.Application) {
-	handlers := make([]context.Handler, 0)
-	if auth != "" {
-		authConfig := strings.SplitN(auth, ":", 2)
-		handlers = append(handlers, basicauth.New(basicauth.Config{
-			Users: map[string]string{authConfig[0]: authConfig[1]},
-			Realm: "Authorization Required", Expires: time.Duration(30) * time.Minute,
-		}))
-	}
-
-	h := hero.New()
-	h.Register(func(ctx iris.Context) []string {
-		return ctx.Request().URL.Query()["q"]
-	})
-	h.Register(func(ctx iris.Context) nginx.Client {
-		doc, err := nginx.AnalysisNginx()
-		util.PanicIfError(err)
-		return nginx.NewClient(doc)
-	})
-	h.Register(func(ctx iris.Context) []*nginx.Directive {
-		body, err := ctx.GetBody()
-		util.PanicIfError(err)
-		conf, err := nginx.Analysis("", nginx.NamedReader(bytes.NewBuffer(body), ""))
-		util.PanicIfError(err)
-		return conf.Directive().Body
-	})
-	service := &apiService{vister: vister}
-	return func(app *iris.Application) {
-		api := app.Party("/api", handlers...)
-		{
-			api.Get("", h.Handler(service.queryDirective))
-			api.Put("", h.Handler(service.addDirective))
-			api.Delete("", h.Handler(service.deleteDirective))
-			api.Post("", h.Handler(service.modifyDirective))
-		}
-	}
+type apiController struct {
+	vister  *Supervister
+	engine  storage.Engine
+	manager *lego.Manager
 }
 
-type apiService struct {
-	vister *Supervister
+func (as *apiController) upload(ctx iris.Context) int {
+	file, _, err := ctx.FormFile("file")
+	util.PanicIfError(err)
+	defer func() { _ = file.Close() }()
+	filePath := ctx.FormValue("path")
+
+	out := bytes.NewBuffer(make([]byte, 0))
+	_, err = io.Copy(out, file)
+	util.PanicIfError(err)
+
+	err = as.engine.Store(filePath, out.Bytes())
+	util.PanicIfError(err)
+
+	return iris.StatusNotFound
 }
 
-func (as *apiService) queryDirective(client nginx.Client, queries []string) []*nginx.Directive {
+func (as *apiController) queryDirective(client *client.Client, queries []string) []*configuration.Directive {
 	directives, err := client.Select(queries...)
 	util.PanicIfError(err)
 	return directives
 }
 
-func (as *apiService) addDirective(client nginx.Client, queries []string, directives []*nginx.Directive) int {
+func (as *apiController) addDirective(client *client.Client, queries []string, directives []*configuration.Directive) int {
 	util.PanicIfError(client.Add(queries, directives...))
 	util.PanicIfError(as.vister.Test(client.Configuration()))
+	util.PanicIfError(as.engine.StoreConfiguration(client.Configuration()))
 	return iris.StatusNoContent
 }
 
-func (as *apiService) deleteDirective(client nginx.Client, queries []string) int {
+func (as *apiController) deleteDirective(client *client.Client, queries []string) int {
 	util.PanicIfError(client.Delete(queries...))
 	util.PanicIfError(as.vister.Test(client.Configuration()))
+	util.PanicIfError(as.engine.StoreConfiguration(client.Configuration()))
 	return iris.StatusNoContent
 }
 
-func (as *apiService) modifyDirective(client nginx.Client, queries []string, directives []*nginx.Directive) int {
+func (as *apiController) modifyDirective(client *client.Client, queries []string, directives []*configuration.Directive) int {
 	if len(directives) == 0 {
 		panic(errors.New("new directive is empty"))
 	}
 	util.PanicIfError(client.Modify(queries, directives[0]))
 	util.PanicIfError(as.vister.Test(client.Configuration()))
+	util.PanicIfError(as.engine.StoreConfiguration(client.Configuration()))
 	return iris.StatusNoContent
+}
+
+func (as *apiController) reload() int {
+	util.PanicIfError(as.vister.Reload())
+	return iris.StatusNoContent
+}
+
+func (as *apiController) selectDirective(queries ...string) func(*client.Client) []*configuration.Directive {
+	return func(client *client.Client) []*configuration.Directive {
+		directives := make([]*configuration.Directive, 0)
+		for _, query := range queries {
+			if ds, err := client.Select(strings.Split(query, ",")...); err == nil {
+				directives = append(directives, ds...)
+			}
+		}
+		return directives
+	}
 }

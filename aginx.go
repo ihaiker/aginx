@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	VERSION        string = "v0.0.1"
-	BUILD_TIME     string = "2012-12-12 12:12:12"
-	GITLOG_VERSION string = "0000"
+	VERSION        = "v0.0.1"
+	BUILD_TIME     = "2012-12-12 12:12:12"
+	GITLOG_VERSION = "0000"
 )
 
 func setLogger(cmd *cobra.Command) error {
@@ -34,10 +34,9 @@ func setLogger(cmd *cobra.Command) error {
 }
 
 var rootCmd = &cobra.Command{
-	Use: "aginx",
-	Long: fmt.Sprintf(`api for nginx.
-Build: %s, Go: %s, Commit: %s`, BUILD_TIME, runtime.Version(), GITLOG_VERSION),
-	Version: fmt.Sprint(VERSION),
+	Use:     "aginx",
+	Long:    fmt.Sprintf(`api for nginx. Build: %s, Go: %s, Commit: %s`, BUILD_TIME, runtime.Version(), GITLOG_VERSION),
+	Version: "" + VERSION + "",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		if err = setLogger(cmd); err != nil {
 			return

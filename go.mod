@@ -12,4 +12,5 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/xhaiker/codf v0.2.4-nginx
+	golang.org/x/tools v0.0.0-20200207224406-61798d64f025
 )

@@ -1,4 +1,4 @@
-package nginx
+package query
 
 import (
 	"github.com/alecthomas/participle"
@@ -19,7 +19,7 @@ type Args struct {
 	Next []*ArgAddition `{ @@ }`
 }
 
-type DirectiveExpr struct {
+type Directive struct {
 	Comparison string `( ( [@("!" | "@" | "^" | "$")]`
 	Name       string `@Ident )`
 
@@ -29,23 +29,23 @@ type DirectiveExpr struct {
 }
 
 type Children struct {
-	Directive *DirectiveExpr `( @@`
-	Group     *ChildArray    `| "[" @@ "]" )`
+	Directive *Directive  `( @@`
+	Group     *ChildArray `| "[" @@ "]" )`
 }
 
 type ChildArray struct {
-	First *DirectiveExpr      `@@`
+	First *Directive          `@@`
 	Next  []*ChildrenAddition `@@`
 }
 
 type ChildrenAddition struct {
-	Operator string         `@("&" | "|")`
-	Next     *DirectiveExpr `@@`
+	Operator string     `@("&" | "|")`
+	Next     *Directive `@@`
 }
 
 type Expression struct {
-	Directive *DirectiveExpr `@@`
-	Children  []*Children    `("." @@)*`
+	Directive *Directive  `@@`
+	Children  []*Children `("." @@)*`
 }
 
 func Parser(str string) (expr *Expression, err error) {
