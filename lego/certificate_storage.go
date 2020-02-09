@@ -2,8 +2,8 @@ package lego
 
 import (
 	"encoding/json"
-	"github.com/go-acme/lego/v3/certcrypto"
 	"github.com/go-acme/lego/v3/certificate"
+	"github.com/go-acme/lego/v3/challenge"
 	"github.com/go-acme/lego/v3/challenge/http01"
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/ihaiker/aginx/storage"
@@ -26,21 +26,17 @@ func (cfs *CertificateStorage) Get(domain string) (cert *Certificate, has bool) 
 	return
 }
 
-func (cfs *CertificateStorage) New(keyType certcrypto.KeyType, account *Account, domain, address string) (cert *Certificate, err error) {
-
+func (cfs *CertificateStorage) NewWithProvider(account *Account, domain string, provider challenge.Provider) (cert *Certificate, err error) {
 	config := lego.NewConfig(account)
-	config.Certificate.KeyType = keyType
+	config.Certificate.KeyType = account.KeyType
+	config.Certificate.Timeout = time.Minute
 
 	var client *lego.Client
 	if client, err = lego.NewClient(config); err != nil {
 		return
 	}
 
-	var iface, port string
-	if iface, port, err = net.SplitHostPort(address); err != nil {
-		return
-	}
-	if err = client.Challenge.SetHTTP01Provider(http01.NewProviderServer(iface, port)); err != nil {
+	if err = client.Challenge.SetHTTP01Provider(provider); err != nil {
 		return
 	}
 
@@ -51,6 +47,8 @@ func (cfs *CertificateStorage) New(keyType certcrypto.KeyType, account *Account,
 	} else if err = cert.LoadCertificate(); err != nil {
 		return
 	}
+
+	cert.Email = account.Email
 	cert.ExpireTime = time.Now().AddDate(0, 3, 0)
 
 	cfs.data[domain] = cert
@@ -59,6 +57,15 @@ func (cfs *CertificateStorage) New(keyType certcrypto.KeyType, account *Account,
 		return
 	}
 	return
+}
+
+func (cfs *CertificateStorage) New(account *Account, domain, address string) (*Certificate, error) {
+	if iface, port, err := net.SplitHostPort(address); err != nil {
+		return nil, err
+	} else {
+		provider := http01.NewProviderServer(iface, port)
+		return cfs.NewWithProvider(account, domain, provider)
+	}
 }
 
 func (cfs *CertificateStorage) restore(domain string) error {

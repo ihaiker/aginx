@@ -6,7 +6,7 @@ import (
 
 type Arg struct {
 	Comparison string `[@("!" | "@" | "^" | "$")]`
-	Value      string `@(Ident|String|RawString)`
+	Value      string `@(String|RawString|Ident)`
 }
 
 type ArgAddition struct {

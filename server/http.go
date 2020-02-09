@@ -23,19 +23,19 @@ func NewHttp(address string, routers func(*iris.Application)) *Http {
 
 func (this *Http) Start() error {
 	this.app.UseGlobal(iris.Gzip)
-	this.app.UseGlobal(func(ctx iris.Context) {
+	this.app.Use(func(ctx iris.Context) {
 		defer func() {
 			if err := recover(); err != nil {
 				if ctx.IsStopped() {
 					return
 				}
-				ctx.StopExecution()
-
 				ctx.StatusCode(iris.StatusInternalServerError)
 				_, _ = ctx.JSON(map[string]string{
 					"error":   "InternalServerError",
 					"message": fmt.Sprintf("%v", err),
 				})
+				logrus.Error("handler error: ", err)
+				ctx.StopExecution()
 			}
 		}()
 		ctx.Next()

@@ -2,13 +2,13 @@ package lego
 
 import (
 	"github.com/go-acme/lego/v3/certificate"
-	"io/ioutil"
-	"os"
+	"github.com/ihaiker/aginx/storage"
 	"time"
 )
 
 type Certificate struct {
 	ExpireTime time.Time `json:"expire"`
+	Email      string    `json:"email"`
 
 	*certificate.Resource
 
@@ -19,23 +19,38 @@ type Certificate struct {
 	PEM string `json:"pem"`
 }
 
-func (cfs *Certificate) StoreFile(path string) (err error) {
-	if err = os.MkdirAll(path, os.ModePerm); err != nil {
+type StoreFile struct {
+	Certificate       string `json:"certificate"`
+	IssuerCertificate string `json:"issuerCertificate"`
+	PEM               string `json:"pem"`
+	PrivateKey        string `json:"privateKey"`
+}
+
+func (cfs *Certificate) GetStoreFile() *StoreFile {
+	storePath := certificateDir + "/" + cfs.Domain
+	return &StoreFile{
+		Certificate:       storePath + "/server.crt",
+		IssuerCertificate: storePath + "/server.issuer.crt",
+		PEM:               storePath + "/server.key",
+		PrivateKey:        storePath + "/server.pem",
+	}
+}
+
+func (cfs *Certificate) StoreFile(engine storage.Engine) (file *StoreFile, err error) {
+	file = cfs.GetStoreFile()
+	if err = engine.Store(file.Certificate, []byte(cfs.Certificate)); err != nil {
 		return
 	}
-	if err = ioutil.WriteFile(path+"/server.crt", []byte(cfs.Certificate), 0666); err != nil {
+	if err = engine.Store(file.IssuerCertificate, []byte(cfs.IssuerCertificate)); err != nil {
 		return
 	}
-	if err = ioutil.WriteFile(path+"/server.issuer.crt", []byte(cfs.IssuerCertificate), 0666); err != nil {
+	if err = engine.Store(file.PrivateKey, []byte(cfs.PrivateKey)); err != nil {
 		return
 	}
-	if err = ioutil.WriteFile(path+"/server.key", []byte(cfs.PrivateKey), 0666); err != nil {
+	if err = engine.Store(file.PEM, []byte(cfs.PEM)); err != nil {
 		return
 	}
-	if err = ioutil.WriteFile(path+"/server.pem", []byte(cfs.PEM), 0666); err != nil {
-		return
-	}
-	return nil
+	return
 }
 
 func (cfs *Certificate) LoadCertificate() error {

@@ -14,11 +14,15 @@ param=
 endif
 
 build:
-	go mod download
-	go build -tags bindata -ldflags "${debug} ${param}" -o ${binout}
+	go build -ldflags "${debug} ${param}" -o ${binout}
 
 release:
 	make -C . -e P=release
+
+docker:
+	BUILD_DEBUG=${debug}
+	BUILD_PARAM=${param}
+	docker build -t xhaiker/aginx:${Version} .
 
 clean:
 	@rm -rf bin

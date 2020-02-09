@@ -27,16 +27,16 @@ func NewDirective(name string, args ...string) *Directive {
 	return &Directive{Name: name, Args: args}
 }
 
-func (d Directive) String() string {
+func (d *Directive) String() string {
 	return d.Pretty(0)
 }
 
-func (d Directive) Json() string {
+func (d *Directive) Json() string {
 	bs, _ := json.MarshalIndent(d, "", "\t")
 	return string(bs)
 }
 
-func (d Directive) HideBody() bool {
+func (d *Directive) HideBody() bool {
 	if len(d.Body) == 0 {
 		return true
 	} else {
@@ -49,7 +49,20 @@ func (d Directive) HideBody() bool {
 	}
 }
 
-func (d Directive) Pretty(prefix int) string {
+func (d *Directive) AddBody(name string, args ...string) *Directive {
+	body := NewDirective(name, args...)
+	d.AddBodyDirective(body)
+	return body
+}
+
+func (d *Directive) AddBodyDirective(directive *Directive) {
+	if d.Body == nil {
+		d.Body = make([]*Directive, 0)
+	}
+	d.Body = append(d.Body, directive)
+}
+
+func (d *Directive) Pretty(prefix int) string {
 	prefixString := strings.Repeat(" ", prefix*4)
 	if d.Virtual != "" {
 		return ""
@@ -70,6 +83,45 @@ func (d Directive) Pretty(prefix int) string {
 				out.WriteString(body.Pretty(prefix + 1))
 			}
 			out.WriteString(fmt.Sprintf("\n%s}", prefixString))
+		}
+		return out.String()
+	}
+}
+
+func (d *Directive) Query() string {
+	if d.Virtual != "" {
+		return ""
+	} else {
+		out := bytes.NewBufferString(d.Name)
+		if len(d.Args) > 0 {
+			out.WriteString("(")
+			for i, arg := range d.Args {
+				out.WriteString("'")
+				out.WriteString(arg)
+				out.WriteString("'")
+				if i < len(d.Args)-1 {
+					out.WriteString(" & ")
+				}
+			}
+			out.WriteString(")")
+		}
+
+		if !d.HideBody() {
+			bodyLen := len(d.Body)
+			if bodyLen > 1 {
+				out.WriteString(".[")
+			}
+
+			for i, body := range d.Body {
+				out.WriteString(body.Query())
+				if i < bodyLen-1 {
+					out.WriteString(" & ")
+				}
+			}
+
+			if bodyLen > 1 {
+				out.WriteString("]")
+			}
 		}
 		return out.String()
 	}

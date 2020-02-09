@@ -12,10 +12,11 @@ import (
 	"github.com/kataras/iris/v12/hero"
 	"github.com/kataras/iris/v12/middleware/basicauth"
 	"strings"
+	"sync"
 	"time"
 )
 
-func Routers(sv *Supervister, st storage.Engine, manager *lego.Manager, auth string) func(*iris.Application) {
+func Routers(vister *Supervister, engine storage.Engine, manager *lego.Manager, auth string) func(*iris.Application) {
 	handlers := make([]context.Handler, 0)
 	if auth != "" {
 		authConfig := strings.SplitN(auth, ":", 2)
@@ -29,18 +30,21 @@ func Routers(sv *Supervister, st storage.Engine, manager *lego.Manager, auth str
 	h.Register(func(ctx iris.Context) []string {
 		return ctx.Request().URL.Query()["q"]
 	}, func(ctx iris.Context) *client.Client {
-		api, err := client.NewClient(st)
+		api, err := client.NewClient(engine)
 		util.PanicIfError(err)
 		return api
 	}, func(ctx iris.Context) []*configuration.Directive {
 		body, err := ctx.GetBody()
 		util.PanicIfError(err)
-		conf, err := client.ReaderReadable(st, util.NamedReader(bytes.NewBuffer(body), ""))
+		conf, err := client.ReaderReadable(engine, util.NamedReader(bytes.NewBuffer(body), ""))
 		util.PanicIfError(err)
 		return conf.Directive().Body
 	})
 
-	ctrl := &apiController{vister: sv, manager: manager, engine: st}
+	ctrl := &apiController{vister: vister, manager: manager, engine: engine}
+	ssl := &sslController{vister: vister, manager: manager, engine: engine, lock: new(sync.Mutex)}
+	_ = util.EBus.Subscribe(util.SSLExpire, ssl.Expire)
+
 	return func(app *iris.Application) {
 		api := app.Party("/api", handlers...)
 		{
@@ -63,5 +67,11 @@ func Routers(sv *Supervister, st storage.Engine, manager *lego.Manager, auth str
 		limit := iris.LimitRequestBodySize(1024 * 1024 * 10)
 		app.Post("/upload", limit, h.Handler(ctrl.upload))
 		app.Any("/reload", h.Handler(ctrl.reload))
+
+		sslRouter := app.Party("/ssl", handlers...)
+		{
+			sslRouter.Put("/{domain:string}", h.Handler(ssl.New))
+			sslRouter.Post("/{domain:string}", h.Handler(ssl.Renew))
+		}
 	}
 }

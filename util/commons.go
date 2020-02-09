@@ -73,3 +73,7 @@ type NameReader struct {
 func NamedReader(rd io.Reader, name string) *NameReader {
 	return &NameReader{Reader: rd, Name: name}
 }
+
+func (nr *NameReader) String() string {
+	return fmt.Sprintf("file(%s)", nr.Name)
+}

@@ -32,7 +32,7 @@ func (as *apiController) upload(ctx iris.Context) int {
 	err = as.engine.Store(filePath, out.Bytes())
 	util.PanicIfError(err)
 
-	return iris.StatusNotFound
+	return iris.StatusNoContent
 }
 
 func (as *apiController) queryDirective(client *client.Client, queries []string) []*configuration.Directive {

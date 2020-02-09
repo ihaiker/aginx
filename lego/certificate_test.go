@@ -1,7 +1,6 @@
 package lego
 
 import (
-	"github.com/go-acme/lego/v3/certcrypto"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	"github.com/kr/pretty"
 	"github.com/sirupsen/logrus"
@@ -36,8 +35,7 @@ func TestNewDomain(t *testing.T) {
 		t.Fatal(os.ErrNotExist)
 	}
 	domain := "who.renzhen.la"
-	keyType := certcrypto.EC384
-	cert, err := cfs.New(keyType, account, domain, ":5002")
+	cert, err := cfs.New(account, domain, ":5002")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +46,9 @@ func TestStoreFile(t *testing.T) {
 	cwd, _ := os.Getwd()
 	domain := "who.renzhen.la"
 	cert, _ := cfs.Get(domain)
-	if err := cert.StoreFile(cwd + "/" + domain); err != nil {
+	if sf, err := cert.StoreFile(cwd + "/" + domain); err != nil {
 		t.Fatal(err)
+	} else {
+		t.Log(sf)
 	}
 }

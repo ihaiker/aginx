@@ -33,6 +33,8 @@ func (sp *Supervister) start() error {
 }
 
 func (sp *Supervister) Start() (err error) {
+	_ = util.EBus.Subscribe(util.NginxReload, sp.Reload)
+
 	if err = sp.start(); err != nil {
 		logrus.Debug("start nginx error: ", err)
 		if stopErr := sp.stop(); stopErr != nil {

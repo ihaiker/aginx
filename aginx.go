@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ihaiker/aginx/cmd/aginx"
+	"github.com/ihaiker/aginx/cmd"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"math/rand"
@@ -43,15 +43,16 @@ var rootCmd = &cobra.Command{
 		}
 		return
 	},
-	RunE: aginx.Start,
+	RunE: cmd.ServerCmd.RunE,
 }
 
 func init() {
 	cobra.OnInitialize(func() {})
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "debug mode")
 	rootCmd.PersistentFlags().StringP("level", "l", "info", "log level")
-	rootCmd.PersistentFlags().StringP("api", "a", ":8011", "restful api port")
-	rootCmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd.")
+	cmd.AddServerFlags(rootCmd)
+
+	rootCmd.AddCommand(cmd.ServerCmd)
 }
 
 func main() {

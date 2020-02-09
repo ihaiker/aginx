@@ -37,7 +37,7 @@ func (d *daemon) await() error {
 	C := make(chan os.Signal)
 	signal.Notify(C, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	for s := range C {
-		logrus.WithField("signal", s.String()).Info("接收关闭信号")
+		logrus.WithField("signal", s.String()).Debug("接收关闭信号")
 		err := Async(time.Second*7, d.Stop)
 		if err == ErrTimeout {
 			os.Exit(1)
