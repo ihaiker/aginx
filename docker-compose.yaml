@@ -1,0 +1,10 @@
+version: "3.7"
+
+services:
+  aginx:
+    image: xhaiker/aginx:v1.0.0
+    container_name: aginx
+    ports:
+      - 80:80
+      - 443:443
+      - 8011:8011

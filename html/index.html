@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>aginx</title>
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #wrapper {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main {
+            text-align: center;
+            border-radius: 20px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            padding: 50px 120px;
+            transform: translate(-50%, -50%);
+        }
+        .main span {
+            color: white;
+            font-size: 8em;
+            letter-spacing: 0.25em;
+            padding-left: 0.375em;
+        }
+
+    </style>
+
+    <script type="type/shader" id="vertex">
+    #version 300 es
+    layout (location=0) in vec2 point;
+    void main() {
+       gl_Position = vec4(point.x, point.y, 0.0, 1.0);
+    }
+    </script>
+
+    <script type="type/shader" id="fragment">
+    #version 300 es
+    precision highp float;
+
+   float N21(vec2 p) {
+   p = fract(p * vec2(233.34, 851.73));
+      p += dot(p, p + 23.45);
+      return fract(p.x * p.y);
+  }
+
+  vec2 N22(vec2 p) {
+   float n = N21(p);
+      return vec2(n, N21(p + n));
+  }
+
+  vec2 getPos(vec2 id, vec2 offset, float iTime) {
+   vec2 n = N22(id + offset);
+      float x = cos(iTime * n.x);
+      float y = sin(iTime * n.y);
+      return vec2(x, y) * 0.4 + offset;
+  }
+
+  float distanceToLine(vec2 p, vec2 a, vec2 b) {
+   vec2 pa = p - a;
+      vec2 ba = b - a;
+      float t = clamp(dot(pa, ba) / dot(ba, ba), 0., 1.);
+      return length(pa - t * ba);
+  }
+
+  float getLine(vec2 p, vec2 a, vec2 b, vec2 iResolution) {
+   float distance = distanceToLine(p, a, b);
+      float dx = 15./iResolution.y;
+      return smoothstep(dx, 0., distance) * smoothstep(1.2, 0.3, length(a - b));
+  }
+
+  float layer(vec2 st, float iTime, vec2 iResolution) {
+      float m = 0.;
+      vec2 gv = fract(st) - 0.5;
+      vec2 id = floor(st);
+      // m = gv.x > 0.48 || gv.y > 0.48 ? 1. : 0.;
+      // vec2 pointPos = getPos(id, vec2(0., 0.));
+      // m += smoothstep(0.05, 0.03, length(gv - pointPos));
+
+      float dx=15./iResolution.y;
+      // m += smoothstep(-dx,0., abs(gv.x)-.5);
+      // m += smoothstep(-dx,0., abs(gv.y)-.5);
+      // m += smoothstep(dx, 0., length(gv - pointPos)-0.03);
+
+      vec2 p[9];
+      int i = 0;
+      for (float x = -1.; x <= 1.; x++) {
+          for (float y = -1.; y <= 1.; y++) {
+           p[i++] = getPos(id, vec2(x, y), iTime);
+          }
+      }
+
+      for (int j = 0; j <= 8; j++) {
+       m += getLine(gv, p[4], p[j], iResolution);
+          vec2 temp = (gv - p[j]) * 20.;
+          m += 1./dot(temp, temp) * (sin(10. * iTime + fract(p[j].x) * 20.) * 0.5 + 0.5);
+
+      }
+
+      m += getLine(gv, p[1], p[3], iResolution);
+      m += getLine(gv, p[1], p[5], iResolution);
+      m += getLine(gv, p[3], p[7], iResolution);
+      m += getLine(gv, p[5], p[7], iResolution);
+
+      // m += smoothstep(0.05, 0.04, length(st - vec2(0., 0.)));
+      return m;
+  }
+
+  uniform float iTime;
+  uniform vec2 iResolution;
+  out vec4 fragColor;
+  void main()
+  {
+      vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / iResolution.y;
+
+      float m = 0.;
+
+      float theta = iTime * 0.1;
+      mat2 rot = mat2(cos(theta), -sin(theta), sin(theta), cos(theta));
+      vec2 gradient = uv;
+      uv = rot * uv;
+
+      for (float i = 0.; i < 1.0 ; i += 0.25) {
+       float depth = fract(i + iTime * 0.1);
+          m += layer(uv * mix(10., 0.5, depth) + i * 20., iTime, iResolution) * smoothstep(0., 0.2, depth) * smoothstep(1., 0.8, depth);
+      }
+
+      vec3 baseColor = sin(vec3(3.45, 6.56, 8.78) * iTime * 0.2) * 0.5 + 0.5;
+
+      vec3 col = (m - gradient.y) * baseColor;
+      // Output to screen
+      fragColor = vec4(col, 1.0);
+  }
+
+    </script>
+</head>
+<body>
+<div id="wrapper">
+    <canvas id="cvs"></canvas>
+</div>
+<div class="main">
+    <span>Aginx</span>
+</div>
+<script src="index.js"></script>
+</body>
+</html>

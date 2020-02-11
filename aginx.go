@@ -51,13 +51,17 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "debug mode")
 	rootCmd.PersistentFlags().StringP("level", "l", "info", "log level")
 	cmd.AddServerFlags(rootCmd)
-
-	rootCmd.AddCommand(cmd.ServerCmd)
+	rootCmd.AddCommand(cmd.ServerCmd, cmd.ClusterCmd)
 }
 
 func main() {
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableColors: true,
+		FullTimestamp: true,
+	})
+	logrus.SetOutput(os.Stdout)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
