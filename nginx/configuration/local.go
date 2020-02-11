@@ -2,30 +2,13 @@ package configuration
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
+	"github.com/ihaiker/aginx/util"
 )
 
 type Writer func(file string, content []byte) error
 
-func FileWriter(path string, content []byte) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return err
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-
-	_, err = f.Write(content)
-	return err
-}
-
 func Down(root string, cfg *Configuration) error {
-	return DownWriter(root, cfg, FileWriter)
+	return DownWriter(root, cfg, util.WriterFile)
 }
 
 func DownWriter(root string, cfg *Configuration, writerFn Writer) (err error) {

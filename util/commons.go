@@ -3,7 +3,10 @@ package util
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
+	"os"
+	"path/filepath"
 )
 
 //Try handler(err)
@@ -76,4 +79,12 @@ func NamedReader(rd io.Reader, name string) *NameReader {
 
 func (nr *NameReader) String() string {
 	return fmt.Sprintf("file(%s)", nr.Name)
+}
+
+func WriterFile(path string, content []byte) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path, content, 0666)
 }

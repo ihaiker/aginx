@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/participle v0.4.1
 	github.com/asaskevich/EventBus v0.0.0-20180315140547-d46933a94f05
 	github.com/coreos/bbolt v1.3.3 // indirect
+	github.com/coreos/etcd v3.3.10+incompatible
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/go-acme/lego/v3 v3.3.0
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect

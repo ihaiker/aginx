@@ -8,6 +8,7 @@ import (
 	"github.com/ihaiker/aginx/server"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/storage/consul"
+	"github.com/ihaiker/aginx/storage/etcd"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	. "github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
@@ -35,11 +36,16 @@ func clusterConfiguration(cluster string) (engine storage.Engine) {
 		config, err := url.Parse(cluster)
 		PanicIfError(err)
 
+		folder := config.EscapedPath()[1:]
 		switch config.Scheme {
 		case "consul":
 			token := config.Query().Get("token")
-			folder := config.EscapedPath()[1:]
 			engine, err = consul.New(config.Host, folder, token)
+			PanicIfError(err)
+		case "etcd":
+			user := config.Query().Get("user")
+			password := config.Query().Get("password")
+			engine, err = etcd.New(config.Host, folder, user, password)
 			PanicIfError(err)
 		}
 	}

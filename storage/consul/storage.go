@@ -47,31 +47,39 @@ func New(address, folder, token string) (cs *consulStorage, err error) {
 	return
 }
 
-func (cs *consulStorage) downloadFile() {
+func (cs *consulStorage) downloadFile() (changed bool) {
 	kvs, query, err := cs.client.KV().List(cs.folder, &consulApi.QueryOptions{
 		WaitTime: time.Second * 3, WaitIndex: cs.index,
 	})
 	if err != nil {
 		return
 	}
+
 	if cs.index != query.LastIndex {
+
+		_ = filepath.Walk(cs.rootDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return err
+			}
+			return os.Remove(path)
+		})
+
 		for _, kv := range kvs {
-			if cs.index == 0 || kv.ModifyIndex == query.LastIndex {
-
-				filePath := cs.rootDir + strings.Replace(kv.Key, cs.folder, "", 1)
-				err := configuration.FileWriter(filePath, kv.Value)
-
+			filePath := cs.rootDir + strings.Replace(kv.Key, cs.folder, "", 1)
+			err := util.WriterFile(filePath, kv.Value)
+			if cs.index == 0 || kv.ModifyIndex >= query.LastIndex {
+				changed = true
 				logrus.WithField("engine", "consul").WithField("file", kv.Key).
 					WithError(err).Debug("the configuration has changed.")
 			}
 		}
-		logrus.Info("publish: ", util.NginxReload)
-		util.EBus.Publish(util.NginxReload)
 	}
+
 	cs.index = query.LastIndex
+	return
 }
 
-func (cs *consulStorage) checkChanged() {
+func (cs *consulStorage) watchChanged() {
 	cs.wg.Add(1)
 	defer cs.wg.Done()
 	for {
@@ -79,14 +87,17 @@ func (cs *consulStorage) checkChanged() {
 		case <-cs.closeChan:
 			return
 		default:
-			cs.downloadFile()
+			if cs.downloadFile() {
+				logrus.Info("publish: ", util.NginxReload)
+				util.EBus.Publish(util.NginxReload)
+			}
 		}
 	}
 }
 
 func (cs *consulStorage) Start() error {
 	cs.downloadFile()
-	go cs.checkChanged()
+	go cs.watchChanged()
 	return nil
 }
 
@@ -126,8 +137,7 @@ func (cs *consulStorage) File(file string) (*util.NameReader, error) {
 	} else if value == nil {
 		return nil, os.ErrNotExist
 	} else {
-		name := strings.ReplaceAll(value.Key, cs.folder+"/", "")
-		reader := util.NamedReader(bytes.NewBuffer(value.Value), name)
+		reader := util.NamedReader(bytes.NewBuffer(value.Value), file)
 		return reader, nil
 	}
 }
