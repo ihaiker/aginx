@@ -10,20 +10,23 @@ import (
 	"github.com/ihaiker/aginx/storage/consul"
 	"github.com/ihaiker/aginx/storage/etcd"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
+	"github.com/ihaiker/aginx/storage/zookeeper"
 	. "github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"net/url"
-	"os"
 	"strings"
 )
 
-func getString(cmd *cobra.Command, key string) string {
-	envKey := strings.ToUpper(fmt.Sprintf("aginx_%s", key))
-	if value := os.Getenv(envKey); value != "" {
-		return value
-	}
+func getString(cmd *cobra.Command, key, def string) string {
 	value, err := cmd.PersistentFlags().GetString(key)
 	PanicIfError(err)
+	if value == "" {
+		value = viper.GetString(key)
+	}
+	if value == "" {
+		return def
+	}
 	return value
 }
 
@@ -46,6 +49,11 @@ func clusterConfiguration(cluster string) (engine storage.Engine) {
 			user := config.Query().Get("user")
 			password := config.Query().Get("password")
 			engine, err = etcd.New(config.Host, folder, user, password)
+			PanicIfError(err)
+		case "zk":
+			scheme := config.Query().Get("scheme")
+			auth := config.Query().Get("auth")
+			engine, err = zookeeper.New(config.Host, folder, scheme, auth)
 			PanicIfError(err)
 		}
 	}
@@ -90,9 +98,8 @@ func apiServer(domain, address string) *configuration.Directive {
 	return directive
 }
 
-func exposeApi(cmd *cobra.Command, engine storage.Engine) {
-	address := getString(cmd, "api")
-	domain := getString(cmd, "expose")
+func exposeApi(cmd *cobra.Command, address string, engine storage.Engine) {
+	domain := getString(cmd, "expose", "")
 	if domain == "" {
 		return
 	}
@@ -112,23 +119,23 @@ func exposeApi(cmd *cobra.Command, engine storage.Engine) {
 }
 
 var ServerCmd = &cobra.Command{
-	Use: "server", Long: "the api server",
+	Use: "server", Short: "the aginx server", Long: "the api server", Example: "aginx server",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer Catch(func(err error) {
 			fmt.Println(err)
 		})
 
-		address := getString(cmd, "api")
-		auth := getString(cmd, "security")
+		address := getString(cmd, "api", ":8011")
+		auth := getString(cmd, "security", "")
 
 		daemon := NewDaemon()
-		cluster := getString(cmd, "cluster")
+		cluster := getString(cmd, "cluster", "")
 		engine := clusterConfiguration(cluster)
 		if service, matched := engine.(Service); matched {
 			daemon.Add(service)
 		}
 
-		exposeApi(cmd, engine)
+		exposeApi(cmd, address, engine)
 
 		manager, err := lego.NewManager(engine)
 		PanicIfError(err)
@@ -144,19 +151,20 @@ var ServerCmd = &cobra.Command{
 func AddClusterFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("cluster", "c", "", `cluster config
 for example. 
-	consul://127.0.0.1:8500/aginx?token=authtoken   config from consul.  
-	zk://127.0.0.1:2182/aginx                       config from zookeeper.
-	etcd://127.0.0.1:1234/aginx                     config from etcd.
+	consul://127.0.0.1:8500/aginx[?token=authtoken]   config from consul.  
+	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
+	etcd://127.0.0.1:1234/aginx[?user=&password]      config from etcd.
 `)
 	cmd.PersistentFlags().StringP("expose", "e", "", "expose api use domain")
 }
 
 func AddServerFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("api", "a", ":8011", "restful api port")
+	cmd.PersistentFlags().StringP("api", "a", "", "restful api port. (default :8081)")
 	cmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
 	AddClusterFlag(cmd)
 }
 
 func init() {
 	AddServerFlags(ServerCmd)
+	_ = viper.BindPFlags(ServerCmd.PersistentFlags())
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ihaiker/aginx/storage/file"
 	. "github.com/ihaiker/aginx/util"
@@ -13,13 +14,18 @@ import (
 )
 
 var ClusterCmd = &cobra.Command{
-	Use: "cluster", Long: "Sync configuration files to cluster storage",
+	Use: "cluster", Short: "Sync configuration files from nginx to cluster storage",
+	Long: "Sync configuration files to cluster storage",
 	Args: cobra.ExactValidArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer Catch(func(err error) {
 			fmt.Println(err)
 		})
 		engine := clusterConfiguration(args[0])
+		if engine == nil {
+			return errors.New("the flag cluster not found")
+		}
+
 		_, conf, err := file.GetInfo()
 		PanicIfError(err)
 
