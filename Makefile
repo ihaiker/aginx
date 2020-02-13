@@ -1,4 +1,4 @@
-.PHONY: build release clean
+.PHONY: build release clean docker sync-consul sync-etcd sync-zk
 
 binout=bin/aginx
 
@@ -17,6 +17,16 @@ release:
 
 docker:
 	docker build --build-arg LDFLAGS="${debug} ${param}" -t xhaiker/aginx:${Version} .
+
+
+sync-consul: build
+	./bin/aginx -d cluster consul://127.0.0.1:8500/aginx
+
+sync-etcd: build
+	./bin/aginx -d cluster etcd://127.0.0.1:2379/aginx
+
+sync-zk: build
+	./bin/aginx -d cluster zk://127.0.0.1:2181/aginx
 
 clean:
 	@rm -rf bin

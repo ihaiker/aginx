@@ -1,18 +1,34 @@
 package consul
 
 import (
+	"github.com/ihaiker/aginx/server/ignore"
+	"github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	url2 "net/url"
+	"strconv"
 	"testing"
 	"time"
 )
 
-func TestEngine(t *testing.T) {
-	api, err := New("127.0.0.1:8500", "aginx", "")
-	assert.Nil(t, err)
+func init() {
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetFormatter(&util.Formatter{
+		TimestampFormat: "2006-01-02 15:04:05.000", FieldsOrder: []string{"engine"},
+	})
+}
 
-	err = api.Store("nginx.conf", []byte("nginx configuration 2."))
+func newClient(t *testing.T) *consulStorage {
+	url, _ := url2.Parse("consul://127.0.0.1:8500/aginx")
+	engine, _ := New(url, ignore.Empty())
+	return engine
+}
+
+func TestEngine(t *testing.T) {
+	api := newClient(t)
+
+	err := api.Store("nginx.conf", []byte("nginx configuration 2."))
 	assert.Nil(t, err)
 
 	reader, err := api.File("nginx.conf")
@@ -25,8 +41,7 @@ func TestEngine(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	api, err := New("127.0.0.1:8500", "aginx", "")
-	assert.Nil(t, err)
+	api := newClient(t)
 
 	readers, err := api.Search("*")
 	assert.Nil(t, err)
@@ -34,8 +49,7 @@ func TestKeys(t *testing.T) {
 }
 
 func TestAccounts(t *testing.T) {
-	api, err := New("127.0.0.1:8500", "aginx", "")
-	assert.Nil(t, err)
+	api := newClient(t)
 
 	readers, err := api.Search("lego/accounts/*")
 	assert.Nil(t, err)
@@ -44,13 +58,24 @@ func TestAccounts(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
+	api := newClient(t)
 
-	api, err := New("127.0.0.1:8500", "aginx", "")
-	assert.Nil(t, err)
-
-	err = api.Start()
+	err := api.Start()
 	assert.Nil(t, err)
 	defer func() { _ = api.Stop() }()
 
-	time.Sleep(time.Second * 7)
+	time.Sleep(time.Hour * 7)
+}
+
+func TestRemove(t *testing.T) {
+	api := newClient(t)
+
+	for i := 0; i < 10; i++ {
+		err := api.Store("test/nginx"+strconv.Itoa(i)+".conf", []byte("nginx configuration ."+strconv.Itoa(i)))
+		assert.Nil(t, err)
+	}
+
+	t.Log(api.Remove("test/nginx0.conf"))
+
+	t.Log(api.Remove("test"))
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/ihaiker/aginx/nginx/client"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	"github.com/ihaiker/aginx/server"
+	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/storage/consul"
 	"github.com/ihaiker/aginx/storage/etcd"
@@ -30,7 +31,7 @@ func getString(cmd *cobra.Command, key, def string) string {
 	return value
 }
 
-func clusterConfiguration(cluster string) (engine storage.Engine) {
+func clusterConfiguration(cluster string, ignore ig.Ignore) (engine storage.Engine) {
 	var err error
 	if cluster == "" {
 		engine, err = fileStorage.System()
@@ -38,22 +39,15 @@ func clusterConfiguration(cluster string) (engine storage.Engine) {
 	} else {
 		config, err := url.Parse(cluster)
 		PanicIfError(err)
-
-		folder := config.EscapedPath()[1:]
 		switch config.Scheme {
 		case "consul":
-			token := config.Query().Get("token")
-			engine, err = consul.New(config.Host, folder, token)
+			engine, err = consul.New(config, ignore)
 			PanicIfError(err)
 		case "etcd":
-			user := config.Query().Get("user")
-			password := config.Query().Get("password")
-			engine, err = etcd.New(config.Host, folder, user, password)
+			engine, err = etcd.New(config, ignore)
 			PanicIfError(err)
 		case "zk":
-			scheme := config.Query().Get("scheme")
-			auth := config.Query().Get("auth")
-			engine, err = zookeeper.New(config.Host, folder, scheme, auth)
+			engine, err = zookeeper.New(config, ignore)
 			PanicIfError(err)
 		}
 	}
@@ -84,9 +78,8 @@ func apiServer(domain, address string) *configuration.Directive {
 		address = "127.0.0.1" + address
 	}
 	location := directive.AddBody("location", "/")
-	location.AddBody("proxy_redirect", "default")
 	location.AddBody("proxy_pass", fmt.Sprintf("http://%s", address))
-	location.AddBody("proxy_set_header", "Host", "$host")
+	location.AddBody("proxy_set_header", "Host", domain)
 	location.AddBody("proxy_set_header", "X-Real-IP", "$remote_addr")
 	location.AddBody("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for")
 	location.AddBody("client_max_body_size", "10m")
@@ -130,7 +123,9 @@ var ServerCmd = &cobra.Command{
 
 		daemon := NewDaemon()
 		cluster := getString(cmd, "cluster", "")
-		engine := clusterConfiguration(cluster)
+		ignore := ig.Empty()
+
+		engine := clusterConfiguration(cluster, ignore)
 		if service, matched := engine.(Service); matched {
 			daemon.Add(service)
 		}
@@ -148,20 +143,18 @@ var ServerCmd = &cobra.Command{
 	},
 }
 
-func AddClusterFlag(cmd *cobra.Command) {
+func AddServerFlags(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP("api", "a", "", "restful api port. (default :8081)")
+	cmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
+
 	cmd.PersistentFlags().StringP("cluster", "c", "", `cluster config
 for example. 
 	consul://127.0.0.1:8500/aginx[?token=authtoken]   config from consul.  
 	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
-	etcd://127.0.0.1:1234/aginx[?user=&password]      config from etcd.
+	etcd://127.0.0.1:2379/aginx[?user=&password]      config from etcd.
 `)
 	cmd.PersistentFlags().StringP("expose", "e", "", "expose api use domain")
-}
-
-func AddServerFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("api", "a", "", "restful api port. (default :8081)")
-	cmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
-	AddClusterFlag(cmd)
+	cmd.PersistentFlags().BoolP("watcher", "w", false, "watcher local file changes and sync to cluster configuration")
 }
 
 func init() {

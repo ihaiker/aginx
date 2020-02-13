@@ -3,11 +3,13 @@ package zookeeper
 import (
 	"bytes"
 	"github.com/ihaiker/aginx/nginx/configuration"
+	ig "github.com/ihaiker/aginx/server/ignore"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
 	"github.com/samuel/go-zookeeper/zk"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,10 +23,16 @@ type zkStorage struct {
 	folder  string
 	keeper  *zk.Conn
 	watcher *Watcher
+	ignore  ig.Ignore
 }
 
-func New(address, folder, scheme, auth string) (zks *zkStorage, err error) {
-	zks = &zkStorage{address: address, folder: folder}
+func New(clusterConfig *url.URL, ignore ig.Ignore) (zks *zkStorage, err error) {
+	address := clusterConfig.Host
+	folder := clusterConfig.EscapedPath()[1:]
+	scheme := clusterConfig.Query().Get("scheme")
+	auth := clusterConfig.Query().Get("auth")
+
+	zks = &zkStorage{address: address, folder: folder, ignore: ignore}
 	if !strings.HasPrefix(zks.folder, "/") {
 		zks.folder = "/" + zks.folder
 	}
@@ -38,6 +46,10 @@ func New(address, folder, scheme, auth string) (zks *zkStorage, err error) {
 	zks.watcher = NewWatcher(zks.keeper)
 	err = zks.zkMkdir(zks.folder)
 	return
+}
+
+func (zks *zkStorage) IsCluster() bool {
+	return true
 }
 
 func (zks *zkStorage) zkList(path string, onlyFile bool) ([]*util.NameReader, error) {
@@ -88,6 +100,22 @@ func (zks *zkStorage) Search(args ...string) ([]*util.NameReader, error) {
 	return matched, err
 }
 
+func (zks *zkStorage) Remove(file string) error {
+	path := zks.folder + "/" + file
+	err := zks.keeper.Delete(path, -1)
+	if err == zk.ErrNotEmpty {
+		childless, _, _ := zks.keeper.Children(path)
+		for _, children := range childless {
+			if err = zks.Remove(file + "/" + children); err != nil {
+				return err
+			}
+		}
+		return zks.keeper.Delete(path, -1)
+	}
+	logrus.WithField("engine", "zk").WithError(err).Debug("remove cluster ", file)
+	return err
+}
+
 func (zks *zkStorage) File(file string) (*util.NameReader, error) {
 	path := zks.folder + "/" + file
 	if data, _, err := zks.keeper.Get(path); err != nil {
@@ -107,7 +135,7 @@ func (zks *zkStorage) zkMkdir(file string) error {
 		if err = zks.zkMkdir(dir); err != nil {
 			return err
 		}
-		logrus.WithField("engine", "zk").WithField("dir", dir).Info("create dir")
+		logrus.WithField("engine", "zk").Info("create dir ", dir)
 		if _, err = zks.keeper.Create(dir, zkDirData, 0, zk.WorldACL(zk.PermAll)); err != nil {
 			return err
 		}
@@ -123,11 +151,11 @@ func (zks *zkStorage) zkStore(file string, content []byte) error {
 		return err
 	} else if exists {
 		_, err := zks.keeper.Set(file, content, stat.Version)
-		logrus.WithField("engine", "zk").WithField("file", file).WithError(err).Debug("store file")
+		logrus.WithField("engine", "zk").WithError(err).Debug("store cluster file ", file)
 		return err
 	} else {
 		_, err := zks.keeper.Create(file, content, 0, zk.WorldACL(zk.PermAll))
-		logrus.WithField("engine", "zk").WithField("file", file).WithError(err).Debug("store file")
+		logrus.WithField("engine", "zk").WithError(err).Debug("store cluster file ", file)
 		return err
 	}
 }
@@ -141,9 +169,13 @@ func (zks *zkStorage) StoreConfiguration(cfg *configuration.Configuration) error
 	return configuration.DownWriter(zks.folder, cfg, zks.zkStore)
 }
 
+func (zks *zkStorage) publishFileChangedEvent() {
+	logrus.WithField("engine", "zk").Info("publish: ", util.StorageFileChanged)
+	util.EBus.Publish(util.StorageFileChanged)
+}
 func (zks *zkStorage) watchEvent(rootDir string) {
 	for event := range zks.watcher.C {
-		logrus.WithField("engine", "zk").Info("event ", event.Type.String(), " ", event.Path)
+		logrus.WithField("engine", "zk").Debug("event ", event.Type.String(), " ", event.Path)
 		localFile := rootDir + "/" + strings.Replace(event.Path, zks.folder, "", 1)
 		switch event.Type {
 		case zk.EventNodeCreated:
@@ -157,7 +189,9 @@ func (zks *zkStorage) watchEvent(rootDir string) {
 				if err := ioutil.WriteFile(localFile, data, 0666); err != nil {
 					logrus.WithField("engine", "zk").Warn("open file ", localFile, " error ", err)
 				}
+				zks.publishFileChangedEvent()
 			}
+
 		case zk.EventNodeDeleted:
 			if fileInfo, err := os.Stat(localFile); err != nil {
 				if !os.IsNotExist(err) {
@@ -168,12 +202,15 @@ func (zks *zkStorage) watchEvent(rootDir string) {
 			} else {
 				logrus.WithField("engine", "zk").Warn("delete file ", localFile, " error ", os.Remove(localFile))
 			}
+			zks.publishFileChangedEvent()
+
 		case zk.EventNodeDataChanged:
 			data, _, _ := zks.keeper.Get(event.Path)
 			if !(bytes.Equal(data, zkDirData) || len(data) == 0) {
 				err := ioutil.WriteFile(localFile, data, 0666)
 				logrus.WithField("engine", "zk").Warn("write file changed ", localFile, " error ", err)
 			}
+			zks.publishFileChangedEvent()
 		}
 	}
 }
@@ -190,10 +227,7 @@ func (zks *zkStorage) Start() error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
-			return os.RemoveAll(path)
-		}
-		logrus.WithField("engine", "zk").Debug("remove file ", path)
+		logrus.WithField("engine", "zk").Debug("remove local ", path)
 		return os.Remove(path)
 	})
 

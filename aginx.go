@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	nested "github.com/antonfisher/nested-logrus-formatter"
 	"github.com/ihaiker/aginx/cmd"
+	"github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -63,7 +63,7 @@ func init() {
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().Unix())
-	logrus.SetFormatter(&nested.Formatter{
+	logrus.SetFormatter(&util.Formatter{
 		TimestampFormat: "2006-01-02 15:04:05.000", FieldsOrder: []string{"engine"},
 	})
 	logrus.SetOutput(os.Stdout)

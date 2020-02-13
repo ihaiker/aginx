@@ -6,6 +6,9 @@ import (
 )
 
 type Engine interface {
+	IsCluster() bool
+
+	Remove(file string) error
 
 	//搜索文件
 	Search(args ...string) ([]*util.NameReader, error)

@@ -33,6 +33,10 @@ func New(conf string) *fileStorage {
 	return &fileStorage{conf: conf}
 }
 
+func (fs *fileStorage) IsCluster() bool {
+	return false
+}
+
 func (fs *fileStorage) Search(args ...string) ([]*util.NameReader, error) {
 	readers := make([]*util.NameReader, 0)
 	for _, arg := range args {
@@ -41,7 +45,9 @@ func (fs *fileStorage) Search(args ...string) ([]*util.NameReader, error) {
 		files, _ := filepath.Glob(pattern)
 
 		for _, f := range files {
-			if reader, err := fs.File(f); err != nil {
+			if reader, err := fs.File(f); os.IsNotExist(err) {
+				continue
+			} else if err != nil {
 				return nil, err
 			} else {
 				if !strings.HasPrefix(arg, "/") {
@@ -55,8 +61,23 @@ func (fs *fileStorage) Search(args ...string) ([]*util.NameReader, error) {
 	return readers, nil
 }
 
+func (cs *fileStorage) Remove(file string) error {
+	fp := filepath.Dir(cs.conf) + "/" + file
+	if fileInfo, err := os.Stat(fp); err != nil {
+		return err
+	} else if fileInfo.IsDir() {
+		return os.RemoveAll(fp)
+	} else {
+		return os.Remove(fp)
+	}
+}
+
 func (fs *fileStorage) File(file string) (reader *util.NameReader, err error) {
 	path := fs.Abs(file)
+	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
+		return nil, os.ErrNotExist
+	}
+
 	rd, err := os.OpenFile(path, os.O_RDONLY, os.ModeTemporary)
 	if err != nil {
 		if os.IsNotExist(err) {

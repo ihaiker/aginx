@@ -5,9 +5,11 @@ import (
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/ihaiker/aginx/nginx/configuration"
+	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,18 +20,25 @@ type etcdV3Storage struct {
 	closeChan chan struct{}
 	wg        *sync.WaitGroup
 
-	client3 *v3.Client
+	etcdApi *v3.Client
 	//client2 *v2.Client
 
 	folder  string
 	rootDir string
+
+	ignore ig.Ignore
 }
 
-func New(address, folder, username, password string) (*etcdV3Storage, error) {
+func New(clusterConfig *url.URL, ignore ig.Ignore) (*etcdV3Storage, error) {
+	address := clusterConfig.Host
+	folder := clusterConfig.EscapedPath()[1:]
+	username := clusterConfig.Query().Get("user")
+	password := clusterConfig.Query().Get("password")
+
 	cs := &etcdV3Storage{
 		closeChan: make(chan struct{}),
 		wg:        new(sync.WaitGroup),
-		folder:    folder,
+		folder:    folder, ignore: ignore,
 	}
 	if !strings.HasPrefix(cs.folder, "/") {
 		cs.folder = "/" + cs.folder
@@ -47,17 +56,21 @@ func New(address, folder, username, password string) (*etcdV3Storage, error) {
 	if client, err := v3.New(config); err != nil {
 		return nil, err
 	} else {
-		cs.client3 = client
+		cs.etcdApi = client
 		return cs, nil
 	}
 
+}
+
+func (cs *etcdV3Storage) IsCluster() bool {
+	return true
 }
 
 func (cs *etcdV3Storage) watchChanged() {
 	cs.wg.Add(1)
 	defer cs.wg.Done()
 
-	watch := cs.client3.Watch(cs.client3.Ctx(), cs.folder, v3.WithPrefix())
+	watch := cs.etcdApi.Watch(cs.etcdApi.Ctx(), cs.folder, v3.WithPrefix(), v3.WithPrevKV())
 	for {
 		select {
 		case <-cs.closeChan:
@@ -72,13 +85,13 @@ func (cs *etcdV3Storage) watchChanged() {
 					} else {
 						err = os.Remove(filePath)
 					}
-					logrus.WithField("file", string(event.Kv.Key)).WithError(err).Info("remove file")
+					logrus.WithField("engine", "etcd").WithError(err).Info("remove local file : ", string(event.Kv.Key))
 				} else if event.IsCreate() || event.IsModify() {
 					cs.localFile(event.Kv.Key, event.Kv.Value)
 				}
 			}
-			logrus.Info("publish: ", util.NginxReload)
-			util.EBus.Publish(util.NginxReload)
+			logrus.WithField("engine", "etcd").Info("publish: ", util.StorageFileChanged)
+			util.EBus.Publish(util.StorageFileChanged)
 		}
 	}
 }
@@ -93,16 +106,16 @@ func (cs *etcdV3Storage) localFile(file, content []byte) {
 	//is folder
 	if isDir(content) {
 		_ = os.MkdirAll(filePath, os.ModePerm)
+		logrus.WithField("engine", "etcd").Debug("mkdir local ", filePath)
 		return
 	}
 
 	err := util.WriterFile(filePath, content)
-	logrus.WithField("engine", "consul").WithField("file", string(file)).
-		WithError(err).Debug("store the configuration.")
+	logrus.WithField("engine", "etcd").WithError(err).Debug("down file ", string(file))
 }
 
 func (cs *etcdV3Storage) Start() error {
-	if resp, err := cs.client3.Get(cs.client3.Ctx(), cs.folder, v3.WithPrefix()); err != nil {
+	if resp, err := cs.etcdApi.Get(cs.etcdApi.Ctx(), cs.folder, v3.WithPrefix()); err != nil {
 		return err
 	} else {
 		for _, kv := range resp.Kvs {
@@ -123,7 +136,7 @@ func (cs *etcdV3Storage) Stop() error {
 
 func (cs *etcdV3Storage) Search(args ...string) ([]*util.NameReader, error) {
 	readers := make([]*util.NameReader, 0)
-	if resp, err := cs.client3.Get(cs.client3.Ctx(), cs.folder, v3.WithPrefix()); err != nil {
+	if resp, err := cs.etcdApi.Get(cs.etcdApi.Ctx(), cs.folder, v3.WithPrefix()); err != nil {
 		return nil, err
 	} else {
 		for _, kv := range resp.Kvs {
@@ -143,9 +156,16 @@ func (cs *etcdV3Storage) Search(args ...string) ([]*util.NameReader, error) {
 	return readers, nil
 }
 
+func (cs *etcdV3Storage) Remove(file string) error {
+	key := cs.folder + "/" + file
+	resp, err := cs.etcdApi.Delete(cs.etcdApi.Ctx(), key, v3.WithPrefix())
+	logrus.WithField("engine", "etcd").Debug("delete cluster file ", resp.Deleted)
+	return err
+}
+
 func (cs *etcdV3Storage) File(file string) (*util.NameReader, error) {
 	path := cs.folder + "/" + file
-	if response, err := cs.client3.Get(cs.client3.Ctx(), path); err != nil {
+	if response, err := cs.etcdApi.Get(cs.etcdApi.Ctx(), path); err != nil {
 		return nil, err
 	} else if response.Count == 0 {
 		return nil, os.ErrNotExist
@@ -156,8 +176,8 @@ func (cs *etcdV3Storage) File(file string) (*util.NameReader, error) {
 }
 
 func (cs *etcdV3Storage) store(file string, content []byte) error {
-	logrus.WithField("engine", "etcd").Debug("store ", file)
-	_, err := cs.client3.Put(cs.client3.Ctx(), file, string(content))
+	logrus.WithField("engine", "etcd").Debug("store cluster ", file)
+	_, err := cs.etcdApi.Put(cs.etcdApi.Ctx(), file, string(content))
 	return err
 }
 

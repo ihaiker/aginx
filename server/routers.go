@@ -65,7 +65,8 @@ func Routers(vister *Supervister, engine storage.Engine, manager *lego.Manager, 
 			}
 		}
 		limit := iris.LimitRequestBodySize(1024 * 1024 * 10)
-		app.Post("/upload", limit, h.Handler(ctrl.upload))
+		app.Post("/file", limit, h.Handler(ctrl.upload))
+		app.Delete("/file", h.Handler(ctrl.deleteFile))
 		app.Any("/reload", h.Handler(ctrl.reload))
 
 		sslRouter := app.Party("/ssl", handlers...)

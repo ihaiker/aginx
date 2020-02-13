@@ -42,10 +42,7 @@ func (br *Watcher) File(name string) {
 func (br *Watcher) watch(name string, fn func(string) (<-chan zk.Event, error)) {
 	br.watched[name] = name
 	go func() {
-		defer func() {
-			logrus.Debug("out watch ", name)
-			delete(br.watched, name)
-		}()
+		defer delete(br.watched, name)
 		for {
 			ec, err := fn(name)
 			if err == zk.ErrNoNode {
@@ -66,7 +63,7 @@ func (br *Watcher) watch(name string, fn func(string) (<-chan zk.Event, error)) 
 }
 
 func (br *Watcher) filter(event zk.Event) {
-	logrus.WithField("event", event.Type.String()).WithField("path", event.Path).Debug("filer")
+	logrus.WithField("engine", "zk").WithField("event", event.Type.String()).Debug("filer ", event.Path)
 	switch event.Type {
 	case zk.EventNodeChildrenChanged:
 		childless, _, _ := br.keeper.Children(event.Path)

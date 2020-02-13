@@ -19,6 +19,15 @@ type apiController struct {
 	manager *lego.Manager
 }
 
+func (as *apiController) deleteFile(ctx iris.Context) int {
+	file := ctx.URLParam("file")
+	if strings.HasPrefix(file, "/") {
+		panic("File path must be relative")
+	}
+	util.PanicMessage(as.engine.Remove(file), "remove file error")
+	return iris.StatusNoContent
+}
+
 func (as *apiController) upload(ctx iris.Context) int {
 	file, _, err := ctx.FormFile("file")
 	util.PanicIfError(err)
