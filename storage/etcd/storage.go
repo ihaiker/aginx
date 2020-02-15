@@ -117,6 +117,9 @@ func (cs *etcdV3Storage) localFile(file, content []byte) {
 }
 
 func (cs *etcdV3Storage) Start() error {
+	if err := os.RemoveAll(cs.rootDir); err != nil {
+		return err
+	}
 	if resp, err := cs.etcdApi.Get(cs.etcdApi.Ctx(), cs.folder, v3.WithPrefix()); err != nil {
 		return err
 	} else {

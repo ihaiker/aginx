@@ -18,7 +18,6 @@ release:
 docker:
 	docker build --build-arg LDFLAGS="${debug} ${param}" -t xhaiker/aginx:${Version} .
 
-
 sync-consul: build
 	./bin/aginx -d cluster consul://127.0.0.1:8500/aginx
 

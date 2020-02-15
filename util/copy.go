@@ -30,9 +30,20 @@ func CopyDir(srcPath string, destPath string) error {
 		if f == nil {
 			return err
 		}
+		destNewPath := strings.Replace(path, srcPath, destPath, -1)
+
+		if f.Mode()&os.ModeSymlink == os.ModeSymlink {
+			linkPath, _ := filepath.EvalSymlinks(path)
+			if linkInfo, err := os.Stat(linkPath); err != nil {
+				return err
+			} else if linkInfo.IsDir() {
+				relative, _ := filepath.Rel(srcPath, path)
+				destNewPath = filepath.Join(destPath, relative)
+				return CopyDir(linkPath, destNewPath)
+			}
+		}
+
 		if !f.IsDir() {
-			path := strings.Replace(path, "\\", "/", -1)
-			destNewPath := strings.Replace(path, srcPath, destPath, -1)
 			if _, err := copyFile(path, destNewPath); err != nil {
 				return err
 			}

@@ -23,26 +23,6 @@ import (
 
 var logger = logs.New("server-cmd")
 
-func getString(cmd *cobra.Command, key, def string) string {
-	value, err := cmd.PersistentFlags().GetString(key)
-	PanicIfError(err)
-	if value == "" {
-		value = viper.GetString(key)
-	}
-	if value == "" {
-		return def
-	}
-	return value
-}
-func getBool(cmd *cobra.Command, key string) bool {
-	value, err := cmd.PersistentFlags().GetBool(key)
-	PanicIfError(err)
-	if !value {
-		value = viper.GetBool(key)
-	}
-	return value
-}
-
 func clusterConfiguration(cluster string, ignore ig.Ignore) (engine storage.Engine) {
 	var err error
 	if cluster == "" {
@@ -104,7 +84,7 @@ func apiServer(domain, address string) *configuration.Directive {
 }
 
 func exposeApi(cmd *cobra.Command, address string, engine storage.Engine) {
-	domain := getString(cmd, "expose", "")
+	domain := GetString(cmd, "expose", "")
 	if domain == "" {
 		return
 	}
@@ -131,10 +111,10 @@ var ServerCmd = &cobra.Command{
 			fmt.Println(err)
 		})
 
-		address := getString(cmd, "api", ":8011")
-		auth := getString(cmd, "security", "")
-		cluster := getString(cmd, "cluster", "")
-		withWatcher := (cluster != "") && getBool(cmd, "watcher")
+		address := GetString(cmd, "api", ":8011")
+		auth := GetString(cmd, "security", "")
+		cluster := GetString(cmd, "cluster", "")
+		withWatcher := (cluster != "") && GetBool(cmd, "watcher")
 
 		daemon := NewDaemon()
 

@@ -15,10 +15,6 @@ FROM nginx:1.17.7-alpine
 MAINTAINER Haiker ni@renzhen.la
 
 COPY --from=builder /build/aginx /usr/sbin/aginx
-VOLUME /etc/nginx
-
-ADD html /usr/share/nginx/html
-RUN rm -rf /etc/nginx/modules
 
 ENV AGINX_DEBUG="false"
 ENV AGINX_LEVEL="info"

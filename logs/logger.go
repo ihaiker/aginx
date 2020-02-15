@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
@@ -16,16 +17,12 @@ func SetLevel(level logrus.Level) {
 }
 
 func SetLogger(cmd *cobra.Command) error {
-	if debug, err := cmd.Root().PersistentFlags().GetBool("debug"); err != nil {
-		return err
-	} else if debug {
+	if debug := util.GetBool(cmd.Root(), "debug"); debug {
 		SetLevel(logrus.DebugLevel)
-	} else if level, err := cmd.Root().PersistentFlags().GetString("level"); err != nil {
-		return err
-	} else if logrusLevel, err := logrus.ParseLevel(level); err != nil {
+	} else if level, err := logrus.ParseLevel(util.GetString(cmd.Root(), "level", "info")); err != nil {
 		return err
 	} else {
-		SetLevel(logrusLevel)
+		SetLevel(level)
 	}
 	return nil
 }

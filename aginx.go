@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/cmd"
 	"github.com/ihaiker/aginx/logs"
+	"github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"math/rand"
@@ -23,9 +24,8 @@ var rootCmd = &cobra.Command{
 	Long:    fmt.Sprintf(`api for nginx. Build: %s, Go: %s, Commit: %s`, BUILD_TIME, runtime.Version(), GITLOG_VERSION),
 	Version: "" + VERSION + "",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
-		if err = logs.SetLogger(cmd); err != nil {
-			return
-		}
+		defer util.CatchError(err)
+		util.PanicIfError(logs.SetLogger(cmd))
 		return
 	},
 	RunE: cmd.ServerCmd.RunE,

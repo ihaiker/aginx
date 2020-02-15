@@ -65,7 +65,7 @@ func (cs *consulStorage) IsCluster() bool {
 
 func (cs *consulStorage) downloadFile(watcher bool) bool {
 	kvs, query, err := cs.client.KV().List(cs.folder, &consulApi.QueryOptions{
-		WaitTime: time.Second * 3, WaitIndex: cs.index,
+		WaitTime: time.Second * 30, WaitIndex: cs.index,
 	})
 	if err != nil {
 		return false
@@ -137,14 +137,9 @@ func (cs *consulStorage) watchChanged() {
 }
 
 func (cs *consulStorage) Start() error {
-
-	_ = filepath.Walk(cs.rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		return os.RemoveAll(path)
-	})
-
+	if err := os.RemoveAll(cs.rootDir); err != nil {
+		return err
+	}
 	cs.downloadFile(false)
 	go cs.watchChanged()
 	return nil

@@ -224,13 +224,9 @@ func (zks *zkStorage) Start() error {
 
 	//clear file
 	rootDir := filepath.Dir(conf)
-	_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		logger.Debug("remove local ", path)
-		return os.Remove(path)
-	})
+	if err := os.RemoveAll(rootDir); err != nil {
+		return err
+	}
 
 	zkFiles, err := zks.zkList(zks.folder, false)
 	if err != nil {

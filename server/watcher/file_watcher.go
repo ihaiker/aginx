@@ -132,7 +132,12 @@ func (fw *FileWatcher) handlerEvent(events []watcher.Event) {
 func (fw *FileWatcher) Start() error {
 	fw.wr = watcher.New()
 	fw.wr.IgnoreHiddenFiles(true)
-
+	/*fw.wr.AddFilterHook(func(info os.FileInfo, fullPath string) error {
+		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+			return http.ErrNotSupported
+		}
+		return nil
+	})*/
 	_, conf, _ := file.GetInfo()
 	fw.rootDir = filepath.Dir(conf)
 	if err := fw.wr.AddRecursive(fw.rootDir); err != nil {
