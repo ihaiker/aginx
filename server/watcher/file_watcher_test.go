@@ -1,6 +1,7 @@
-package server
+package watcher
 
 import (
+	"github.com/ihaiker/aginx/logs"
 	ignore2 "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/storage/consul"
@@ -14,10 +15,7 @@ import (
 )
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&util.Formatter{
-		TimestampFormat: "2006-01-02 15:04:05.000", FieldsOrder: []string{"engine"},
-	})
+	logs.SetLevel(logrus.DebugLevel)
 }
 func TestWatcher(t *testing.T) {
 	fw := new(FileWatcher)

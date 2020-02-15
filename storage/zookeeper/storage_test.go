@@ -1,8 +1,8 @@
 package zookeeper
 
 import (
+	"github.com/ihaiker/aginx/logger"
 	"github.com/ihaiker/aginx/server/ignore"
-	"github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	url2 "net/url"
@@ -14,7 +14,7 @@ import (
 
 func init() {
 	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&util.Formatter{
+	logrus.SetFormatter(&logger.Formatter{
 		TimestampFormat: "2006-01-02 15:04:05.000",
 		FieldsOrder:     []string{"engine"},
 	})

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -34,7 +33,7 @@ func (this *Http) Start() error {
 					"error":   "InternalServerError",
 					"message": fmt.Sprintf("%v", err),
 				})
-				logrus.Error("handler error: ", err)
+				logger.Error("handler error: ", err)
 				ctx.StopExecution()
 			}
 		}()
@@ -64,11 +63,11 @@ func (this *Http) Start() error {
 	}); err != nil && err != util.ErrTimeout {
 		return err
 	}
-	logrus.Info("http server start at: ", this.address)
+	logger.WithField("-", "http").Info("start at: ", this.address)
 	return nil
 }
 
 func (this *Http) Stop() error {
-	logrus.Info("http server stop.")
+	logger.WithField("-", "http").Info("http server stop.")
 	return this.app.Shutdown(context.TODO())
 }

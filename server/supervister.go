@@ -1,15 +1,17 @@
 package server
 
 import (
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
 )
+
+var logger = logs.New("server")
 
 type Supervister struct {
 	startCmd *exec.Cmd
@@ -18,6 +20,8 @@ type Supervister struct {
 func (sp *Supervister) start() error {
 	err := util.Async(time.Second*5, func() (err error) {
 		sp.startCmd, err = util.CmdStart("nginx", "-g", "daemon off;")
+		sp.startCmd.Stdout = os.Stdout
+		sp.startCmd.Stderr = os.Stderr
 		if err == nil {
 			err = util.CmdAfterWait(sp.startCmd)
 		}
@@ -36,22 +40,18 @@ func (sp *Supervister) Start() (err error) {
 	_ = util.EBus.Subscribe(util.StorageFileChanged, sp.Reload)
 
 	if err = sp.start(); err != nil {
-		logrus.Debug("start nginx error: ", err)
-		if stopErr := sp.stop(); stopErr != nil {
-			logrus.Debug("first stop nginx error: ", stopErr)
-			return
-		} else {
-			logrus.Debug("first stop nginx")
-		}
+		logger.WithField("-", "supervister").Warn("start nginx error ", err)
+		err = sp.stop()
+		logger.WithField("-", "supervister").WithError(err).Debug("first stop nginx")
 		err = sp.start()
 	}
-	logrus.Infof("start nginx %v", err)
+	logger.WithField("-", "supervister").WithError(err).Info("start nginx")
 	return
 }
 
 func (sp *Supervister) Reload() error {
 	err := util.CmdRun("nginx", "-s", "reload")
-	logrus.Info("reload nginx ", err)
+	logger.WithField("-", "supervister").Info("reload nginx ", err)
 	return err
 }
 
@@ -71,7 +71,8 @@ func (sp *Supervister) Test(cfg *configuration.Configuration) (err error) {
 		return
 	}
 	if err = util.CmdRun("nginx", "-t" /*"-p", path,*/, "-c", testRoot+"/nginx.conf"); err != nil {
-		logrus.Info("nginx test error: ", err)
+		logger.WithField("-", "supervister").Info("nginx test error: ", err)
+		return
 	}
 	return
 }

@@ -3,11 +3,11 @@ package consul
 import (
 	"bytes"
 	consulApi "github.com/hashicorp/consul/api"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
-	"github.com/sirupsen/logrus"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 )
+
+var logger = logs.New("storage", "engine", "consul")
 
 type consulStorage struct {
 	closeChan  chan struct{}
@@ -84,12 +86,10 @@ func (cs *consulStorage) downloadFile(watcher bool) bool {
 
 				if len(kv.Value) == 0 {
 					err := os.MkdirAll(filePath, os.ModePerm)
-					logrus.WithField("engine", "consul").
-						WithError(err).Debug("mkdir ", kv.Key, ", write to ", filePath)
+					logger.WithError(err).Debug("mkdir ", kv.Key, ", write to ", filePath)
 				} else {
 					err := util.WriterFile(filePath, kv.Value)
-					logrus.WithField("engine", "consul").
-						WithError(err).Debug("the file changed ", kv.Key, ", write to ", filePath)
+					logger.WithError(err).Debug("the file changed ", kv.Key, ", write to ", filePath)
 				}
 			}
 		}
@@ -110,7 +110,7 @@ func (cs *consulStorage) downloadFile(watcher bool) bool {
 				filePath := cs.rootDir + "/" + clusterPath
 				deleteFiles = append(deleteFiles, cacheFile)
 				err = os.RemoveAll(filePath)
-				logrus.WithField("engine", "consul").WithError(err).Debug("delete ", filePath)
+				logger.WithError(err).Debug("delete ", filePath)
 			}
 		}
 	}
@@ -129,7 +129,7 @@ func (cs *consulStorage) watchChanged() {
 			return
 		default:
 			if cs.downloadFile(true) {
-				logrus.Info("publish: ", util.StorageFileChanged)
+				logger.Info("publish: ", util.StorageFileChanged)
 				util.EBus.Publish(util.StorageFileChanged)
 			}
 		}
@@ -181,7 +181,7 @@ func (cs *consulStorage) Search(args ...string) ([]*util.NameReader, error) {
 
 func (cs *consulStorage) Remove(file string) error {
 	key := cs.folder + "/" + file
-	logrus.WithField("engine", "consul").Debug("remove ", key)
+	logger.Debug("remove ", key)
 
 	if kvs, _, err := cs.client.KV().List(key, nil); err != nil {
 		return err
@@ -207,10 +207,10 @@ func (cs *consulStorage) File(file string) (*util.NameReader, error) {
 }
 
 func (cs *consulStorage) store(file string, content []byte) error {
-	logrus.WithField("engine", "consul").Debug("store file ", file)
+	logger.Debug("store file ", file)
 	p := &consulApi.KVPair{Key: file, Value: content}
 	if _, err := cs.client.KV().Put(p, nil); err != nil {
-		logrus.WithField("engine", "consul").Debug("store file: ", file, ", error: ", err)
+		logger.WithError(err).Debug("store file: ", file)
 		return err
 	}
 	return nil

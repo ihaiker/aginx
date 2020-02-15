@@ -1,8 +1,8 @@
 package consul
 
 import (
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/server/ignore"
-	"github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -13,10 +13,7 @@ import (
 )
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&util.Formatter{
-		TimestampFormat: "2006-01-02 15:04:05.000", FieldsOrder: []string{"engine"},
-	})
+	logs.SetLevel(logrus.DebugLevel)
 }
 
 func newClient(t *testing.T) *consulStorage {

@@ -4,17 +4,19 @@ import (
 	"bytes"
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
-	"github.com/sirupsen/logrus"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 )
+
+var logger = logs.New("storage", "engine", "etcd")
 
 type etcdV3Storage struct {
 	closeChan chan struct{}
@@ -85,12 +87,12 @@ func (cs *etcdV3Storage) watchChanged() {
 					} else {
 						err = os.Remove(filePath)
 					}
-					logrus.WithField("engine", "etcd").WithError(err).Info("remove local file : ", string(event.Kv.Key))
+					logger.WithError(err).Info("remove local file : ", string(event.Kv.Key))
 				} else if event.IsCreate() || event.IsModify() {
 					cs.localFile(event.Kv.Key, event.Kv.Value)
 				}
 			}
-			logrus.WithField("engine", "etcd").Info("publish: ", util.StorageFileChanged)
+			logger.Info("publish: ", util.StorageFileChanged)
 			util.EBus.Publish(util.StorageFileChanged)
 		}
 	}
@@ -106,12 +108,12 @@ func (cs *etcdV3Storage) localFile(file, content []byte) {
 	//is folder
 	if isDir(content) {
 		_ = os.MkdirAll(filePath, os.ModePerm)
-		logrus.WithField("engine", "etcd").Debug("mkdir local ", filePath)
+		logger.Debug("mkdir local ", filePath)
 		return
 	}
 
 	err := util.WriterFile(filePath, content)
-	logrus.WithField("engine", "etcd").WithError(err).Debug("down file ", string(file))
+	logger.WithError(err).Debug("down file ", string(file))
 }
 
 func (cs *etcdV3Storage) Start() error {
@@ -159,7 +161,7 @@ func (cs *etcdV3Storage) Search(args ...string) ([]*util.NameReader, error) {
 func (cs *etcdV3Storage) Remove(file string) error {
 	key := cs.folder + "/" + file
 	resp, err := cs.etcdApi.Delete(cs.etcdApi.Ctx(), key, v3.WithPrefix())
-	logrus.WithField("engine", "etcd").Debug("delete cluster file ", resp.Deleted)
+	logger.Debug("delete cluster file ", resp.Deleted)
 	return err
 }
 
@@ -176,7 +178,7 @@ func (cs *etcdV3Storage) File(file string) (*util.NameReader, error) {
 }
 
 func (cs *etcdV3Storage) store(file string, content []byte) error {
-	logrus.WithField("engine", "etcd").Debug("store cluster ", file)
+	logger.Debug("store cluster ", file)
 	_, err := cs.etcdApi.Put(cs.etcdApi.Ctx(), file, string(content))
 	return err
 }
@@ -186,6 +188,6 @@ func (cs *etcdV3Storage) Store(file string, content []byte) error {
 }
 
 func (cs *etcdV3Storage) StoreConfiguration(cfg *configuration.Configuration) error {
-	logrus.WithField("engine", "etcd").Debug("store configuration")
+	logger.Debug("store configuration")
 	return configuration.DownWriter(cs.folder, cfg, cs.store)
 }

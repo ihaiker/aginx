@@ -54,6 +54,9 @@ func (as *apiController) addDirective(client *client.Client, queries []string, d
 	util.PanicIfError(client.Add(queries, directives...))
 	util.PanicIfError(as.vister.Test(client.Configuration()))
 	util.PanicIfError(as.engine.StoreConfiguration(client.Configuration()))
+	if !as.engine.IsCluster() {
+		_ = as.vister.Reload()
+	}
 	return iris.StatusNoContent
 }
 
@@ -61,6 +64,9 @@ func (as *apiController) deleteDirective(client *client.Client, queries []string
 	util.PanicIfError(client.Delete(queries...))
 	util.PanicIfError(as.vister.Test(client.Configuration()))
 	util.PanicIfError(as.engine.StoreConfiguration(client.Configuration()))
+	if !as.engine.IsCluster() {
+		_ = as.vister.Reload()
+	}
 	return iris.StatusNoContent
 }
 
@@ -71,6 +77,9 @@ func (as *apiController) modifyDirective(client *client.Client, queries []string
 	util.PanicIfError(client.Modify(queries, directives[0]))
 	util.PanicIfError(as.vister.Test(client.Configuration()))
 	util.PanicIfError(as.engine.StoreConfiguration(client.Configuration()))
+	if !as.engine.IsCluster() {
+		_ = as.vister.Reload()
+	}
 	return iris.StatusNoContent
 }
 

@@ -1,6 +1,7 @@
 package etcd
 
 import (
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/server/ignore"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ import (
 )
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
+	logs.SetLevel(logrus.DebugLevel)
 }
 
 func newClient(t *testing.T) *etcdV3Storage {

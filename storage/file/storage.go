@@ -1,12 +1,15 @@
 package file
 
 import (
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	"github.com/ihaiker/aginx/util"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+var logger = logs.New("storage", "engine", "file")
 
 type fileStorage struct {
 	conf string

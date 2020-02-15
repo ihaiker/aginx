@@ -3,8 +3,10 @@ package lego
 import (
 	"fmt"
 	"github.com/go-acme/lego/v3/log"
-	"github.com/sirupsen/logrus"
+	"github.com/ihaiker/aginx/logs"
 )
+
+var logrus = logs.New("lego")
 
 type Stdlout struct {
 }

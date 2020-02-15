@@ -1,12 +1,14 @@
 package util
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/ihaiker/aginx/logs"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 )
+
+var logger = logs.New("util")
 
 type Service interface {
 	Start() error
@@ -37,7 +39,7 @@ func (d *daemon) await() error {
 	C := make(chan os.Signal)
 	signal.Notify(C, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	for s := range C {
-		logrus.WithField("signal", s.String()).Debug("接收关闭信号")
+		logger.Debug("接收关闭信号: ", s.String())
 		err := Async(time.Second*7, d.Stop)
 		if err == ErrTimeout {
 			os.Exit(1)

@@ -1,6 +1,7 @@
-package server
+package watcher
 
 import (
+	"github.com/ihaiker/aginx/logs"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/storage/file"
@@ -14,11 +15,17 @@ import (
 	"time"
 )
 
+var logger = logs.New("watcher")
+
 type FileWatcher struct {
 	engine  storage.Engine
 	wr      *watcher.Watcher
 	ignore  ig.Ignore
 	rootDir string
+}
+
+func NewFileWatcher(engine storage.Engine, ignore ig.Ignore) *FileWatcher {
+	return &FileWatcher{engine: engine, ignore: ignore}
 }
 
 //合并rename,move..等操作是文件夹的时候的批量操，查找最小操作执行
@@ -79,6 +86,7 @@ func (fw *FileWatcher) handlerEvent(events []watcher.Event) {
 	if len(events) == 0 {
 		return
 	}
+
 	events = fw.mergeEvents(events) //合并至最小化操作
 	for _, event := range events {
 		clusterPath := strings.Replace(event.Path, fw.rootDir+"/", "", 1)
@@ -92,10 +100,10 @@ func (fw *FileWatcher) handlerEvent(events []watcher.Event) {
 				continue
 			}
 
-			logrus.WithField("module", "watcher").Debug("write ", event.Path)
+			logger.Debug("write ", event.Path)
 			bs, _ := ioutil.ReadFile(event.Path)
 			if err := fw.engine.Store(clusterPath, bs); err != nil {
-				logrus.WithField("module", "watcher").Warn("store file ", clusterPath, ", error:", err)
+				logger.Warn("store file ", clusterPath, ", error:", err)
 			}
 
 		case watcher.Remove:
@@ -104,20 +112,21 @@ func (fw *FileWatcher) handlerEvent(events []watcher.Event) {
 				continue
 			}
 
-			err := fw.engine.Remove(clusterPath)
-			logrus.WithField("module", "watcher").WithError(err).Debug("remove ", event.Path)
+			logger.Debug("remove ", event.Path)
+			if err := fw.engine.Remove(clusterPath); err != nil {
+				logger.Warn("store remove file error", err)
+			}
 
 		case watcher.Rename, watcher.Move:
-			logrus.Debug("not support move ", event.OldPath, " to ", event.Path, " move back")
+			logger.Debug("not support move ", event.OldPath, " to ", event.Path, " move back")
 			_ = fw.wr.RemoveRecursive(fw.rootDir)
 			_ = os.Rename(event.Path, event.OldPath)
 			_ = fw.wr.AddRecursive(fw.rootDir)
 		}
 	}
-	if len(events) > 0 {
-		logrus.WithField("module", "watcher").Info("publish: ", util.StorageFileChanged)
-		util.EBus.Publish(util.StorageFileChanged)
-	}
+
+	logger.Info("publish: ", util.StorageFileChanged)
+	util.EBus.Publish(util.StorageFileChanged)
 }
 
 func (fw *FileWatcher) Start() error {
@@ -135,9 +144,10 @@ func (fw *FileWatcher) Start() error {
 		events := make([]watcher.Event, 0) //移动，删除，重命名等操作会产生批量时间，把这些操作转成一次执行
 		timer := time.NewTimer(time.Millisecond * 200)
 		for {
+			timer.Reset(time.Millisecond * 200)
+
 			select {
 			case event := <-fw.wr.Event:
-				timer.Reset(time.Millisecond * 20)
 				if event.IsDir() && event.Op == watcher.Write {
 					continue
 				}
@@ -145,7 +155,6 @@ func (fw *FileWatcher) Start() error {
 			case <-timer.C:
 				fw.handlerEvent(events)
 				events = events[0:0]
-				timer.Reset(time.Millisecond * 200)
 			case <-fw.wr.Closed:
 				timer.Stop()
 				fw.handlerEvent(events)
@@ -154,9 +163,10 @@ func (fw *FileWatcher) Start() error {
 			}
 		}
 	}()
-	if err := fw.wr.Start(time.Second); err != nil {
-		return err
-	}
+	go func() {
+		err := fw.wr.Start(time.Millisecond * 300)
+		logrus.WithError(err).Warn("start file watcher")
+	}()
 	return nil
 }
 

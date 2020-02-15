@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   aginx:
-    image: xhaiker/aginx:v1.0.0
+    image: xhaiker/aginx:1.0.0
     container_name: aginx
     ports:
       - 80:80

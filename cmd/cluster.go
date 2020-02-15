@@ -3,10 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage/file"
 	. "github.com/ihaiker/aginx/util"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
@@ -23,6 +23,7 @@ var ClusterCmd = &cobra.Command{
 			fmt.Println(err)
 		})
 
+		logger := logs.New("cluster")
 		engine := clusterConfiguration(args[0], ignore.Empty())
 		if engine == nil {
 			return errors.New("the flag cluster not found")
@@ -42,7 +43,7 @@ var ClusterCmd = &cobra.Command{
 				return err
 			} else {
 				file := strings.Replace(path, root+"/", "", 1)
-				logrus.WithField("module", "cluster").Info("sync file ", file)
+				logger.Info("sync file ", file)
 				return engine.Store(file, bs)
 			}
 		})

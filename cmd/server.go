@@ -3,10 +3,12 @@ package cmd
 import (
 	"fmt"
 	"github.com/ihaiker/aginx/lego"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/client"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	"github.com/ihaiker/aginx/server"
 	ig "github.com/ihaiker/aginx/server/ignore"
+	"github.com/ihaiker/aginx/server/watcher"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/storage/consul"
 	"github.com/ihaiker/aginx/storage/etcd"
@@ -19,6 +21,8 @@ import (
 	"strings"
 )
 
+var logger = logs.New("server-cmd")
+
 func getString(cmd *cobra.Command, key, def string) string {
 	value, err := cmd.PersistentFlags().GetString(key)
 	PanicIfError(err)
@@ -27,6 +31,14 @@ func getString(cmd *cobra.Command, key, def string) string {
 	}
 	if value == "" {
 		return def
+	}
+	return value
+}
+func getBool(cmd *cobra.Command, key string) bool {
+	value, err := cmd.PersistentFlags().GetBool(key)
+	PanicIfError(err)
+	if !value {
+		value = viper.GetBool(key)
 	}
 	return value
 }
@@ -96,6 +108,7 @@ func exposeApi(cmd *cobra.Command, address string, engine storage.Engine) {
 	if domain == "" {
 		return
 	}
+	logger.Info("expose api for : ", domain)
 	api, err := client.NewClient(engine)
 	PanicIfError(err)
 
@@ -120,16 +133,19 @@ var ServerCmd = &cobra.Command{
 
 		address := getString(cmd, "api", ":8011")
 		auth := getString(cmd, "security", "")
+		cluster := getString(cmd, "cluster", "")
+		withWatcher := (cluster != "") && getBool(cmd, "watcher")
 
 		daemon := NewDaemon()
-		cluster := getString(cmd, "cluster", "")
-		ignore := ig.Empty()
 
+		var ignore ig.Ignore = ig.Empty()
+		if withWatcher {
+			ignore = ig.Cluster()
+		}
 		engine := clusterConfiguration(cluster, ignore)
 		if service, matched := engine.(Service); matched {
 			daemon.Add(service)
 		}
-
 		exposeApi(cmd, address, engine)
 
 		manager, err := lego.NewManager(engine)
@@ -138,23 +154,26 @@ var ServerCmd = &cobra.Command{
 		svr := new(server.Supervister)
 		routers := server.Routers(svr, engine, manager, auth)
 		http := server.NewHttp(address, routers)
+		daemon.Add(http, svr, manager)
 
-		return daemon.Add(http, svr, manager).Start()
+		if withWatcher {
+			daemon.Add(watcher.NewFileWatcher(engine, ignore))
+		}
+		return daemon.Start()
 	},
 }
 
 func AddServerFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("api", "a", "", "restful api port. (default :8081)")
+	cmd.PersistentFlags().StringP("api", "", "", "restful api address. (default :8081)")
 	cmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
 
-	cmd.PersistentFlags().StringP("cluster", "c", "", `cluster config
-for example. 
+	cmd.PersistentFlags().StringP("cluster", "c", "", `Use cluster configuration, for example. 
 	consul://127.0.0.1:8500/aginx[?token=authtoken]   config from consul.  
 	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
 	etcd://127.0.0.1:2379/aginx[?user=&password]      config from etcd.
 `)
-	cmd.PersistentFlags().StringP("expose", "e", "", "expose api use domain")
-	cmd.PersistentFlags().BoolP("watcher", "w", false, "watcher local file changes and sync to cluster configuration")
+	cmd.PersistentFlags().StringP("expose", "", "", "expose api use domain")
+	cmd.PersistentFlags().BoolP("watcher", "w", false, "watch local file changes and sync to cluster configuration")
 }
 
 func init() {

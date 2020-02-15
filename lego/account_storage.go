@@ -6,7 +6,6 @@ import (
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/go-acme/lego/v3/registration"
 	"github.com/ihaiker/aginx/storage"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 )
 
@@ -88,8 +87,6 @@ func LoadAccounts(engine storage.Engine) (accountStorage *AccountStorage, err er
 
 	for _, reader := range readers {
 		path := reader.Name
-		logrus.WithField("file", reader.Name).Debug("load account")
-
 		keyBytes, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return nil, err
@@ -99,9 +96,9 @@ func LoadAccounts(engine storage.Engine) (accountStorage *AccountStorage, err er
 		err = json.Unmarshal(keyBytes, account)
 		if err == nil {
 			accountStorage.store[account.Email] = account
-		} else {
-			logrus.WithField("file", path).WithError(err).Error("load account file error")
 		}
+
+		logrus.WithError(err).Info("load account file ", path)
 	}
 	return
 }

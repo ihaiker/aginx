@@ -8,7 +8,6 @@ import (
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net"
 	"time"
@@ -92,9 +91,6 @@ func LoadCertificates(engine storage.Engine) (certificateStorage *CertificateSto
 
 	for _, reader := range readers {
 		path := reader.Name
-		logrus.WithField("file", reader.Name).WithField("module", "certificate").
-			Debug("load certificate")
-
 		keyBytes, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return nil, err
@@ -104,10 +100,8 @@ func LoadCertificates(engine storage.Engine) (certificateStorage *CertificateSto
 		err = json.Unmarshal(keyBytes, cert)
 		if err == nil {
 			certificateStorage.data[cert.Domain] = cert
-		} else {
-			logrus.WithField("file", path).WithField("module", "certificate").
-				WithError(err).Error("load certificate file error")
 		}
+		logrus.WithError(err).Debug("load certificate ", path)
 	}
 	return
 }

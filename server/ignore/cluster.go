@@ -1,9 +1,11 @@
 package ignore
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/ihaiker/aginx/logs"
 	"strings"
 )
+
+var logrus = logs.New("ignore")
 
 type clusterIgnore struct {
 	files []string
@@ -15,14 +17,14 @@ func Cluster() *clusterIgnore {
 
 func (ignore *clusterIgnore) Add(files ...string) {
 	ignore.files = append(ignore.files, files...)
-	logrus.WithField("module", "ignore").Debug("add ignore files: ", strings.Join(files, ","))
+	logrus.Debug("add ignore files: ", strings.Join(files, ","))
 }
 
 func (ignore *clusterIgnore) Is(path string) bool {
 	for idx := 0; idx < len(ignore.files); idx++ {
 		file := ignore.files[idx]
 		if file == path {
-			logrus.WithField("module", "ignore").Debug("is ignore file ", file)
+			logrus.Debug("is ignore file ", file)
 			ignore.files = append(ignore.files[0:idx], ignore.files[idx+1:]...)
 			return true
 		}
