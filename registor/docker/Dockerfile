@@ -1,0 +1,3 @@
+## FOR TEST
+FROM busybox
+EXPOSE 8001

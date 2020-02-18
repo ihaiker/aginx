@@ -26,4 +26,5 @@ ENV AGINX_WATCHER="false"
 
 EXPOSE 8011
 
+CMD ["server"]
 ENTRYPOINT ["/usr/sbin/aginx"]
