@@ -29,10 +29,11 @@ func (as *apiController) deleteFile(ctx iris.Context) int {
 }
 
 func (as *apiController) upload(ctx iris.Context) int {
+	filePath := ctx.FormValue("path")
+
 	file, _, err := ctx.FormFile("file")
 	util.PanicIfError(err)
 	defer func() { _ = file.Close() }()
-	filePath := ctx.FormValue("path")
 
 	out := bytes.NewBuffer(make([]byte, 0))
 	_, err = io.Copy(out, file)

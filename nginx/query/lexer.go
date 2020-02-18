@@ -25,7 +25,7 @@ type Directive struct {
 
 	All string ` | @"*" )`
 
-	Args *Args `["(" @@ ")"]`
+	Args *Args `["(" [@@] ")"]`
 }
 
 type Children struct {

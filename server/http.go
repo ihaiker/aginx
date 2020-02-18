@@ -21,7 +21,6 @@ func NewHttp(address string, routers func(*iris.Application)) *Http {
 }
 
 func (this *Http) Start() error {
-	this.app.UseGlobal(iris.Gzip)
 	this.app.Use(func(ctx iris.Context) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -39,7 +38,6 @@ func (this *Http) Start() error {
 		}()
 		ctx.Next()
 	})
-
 	this.app.OnErrorCode(iris.StatusNotFound, func(ctx iris.Context) {
 		_, _ = ctx.JSON(map[string]string{
 			"error":   "notfound",

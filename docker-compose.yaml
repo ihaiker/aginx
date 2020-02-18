@@ -16,6 +16,6 @@ services:
       - AGINX_DEBUG=true
       - AGINX_SECURITY=aginx:aginx
       - AGINX_EXPOSE=api.aginx.io
-      - AGINX_CLUSTER=consul://consul:8500/aginx
-    depends_on:
-      - consul
+#      - AGINX_CLUSTER=consul://consul:8500/aginx
+#    depends_on:
+#      - consul
