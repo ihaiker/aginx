@@ -14,7 +14,7 @@ func init() {
 }
 
 func TestAginx_Select(t *testing.T) {
-	ds, err := api.Select("http", "server")
+	ds, err := api.Directive().Select("http", "server")
 	t.Log(ds, err)
 }
 
@@ -25,56 +25,55 @@ func TestAginx_Configuration(t *testing.T) {
 
 func TestAginx_Add(t *testing.T) {
 	{
-		err := api.Delete("worker_rlimit_nofilem")
+		err := api.Directive().Delete("worker_rlimit_nofilem")
 		t.Log(err)
 	}
 	{
-		err := api.Add(Queries(), configuration.NewDirective("worker_rlimit_nofile", "8192"))
+		err := api.Directive().Add(Queries(), configuration.NewDirective("worker_rlimit_nofile", "8192"))
 		t.Log(err)
 	}
 
 	{
-		ds, err := api.Select("worker_rlimit_nofile")
+		ds, err := api.Directive().Select("worker_rlimit_nofile")
 		t.Log(ds)
 		t.Log(err)
 	}
 	{
-		err := api.Modify(Queries("worker_rlimit_nofile"), configuration.NewDirective("worker_rlimit_nofile", "1024"))
+		err := api.Directive().Modify(Queries("worker_rlimit_nofile"), configuration.NewDirective("worker_rlimit_nofile", "1024"))
 		t.Log(err)
 	}
 	{
-		ds, err := api.Select("worker_rlimit_nofile")
+		ds, err := api.Directive().Select("worker_rlimit_nofile")
 		t.Log(ds)
 		t.Log(err)
 	}
 }
 
 func TestAginx_HttpUpstream(t *testing.T) {
-	ds, err := api.HttpUpstream()
+	ds, err := api.Directive().HttpUpstream()
 	t.Log(ds)
 	t.Log(err)
 }
 
 func TestAginx_HttpServer(t *testing.T) {
-	ds, err := api.HttpServer()
+	ds, err := api.Directive().HttpServer()
 	t.Log(ds)
 	t.Log(err)
 }
 
 func TestAginx_StreamUpstream(t *testing.T) {
-	ds, err := api.StreamUpstream()
+	ds, err := api.Directive().StreamUpstream()
 	t.Log(ds)
 	t.Log(err)
 }
 
 func TestAginx_StreamServer(t *testing.T) {
-	ds, err := api.StreamServer()
+	ds, err := api.Directive().StreamServer()
 	t.Log(ds)
 	t.Log(err)
 }
 
 func TestUpload(t *testing.T) {
-	err := api.NewFile("password.conf", "/etc/nginx/fastcgi.conf")
-
+	err := api.File().New("password.conf", "/etc/nginx/fastcgi.conf")
 	pretty.Println(err)
 }

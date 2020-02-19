@@ -41,38 +41,43 @@ func Routers(vister *Supervister, engine storage.Engine, manager *lego.Manager, 
 		return conf.Directive().Body
 	})
 
-	ctrl := &apiController{vister: vister, manager: manager, engine: engine}
+	fileCtrl := &fileController{engine: engine}
+	directive := &directiveController{vister: vister, manager: manager, engine: engine}
 	ssl := &sslController{vister: vister, manager: manager, engine: engine, lock: new(sync.Mutex)}
 	_ = util.EBus.Subscribe(util.SSLExpire, ssl.Expire)
 
 	return func(app *iris.Application) {
 		api := app.Party("/api", handlers...)
 		{
-			api.Get("", h.Handler(ctrl.queryDirective))
-			api.Put("", h.Handler(ctrl.addDirective))
-			api.Delete("", h.Handler(ctrl.deleteDirective))
-			api.Post("", h.Handler(ctrl.modifyDirective))
+			api.Get("", h.Handler(directive.queryDirective))
+			api.Put("", h.Handler(directive.addDirective))
+			api.Delete("", h.Handler(directive.deleteDirective))
+			api.Post("", h.Handler(directive.modifyDirective))
 		}
 		for _, f := range []string{"http", "stream"} {
 			extendApi := app.Party("/"+f, handlers...)
 			{
 				for _, s := range []string{"server", "upstream"} {
-					extendApi.Get("/"+s, h.Handler(ctrl.selectDirective(
+					extendApi.Get("/"+s, h.Handler(directive.selectDirective(
 						f+","+s,
 						f+",include,*,"+s,
 					)))
 				}
 			}
 		}
+
+		//
 		limit := iris.LimitRequestBodySize(1024 * 1024 * 10)
-		app.Post("/file", limit, h.Handler(ctrl.upload))
-		app.Delete("/file", h.Handler(ctrl.deleteFile))
-		app.Any("/reload", h.Handler(ctrl.reload))
+		app.Post("/file", limit, h.Handler(fileCtrl.New))
+		app.Delete("/file", h.Handler(fileCtrl.Remove))
+		app.Get("/file", h.Handler(fileCtrl.Search))
 
 		sslRouter := app.Party("/ssl", handlers...)
 		{
 			sslRouter.Put("/{domain:string}", h.Handler(ssl.New))
 			sslRouter.Post("/{domain:string}", h.Handler(ssl.Renew))
 		}
+
+		app.Any("/reload", h.Handler(directive.reload))
 	}
 }

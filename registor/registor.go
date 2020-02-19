@@ -47,5 +47,6 @@ type ServerEvent struct {
 type Registrator interface {
 	util.Service
 	Sync() Servers
+	Get(domain string) Servers
 	Listener() <-chan ServerEvent
 }

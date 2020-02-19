@@ -73,7 +73,7 @@ func includes(store storage.Engine, node *Directive) error {
 		return err
 	}
 	for _, file := range files {
-		includeDirective := &Directive{Virtual: Include, Name: file.Name}
+		includeDirective := &Directive{Virtual: Include, Name: "file", Args: Queries(file.Name)}
 		if doc, err := ReaderReadable(store, file); err != nil {
 			return err
 		} else {
@@ -85,7 +85,7 @@ func includes(store storage.Engine, node *Directive) error {
 }
 
 func fileContent(store storage.Engine, node *Directive) error {
-	directive := &Directive{Virtual: File, Name: node.Args[0]}
+	directive := &Directive{Virtual: File, Name: "file", Args: Queries(node.Args[0])}
 	reader, err := store.File(node.Args[0])
 	if err != nil {
 		return err

@@ -129,9 +129,21 @@ func TestClientAll(t *testing.T) {
 }
 
 func TestSelectInclude(t *testing.T) {
-	servers, _ := api.Select("http", "include", "*", "server.server_name('localhost')")
-
+	servers, err := api.Select("http", "include('reg.d/*.conf')", "file('reg.d/api.aginx.io.ngx.conf')")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, server := range servers {
 		fmt.Println(server.Json())
+	}
+}
+
+func TestServers(t *testing.T) {
+	servers, err := api.Select("http", "include", "*", "server")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, server := range servers {
+		fmt.Println(server.Pretty(0))
 	}
 }

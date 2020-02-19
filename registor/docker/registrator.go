@@ -30,7 +30,6 @@ func Registrator(ip string) (*DockerRegistrator, error) {
 }
 
 func (self *DockerRegistrator) Sync() (registor.Servers, error) {
-
 	containers, err := self.docker.ListContainers(dockerApi.ListContainersOptions{
 		All: true, Filters: map[string][]string{"status": {"running"}},
 	})
@@ -50,6 +49,16 @@ func (self *DockerRegistrator) Sync() (registor.Servers, error) {
 		}
 	}
 	return domains, nil
+}
+
+func (self *DockerRegistrator) Get(domain string) registor.Servers {
+	services := registor.Servers{}
+	if ss, has := self.servers[domain]; has {
+		for _, server := range ss {
+			services = append(services, server)
+		}
+	}
+	return services
 }
 
 func (self *DockerRegistrator) appendServers(domains registor.Servers) {
@@ -73,6 +82,7 @@ func (self *DockerRegistrator) Start() error {
 		for {
 			select {
 			case <-self.closeC:
+				close(self.events)
 				return
 			case event := <-events:
 				if event.Type == "container" {

@@ -6,10 +6,11 @@ import (
 	"github.com/ihaiker/aginx/nginx/configuration"
 	queryLexer "github.com/ihaiker/aginx/nginx/query"
 	"github.com/ihaiker/aginx/storage"
+	"os"
 )
 
 var (
-	ErrNotFound            = errors.New("not found")
+	ErrNotFound            = os.ErrNotExist
 	ErrRootCannotBeDeleted = errors.New("root cannot be deleted")
 )
 

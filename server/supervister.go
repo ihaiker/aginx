@@ -37,7 +37,15 @@ func (sp *Supervister) start() error {
 }
 
 func (sp *Supervister) Start() (err error) {
-	_ = util.EBus.Subscribe(util.StorageFileChanged, sp.Reload)
+
+	_ = util.EBus.Subscribe(util.StorageFileChanged, func() (err error) {
+		if err = util.CmdRun("nginx", "-t"); err != nil {
+			logger.Error("nginx configuration test error ", err)
+			return
+		}
+		err = sp.Reload()
+		return
+	})
 
 	if err = sp.start(); err != nil {
 		logger.WithField("-", "supervister").Warn("start nginx error ", err)

@@ -35,7 +35,7 @@ func TestDocker(t *testing.T) {
 		for domain, servers := range event.Servers.Group() {
 			fmt.Println("DomainAtr: ", domain)
 			for _, server := range servers {
-				fmt.Println("\t", server.(DockerServer).String())
+				fmt.Println("\t", server.(*DockerServer).String())
 			}
 		}
 	}
