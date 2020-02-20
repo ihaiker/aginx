@@ -2,11 +2,10 @@ package api
 
 import (
 	"bytes"
-	"encoding/base64"
-	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"os"
+	"net/url"
 )
 
 type aginxFile struct {
@@ -14,19 +13,20 @@ type aginxFile struct {
 }
 
 func (a aginxFile) New(relativePath, localFileAbsPath string) error {
+	content, err := ioutil.ReadFile(localFileAbsPath)
+	if err != nil {
+		return err
+	}
+	return a.NewWithContent(relativePath, content)
+}
+
+func (a aginxFile) NewWithContent(relativePath string, content []byte) error {
 	buf := new(bytes.Buffer)
 	writer := multipart.NewWriter(buf)
-	if formFile, err := writer.CreateFormFile("file", localFileAbsPath); err != nil {
+	if formFile, err := writer.CreateFormFile("file", relativePath); err != nil {
 		return err
-	} else {
-		if srcFile, err := os.Open(localFileAbsPath); err != nil {
-			return err
-		} else {
-			defer func() { _ = srcFile.Close() }()
-			if _, err = io.Copy(formFile, srcFile); err != nil {
-				return err
-			}
-		}
+	} else if _, err = formFile.Write(content); err != nil {
+		return err
 	}
 	if err := writer.WriteField("path", relativePath); err != nil {
 		return err
@@ -39,11 +39,10 @@ func (a aginxFile) New(relativePath, localFileAbsPath string) error {
 }
 
 func (a aginxFile) Remove(relativePath string) error {
-	file := base64.URLEncoding.EncodeToString([]byte(relativePath))
-	return a.request(http.MethodDelete, "/file?file="+file, nil, nil)
+	return a.request(http.MethodDelete, "/file?file="+url.QueryEscape(relativePath), nil, nil)
 }
 
-func (a aginxFile) Search(queries ...string) (files [][]string, err error) {
-	err = a.request(http.MethodGet, a.get("/file", queries), nil, &files)
+func (a aginxFile) Search(relativePaths ...string) (files map[string]string, err error) {
+	err = a.request(http.MethodGet, a.get("/file", relativePaths), nil, &files)
 	return
 }

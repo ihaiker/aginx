@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"github.com/ihaiker/aginx/lego"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/client"
 	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
@@ -16,7 +18,9 @@ import (
 	"time"
 )
 
-func Routers(vister *Supervister, engine storage.Engine, manager *lego.Manager, auth string) func(*iris.Application) {
+var logger = logs.New("http")
+
+func Routers(email string, vister *daemon.Supervister, engine storage.Engine, manager *lego.Manager, auth string) func(*iris.Application) {
 	handlers := make([]context.Handler, 0)
 	if auth != "" {
 		authConfig := strings.SplitN(auth, ":", 2)
@@ -43,7 +47,7 @@ func Routers(vister *Supervister, engine storage.Engine, manager *lego.Manager, 
 
 	fileCtrl := &fileController{engine: engine}
 	directive := &directiveController{vister: vister, manager: manager, engine: engine}
-	ssl := &sslController{vister: vister, manager: manager, engine: engine, lock: new(sync.Mutex)}
+	ssl := &sslController{email: email, vister: vister, manager: manager, engine: engine, lock: new(sync.Mutex)}
 	_ = util.EBus.Subscribe(util.SSLExpire, ssl.Expire)
 
 	return func(app *iris.Application) {

@@ -20,7 +20,7 @@ func NewManager(engine storage.Engine) (manager *Manager, err error) {
 	if manager.CertificateStorage, err = LoadCertificates(engine); err != nil {
 		return
 	}
-	manager.ticker = time.NewTicker(time.Second * 5)
+	manager.ticker = time.NewTicker(time.Hour)
 	return
 }
 
@@ -30,7 +30,7 @@ func (manager *Manager) Start() error {
 			select {
 			case <-manager.ticker.C:
 				for domain, certificate := range manager.CertificateStorage.data {
-					if certificate.ExpireTime.Before(time.Now()) {
+					if certificate.ExpireTime.Before(time.Now().Add(time.Hour)) {
 						util.EBus.Publish(util.SSLExpire, domain)
 					}
 				}

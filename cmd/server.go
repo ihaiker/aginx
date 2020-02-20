@@ -6,6 +6,7 @@ import (
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx/client"
 	"github.com/ihaiker/aginx/nginx/configuration"
+	nginxDaemon "github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/server"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/server/watcher"
@@ -74,12 +75,6 @@ func apiServer(domain, address string) *configuration.Directive {
 	location.AddBody("proxy_set_header", "Host", domain)
 	location.AddBody("proxy_set_header", "X-Real-IP", "$remote_addr")
 	location.AddBody("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for")
-	location.AddBody("client_max_body_size", "10m")
-	location.AddBody("client_body_buffer_size", "128k")
-	location.AddBody("proxy_connect_timeout", "90")
-	location.AddBody("proxy_send_timeout", "90")
-	location.AddBody("proxy_read_timeout", "90")
-	location.AddBody("proxy_buffers", "32", "4k")
 	return directive
 }
 
@@ -111,10 +106,11 @@ var ServerCmd = &cobra.Command{
 			fmt.Println(err)
 		})
 
+		email := GetString(cmd, "email", "aginx@renzhen.la")
 		address := GetString(cmd, "api", ":8011")
 		auth := GetString(cmd, "security", "")
-		cluster := GetString(cmd, "cluster", "")
-		withWatcher := (cluster != "") && GetBool(cmd, "watcher")
+		storage := GetString(cmd, "storage", "")
+		withWatcher := (storage != "") && GetBool(cmd, "watcher")
 
 		daemon := NewDaemon()
 
@@ -122,38 +118,46 @@ var ServerCmd = &cobra.Command{
 		if withWatcher {
 			ignore = ig.Cluster()
 		}
-		engine := clusterConfiguration(cluster, ignore)
-		if service, matched := engine.(Service); matched {
+		storageEngine := clusterConfiguration(storage, ignore)
+		if service, matched := storageEngine.(Service); matched {
 			daemon.Add(service)
 		}
-		exposeApi(cmd, address, engine)
+		exposeApi(cmd, address, storageEngine)
 
-		manager, err := lego.NewManager(engine)
+		sslManager, err := lego.NewManager(storageEngine)
 		PanicIfError(err)
 
-		svr := new(server.Supervister)
-		routers := server.Routers(svr, engine, manager, auth)
+		svr := new(nginxDaemon.Supervister)
+		routers := server.Routers(email, svr, storageEngine, sslManager, auth)
 		http := server.NewHttp(address, routers)
-		daemon.Add(http, svr, manager)
+		daemon.Add(http, svr, sslManager)
+
+		if bridge, err := findBridge(cmd); err != nil {
+			return nil
+		} else if bridge != nil {
+			daemon.Add(bridge)
+		}
 
 		if withWatcher {
-			daemon.Add(watcher.NewFileWatcher(engine, ignore))
+			daemon.Add(watcher.NewFileWatcher(storageEngine, ignore))
 		}
 		return daemon.Start()
 	},
 }
 
 func AddServerFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("api", "", "", "restful api address. (default :8081)")
-	cmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
+	cmd.PersistentFlags().StringP("email", "u", "aginx@renzhen.la", "Register the current account to the ACME server.")
 
-	cmd.PersistentFlags().StringP("cluster", "c", "", `Use cluster configuration, for example. 
+	cmd.PersistentFlags().StringP("storage", "S", "", `Use centralized storage NGINX configuration, for example. 
 	consul://127.0.0.1:8500/aginx[?token=authtoken]   config from consul.  
 	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
 	etcd://127.0.0.1:2379/aginx[?user=&password]      config from etcd.
 `)
-	cmd.PersistentFlags().StringP("expose", "", "", "expose api use domain")
-	cmd.PersistentFlags().BoolP("watcher", "w", false, "watch local file changes and sync to cluster configuration")
+	cmd.PersistentFlags().StringP("expose", "e", "", "Exposing API services to NGINX。example: api.aginx.io")
+	cmd.PersistentFlags().BoolP("watcher", "w", false, `Listen to local configuration file changes and automatically sync to storage.
+If you use 'storage' to store the NGINX configuration file, it will be synchronized to the local configuration at startup.
+`)
+	AddRegistryFlag(cmd)
 }
 
 func init() {

@@ -61,11 +61,11 @@ func (this *Http) Start() error {
 	}); err != nil && err != util.ErrTimeout {
 		return err
 	}
-	logger.WithField("-", "http").Info("start at: ", this.address)
+	logger.Info("start at: ", this.address)
 	return nil
 }
 
 func (this *Http) Stop() error {
-	logger.WithField("-", "http").Info("http server stop.")
+	logger.Info("http server stop.")
 	return this.app.Shutdown(context.TODO())
 }

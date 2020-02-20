@@ -9,6 +9,8 @@ import (
 
 var loggers = make([]*logrus.Logger, 0)
 
+var STD = New("root")
+
 func SetLevel(level logrus.Level) {
 	logrus.SetLevel(level)
 	for _, logger := range loggers {
@@ -29,6 +31,10 @@ func SetLogger(cmd *cobra.Command) error {
 
 func NewLogger(module string, fns ...func(*FieldsHook, *logrus.Logger)) *logrus.Logger {
 	logger := logrus.New()
+	if module == "root" {
+		logger = logrus.StandardLogger()
+	}
+	logger.SetReportCaller(true)
 	logger.SetLevel(logrus.GetLevel())
 	logger.SetFormatter(&Formatter{
 		TimestampFormat: "2006-01-02 15:04:05.000", FieldsOrder: []string{"module", "engine"},

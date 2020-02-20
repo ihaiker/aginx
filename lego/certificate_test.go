@@ -3,7 +3,6 @@ package lego
 import (
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	"github.com/kr/pretty"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"testing"
@@ -15,8 +14,6 @@ var acs *AccountStorage
 
 func init() {
 	rand.Seed(time.Now().Unix())
-	logrus.SetLevel(logrus.DebugLevel)
-
 	pwd, _ := os.Getwd()
 	engine := fileStorage.New(pwd + "/nginx.conf")
 
@@ -40,15 +37,4 @@ func TestNewDomain(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(cert)
-}
-
-func TestStoreFile(t *testing.T) {
-	cwd, _ := os.Getwd()
-	domain := "who.renzhen.la"
-	cert, _ := cfs.Get(domain)
-	if sf, err := cert.StoreFile(cwd + "/" + domain); err != nil {
-		t.Fatal(err)
-	} else {
-		t.Log(sf)
-	}
 }

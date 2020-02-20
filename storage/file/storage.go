@@ -19,8 +19,7 @@ func (fs *fileStorage) Abs(file string) string {
 	if strings.HasPrefix(file, "/") {
 		return file
 	} else {
-		path, _ := filepath.Abs(filepath.Dir(fs.conf) + "/" + file)
-		return path
+		return filepath.Join(filepath.Dir(fs.conf), file)
 	}
 }
 
@@ -65,7 +64,7 @@ func (fs *fileStorage) Search(args ...string) ([]*util.NameReader, error) {
 }
 
 func (cs *fileStorage) Remove(file string) error {
-	fp := filepath.Dir(cs.conf) + "/" + file
+	fp := filepath.Join(filepath.Dir(cs.conf), file)
 	if fileInfo, err := os.Stat(fp); err != nil {
 		return err
 	} else if fileInfo.IsDir() {
@@ -83,10 +82,6 @@ func (fs *fileStorage) File(file string) (reader *util.NameReader, err error) {
 
 	rd, err := os.OpenFile(path, os.O_RDONLY, os.ModeTemporary)
 	if err != nil {
-		if os.IsNotExist(err) {
-			dir := filepath.Dir(fs.conf)
-			return fs.File(dir + "/" + file)
-		}
 		return nil, err
 	}
 	return util.NamedReader(rd, path), nil

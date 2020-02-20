@@ -14,14 +14,14 @@ type fileController struct {
 	engine storage.Engine
 }
 
-func (as *fileController) Search(queries []string) [][]string {
-	files := make([][]string, 0)
+func (as *fileController) Search(queries []string) map[string]string {
+	files := make(map[string]string, 0)
 	readers, err := as.engine.Search(queries...)
 	util.PanicIfError(err)
 	for _, reader := range readers {
 		bs, _ := ioutil.ReadAll(reader)
 		name := reader.Name
-		files = append(files, []string{name, string(bs)})
+		files[name] = string(bs)
 	}
 	return files
 }

@@ -28,7 +28,6 @@ var rootCmd = &cobra.Command{
 		util.PanicIfError(logs.SetLogger(cmd))
 		return
 	},
-	RunE: cmd.ServerCmd.RunE,
 }
 
 func init() {
@@ -40,7 +39,7 @@ func init() {
 	rootCmd.PersistentFlags().StringP("level", "l", "info", "log level")
 	_ = viper.BindPFlags(rootCmd.PersistentFlags())
 
-	rootCmd.AddCommand(cmd.ServerCmd, cmd.ClusterCmd)
+	rootCmd.AddCommand(cmd.ServerCmd, cmd.SyncCmd, cmd.RegistryCmd)
 }
 
 func main() {

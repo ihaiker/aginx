@@ -5,6 +5,7 @@ import (
 	"github.com/go-acme/lego/v3/challenge/http01"
 	"github.com/ihaiker/aginx/nginx/client"
 	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/storage/file"
 	"path/filepath"
 	"time"
@@ -14,10 +15,10 @@ type aginxProvider struct {
 	queries   []string
 	directive *configuration.Directive
 	api       *client.Client
-	vistor    *Supervister
+	vistor    *daemon.Supervister
 }
 
-func NewAginxProvider(api *client.Client, vister *Supervister) *aginxProvider {
+func NewAginxProvider(api *client.Client, vister *daemon.Supervister) *aginxProvider {
 	return &aginxProvider{api: api, vistor: vister}
 }
 

@@ -3,6 +3,7 @@ package logs
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -67,21 +68,18 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 		b.WriteString("\x1b[0m")
 	}
 
+	if entry.HasCaller() {
+		idx := strings.Index(entry.Caller.Function, ".(")
+		fn := entry.Caller.Function[idx+1:]
+		file := entry.Caller.Function[0:idx] + "/" + filepath.Base(entry.Caller.File)
+		fmt.Fprintf(b, "%s() %s:%d ", fn, file, entry.Caller.Line)
+	}
+
 	// write message
 	if f.TrimMessages {
 		b.WriteString(strings.TrimSpace(entry.Message))
 	} else {
 		b.WriteString(entry.Message)
-	}
-
-	if entry.HasCaller() {
-		fmt.Fprintf(
-			b,
-			" (%s:%d %s)",
-			entry.Caller.File,
-			entry.Caller.Line,
-			entry.Caller.Function,
-		)
 	}
 
 	b.WriteByte('\n')

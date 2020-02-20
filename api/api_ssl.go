@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/lego"
 	"net/http"
+	"net/url"
 )
 
 type aginxSSL struct {
@@ -12,7 +13,7 @@ type aginxSSL struct {
 
 func (self *aginxSSL) New(accountEmail, domain string) (sf *lego.StoreFile, err error) {
 	sf = new(lego.StoreFile)
-	err = self.request(http.MethodPut, fmt.Sprintf("/ssl/%s?email=%s"+domain, accountEmail), nil, sf)
+	err = self.request(http.MethodPut, fmt.Sprintf("/ssl/%s?email=%s", domain, url.QueryEscape(accountEmail)), nil, sf)
 	return
 }
 

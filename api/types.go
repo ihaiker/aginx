@@ -21,9 +21,11 @@ func (err *ApiError) Error() string {
 type AginxFile interface {
 	New(relativePath, localFileAbsPath string) error
 
+	NewWithContent(relativePath string, content []byte) error
+
 	Remove(relativePath string) error
 
-	Search(queries ...string) ([][]string, error)
+	Search(relativePaths ...string) (map[string]string, error)
 }
 
 type AginxSSL interface {

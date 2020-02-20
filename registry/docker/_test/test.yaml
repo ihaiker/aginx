@@ -3,8 +3,8 @@
 version: "3.7"
 
 services:
-
   s1: &template
+    image: aginxtest
     build: .
     command: ping baidu.com
     labels:
@@ -19,8 +19,6 @@ services:
 
   s21:
     <<: *template
-    ports:
-      - 8501:8001
     labels:
       - aginx.domain.8001=s2.aginx.io
 

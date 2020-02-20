@@ -11,6 +11,8 @@ func Down(root string, cfg *Configuration) error {
 	return DownWriter(root, cfg, util.WriterFile)
 }
 
+//TODO 判断异同后写文件
+
 func DownWriter(root string, cfg *Configuration, writerFn Writer) (err error) {
 	content := cfg.String()
 	if err = writerFn(root+"/nginx.conf", []byte(content)); err != nil {

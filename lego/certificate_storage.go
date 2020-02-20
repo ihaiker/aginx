@@ -50,6 +50,10 @@ func (cfs *CertificateStorage) NewWithProvider(account *Account, domain string, 
 	cert.Email = account.Email
 	cert.ExpireTime = time.Now().AddDate(0, 3, 0)
 
+	if _, err = cert.StoreFile(cfs.engine); err != nil {
+		return nil, err
+	}
+
 	cfs.data[domain] = cert
 	if err = cfs.restore(domain); err != nil {
 		delete(cfs.data, domain)

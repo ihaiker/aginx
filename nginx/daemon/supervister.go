@@ -1,4 +1,4 @@
-package server
+package daemon
 
 import (
 	"github.com/ihaiker/aginx/logs"
@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var logger = logs.New("server")
+var logger = logs.New("daemon")
 
 type Supervister struct {
 	startCmd *exec.Cmd
@@ -48,18 +48,18 @@ func (sp *Supervister) Start() (err error) {
 	})
 
 	if err = sp.start(); err != nil {
-		logger.WithField("-", "supervister").Warn("start nginx error ", err)
+		logger.Warn("start nginx error ", err)
 		err = sp.stop()
-		logger.WithField("-", "supervister").WithError(err).Debug("first stop nginx")
+		logger.WithError(err).Debug("first stop nginx")
 		err = sp.start()
 	}
-	logger.WithField("-", "supervister").WithError(err).Info("start nginx")
+	logger.WithError(err).Info("start nginx")
 	return
 }
 
 func (sp *Supervister) Reload() error {
 	err := util.CmdRun("nginx", "-s", "reload")
-	logger.WithField("-", "supervister").Info("reload nginx ", err)
+	logger.Info("reload nginx ", err)
 	return err
 }
 
@@ -79,7 +79,7 @@ func (sp *Supervister) Test(cfg *configuration.Configuration) (err error) {
 		return
 	}
 	if err = util.CmdRun("nginx", "-t" /*"-p", path,*/, "-c", testRoot+"/nginx.conf"); err != nil {
-		logger.WithField("-", "supervister").Info("nginx test error: ", err)
+		logger.Info("nginx test error: ", err)
 		return
 	}
 	return

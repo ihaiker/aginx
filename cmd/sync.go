@@ -47,9 +47,9 @@ func syncupClusterConfiguration(root, appendRelativeDir string, engine storage.E
 	})
 }
 
-var ClusterCmd = &cobra.Command{
-	Use: "cluster", Short: "Sync configuration files from nginx to cluster storage",
-	Long: "Sync configuration files to cluster storage",
+var SyncCmd = &cobra.Command{
+	Use: "sync", Short: "Sync configuration files from nginx to cluster storage",
+	Long: "Sync configuration files to storage", Example: "aginx sync consul://127.0.0.1:8500/aginx",
 	Args: cobra.ExactValidArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer Catch(func(err error) {
@@ -64,10 +64,11 @@ var ClusterCmd = &cobra.Command{
 		_, conf, err := file.GetInfo()
 		PanicIfError(err)
 
-		_ = engine.Remove("")
+		//TODO 同步到服务器上使用bridge提供的方式，并且不能这样全部删除后同步，一定要判断更改做操作
+		err = engine.Remove("")
+		PanicIfError(err)
 
 		root := filepath.Dir(conf)
-
 		return syncupClusterConfiguration(root, "", engine)
 	},
 }

@@ -1,12 +1,9 @@
 package util
 
 import (
+	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
-	"os"
-	"path/filepath"
 )
 
 //Try handler(err)
@@ -46,6 +43,12 @@ func Catch(fns ...func(error)) {
 	}
 }
 
+func AssertTrue(check bool, msg string) {
+	if !check {
+		panic(errors.New(msg))
+	}
+}
+
 //如果不为空，使用msg panic错误，
 func PanicMessage(err interface{}, msg string) {
 	if err != nil {
@@ -66,37 +69,4 @@ func RandomPort() (int, error) {
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
 	return port, nil
-}
-
-type NameReader struct {
-	io.Reader
-	Name string
-}
-
-func NamedReader(rd io.Reader, name string) *NameReader {
-	return &NameReader{Reader: rd, Name: name}
-}
-
-func (nr *NameReader) String() string {
-	return fmt.Sprintf("file(%s)", nr.Name)
-}
-
-func WriterFile(path string, content []byte) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return err
-	}
-	return ioutil.WriteFile(path, content, 0666)
-}
-
-func WriterReader(path string, reader io.Reader) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return err
-	}
-	bs, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(path, bs, 0666)
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
 type Virtual string
@@ -134,7 +133,7 @@ func (conf *Configuration) Directive() *Directive {
 }
 
 func (conf Configuration) String() string {
-	out := bytes.NewBufferString("# -*-*- " + time.Now().Format(time.RFC3339) + " -*-*- \n")
+	out := bytes.NewBufferString("")
 	for _, body := range conf.Body {
 		out.WriteString(body.Pretty(0))
 		out.WriteString("\n")

@@ -4,6 +4,7 @@ import (
 	"github.com/go-acme/lego/v3/certcrypto"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/nginx/client"
+	"github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
@@ -11,7 +12,8 @@ import (
 )
 
 type sslController struct {
-	vister  *Supervister
+	email   string
+	vister  *daemon.Supervister
 	engine  storage.Engine
 	manager *lego.Manager
 	lock    sync.Locker
@@ -34,17 +36,14 @@ func (self *sslController) newCertificate(api *client.Client, email, domain stri
 	cert, err := self.manager.CertificateStorage.NewWithProvider(account, domain, provider)
 	util.PanicIfError(err)
 
-	file, err := cert.StoreFile(self.engine)
-	util.PanicIfError(err)
-
-	return file
+	return cert.GetStoreFile()
 }
 
 func (self *sslController) New(ctx iris.Context, api *client.Client, domain string) *lego.StoreFile {
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	email := ctx.URLParamDefault("email", "aginx@examples.com")
+	email := ctx.URLParamDefault("email", self.email)
 	return self.newCertificate(api, email, domain)
 }
 

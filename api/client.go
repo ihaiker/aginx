@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -16,7 +17,11 @@ type client struct {
 
 func (self *client) get(uri string, queries []string) string {
 	if len(queries) > 0 {
-		return uri + "?q=" + strings.Join(queries, "&q=")
+		values := url.Values{}
+		for _, query := range queries {
+			values.Add("q", query)
+		}
+		return uri + "?" + values.Encode()
 	}
 	return uri
 }
@@ -43,7 +48,7 @@ func (self *client) response(resp *http.Response, ret interface{}) error {
 }
 
 func (self *client) request(method string, url string, body io.Reader, ret interface{}, extends ...func(r *http.Request)) error {
-	if req, err := http.NewRequest(method, url, body); err != nil {
+	if req, err := http.NewRequest(method, self.address+url, body); err != nil {
 		return err
 	} else {
 		for _, extend := range extends {

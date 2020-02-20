@@ -19,7 +19,8 @@ func Queries(query ...string) []string {
 }
 
 type Client struct {
-	doc *configuration.Configuration
+	doc    *configuration.Configuration
+	Engine storage.Engine
 }
 
 func NewClient(store storage.Engine) (*Client, error) {
@@ -27,7 +28,7 @@ func NewClient(store storage.Engine) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{doc: doc}, nil
+	return &Client{doc: doc, Engine: store}, nil
 }
 
 func (client *Client) find(directives []*configuration.Directive, query string) ([]*configuration.Directive, error) {

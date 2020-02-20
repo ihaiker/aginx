@@ -5,6 +5,7 @@ import (
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/nginx/client"
 	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
@@ -12,7 +13,7 @@ import (
 )
 
 type directiveController struct {
-	vister  *Supervister
+	vister  *daemon.Supervister
 	engine  storage.Engine
 	manager *lego.Manager
 }
