@@ -6,6 +6,13 @@ import (
 	"net"
 )
 
+func Safe(fn func()) (err error) {
+	Try(fn, func(e error) {
+		err = e
+	})
+	return
+}
+
 //Try handler(err)
 func Try(fun func(), handler ...func(error)) {
 	defer Catch(handler...)

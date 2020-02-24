@@ -12,6 +12,20 @@ type Service interface {
 	Stop() error
 }
 
+func StartService(ob interface{}) error {
+	if sv, match := ob.(Service); match {
+		return sv.Start()
+	}
+	return nil
+}
+
+func StopService(ob interface{}) error {
+	if sv, match := ob.(Service); match {
+		return sv.Stop()
+	}
+	return nil
+}
+
 type daemon struct {
 	services []Service
 }

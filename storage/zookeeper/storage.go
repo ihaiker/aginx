@@ -3,15 +3,12 @@ package zookeeper
 import (
 	"bytes"
 	"github.com/ihaiker/aginx/logs"
-	ig "github.com/ihaiker/aginx/server/ignore"
-	fileStorage "github.com/ihaiker/aginx/storage/file"
+	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"github.com/samuel/go-zookeeper/zk"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -19,23 +16,18 @@ var logger = logs.New("storage", "engine", "zk")
 var zkDirData = []byte("zkdir")
 
 type zkStorage struct {
-	address string
 	folder  string
 	keeper  *zk.Conn
 	watcher *Watcher
-	ignore  ig.Ignore
 }
 
-func New(clusterConfig *url.URL, ignore ig.Ignore) (zks *zkStorage, err error) {
+func New(clusterConfig *url.URL) (zks *zkStorage, err error) {
 	address := clusterConfig.Host
-	folder := clusterConfig.EscapedPath()[1:]
+	folder := clusterConfig.EscapedPath()
 	scheme := clusterConfig.Query().Get("scheme")
 	auth := clusterConfig.Query().Get("auth")
 
-	zks = &zkStorage{address: address, folder: folder, ignore: ignore}
-	if !strings.HasPrefix(zks.folder, "/") {
-		zks.folder = "/" + zks.folder
-	}
+	zks = &zkStorage{folder: folder}
 	zks.keeper, _, err = zk.Connect([]string{address}, time.Second*3)
 	zks.keeper.SetLogger(logger)
 	if scheme != "" {
@@ -52,8 +44,8 @@ func (zks *zkStorage) IsCluster() bool {
 	return true
 }
 
-func (zks *zkStorage) zkList(path string, onlyFile bool) ([]*util.NameReader, error) {
-	readers := make([]*util.NameReader, 0)
+func (zks *zkStorage) zkList(path string, onlyFile bool) ([]*plugins.ConfigurationFile, error) {
+	readers := make([]*plugins.ConfigurationFile, 0)
 	keys, _, err := zks.keeper.Children(path)
 	if err != nil {
 		return nil, err
@@ -63,9 +55,9 @@ func (zks *zkStorage) zkList(path string, onlyFile bool) ([]*util.NameReader, er
 		if data, st, err := zks.keeper.Get(file); err != nil {
 			return nil, err
 		} else {
-			if bytes.Equal(data, zkDirData) || st.NumChildren > 0 || len(data) == 0 {
+			if isDir(data) || st.NumChildren > 0 {
 				if !onlyFile {
-					readers = append(readers, util.NamedReader(nil, file))
+					readers = append(readers, plugins.NewFile(file, nil))
 				}
 				if files, err := zks.zkList(file, onlyFile); err != nil {
 					return nil, err
@@ -73,26 +65,36 @@ func (zks *zkStorage) zkList(path string, onlyFile bool) ([]*util.NameReader, er
 					readers = append(readers, files...)
 				}
 			} else {
-				readers = append(readers, util.NamedReader(bytes.NewBuffer(data), file))
+				relPath, _ := filepath.Rel(zks.folder, file)
+				readers = append(readers, plugins.NewFile(relPath, data))
 			}
 		}
 	}
 	return readers, err
 }
 
-func (zks *zkStorage) Search(args ...string) ([]*util.NameReader, error) {
-	matched := make([]*util.NameReader, 0)
+func isDir(data []byte) bool {
+	return bytes.Equal(data, zkDirData) || len(data) == 0
+}
 
-	readers, err := zks.zkList(zks.folder, true)
+func (zks *zkStorage) Search(args ...string) ([]*plugins.ConfigurationFile, error) {
+	matched := make([]*plugins.ConfigurationFile, 0)
+
+	zkFiles, err := zks.zkList(zks.folder, true)
 	if err == nil {
 	READERS:
-		for _, reader := range readers {
-			for _, arg := range args {
-				pattern := zks.folder + "/" + arg
-				if match, _ := filepath.Match(pattern, reader.Name); match {
-					reader.Name = strings.ReplaceAll(reader.Name, zks.folder+"/", "")
-					matched = append(matched, reader)
-					continue READERS
+		for _, zkFile := range zkFiles {
+			if len(args) == 0 {
+				matched = append(matched, &plugins.ConfigurationFile{
+					Name:    zkFile.Name,
+					Content: zkFile.Content,
+				})
+			} else {
+				for _, arg := range args {
+					if match, _ := filepath.Match(arg, zkFile.Name); match {
+						matched = append(matched, zkFile)
+						continue READERS
+					}
 				}
 			}
 		}
@@ -116,14 +118,17 @@ func (zks *zkStorage) Remove(file string) error {
 	return err
 }
 
-func (zks *zkStorage) Get(file string) (*util.NameReader, error) {
+func (zks *zkStorage) Get(file string) (*plugins.ConfigurationFile, error) {
 	path := zks.folder + "/" + file
 	if data, _, err := zks.keeper.Get(path); err != nil {
+		if err.Error() == "zk: node does not exist" {
+			err = os.ErrNotExist
+		}
 		return nil, err
 	} else if bytes.Equal(data, zkDirData) {
 		return nil, os.ErrNotExist
 	} else {
-		return util.NamedReader(bytes.NewBuffer(data), file), nil
+		return plugins.NewFile(file, data), nil
 	}
 }
 
@@ -165,85 +170,48 @@ func (zks *zkStorage) Put(file string, content []byte) error {
 	return zks.zkStore(path, content)
 }
 
-func (zks *zkStorage) publishFileChangedEvent() {
-	logger.Info("publish: ", util.StorageFileChanged)
-	util.EBus.Publish(util.StorageFileChanged)
-}
-
-func (zks *zkStorage) watchEvent(rootDir string) {
-	for event := range zks.watcher.C {
-		logger.Debug("event ", event.Type.String(), " ", event.Path)
-		localFile := rootDir + "/" + strings.Replace(event.Path, zks.folder, "", 1)
-		switch event.Type {
-		case zk.EventNodeCreated:
-			data, _, _ := zks.keeper.Get(event.Path)
-			isDir := bytes.Equal(data, zkDirData) || len(data) == 0
-			if isDir {
-				if err := os.MkdirAll(localFile, os.ModePerm); err != nil {
-					logger.Warn("mkdir ", localFile, " error ", err)
-				}
+func (zks *zkStorage) StartListener() <-chan plugins.FileEvent {
+	events := make(chan plugins.FileEvent)
+	if zkFiles, err := zks.zkList(zks.folder, false); err == nil {
+		zks.watcher.Folder(zks.folder)
+		for _, zkFile := range zkFiles {
+			if zkFile.Content != nil { //file
+				zks.watcher.File(zkFile.Name)
 			} else {
-				if err := ioutil.WriteFile(localFile, data, 0666); err != nil {
-					logger.Warn("open file ", localFile, " error ", err)
-				}
-				zks.publishFileChangedEvent()
+				zks.watcher.Folder(zkFile.Name)
 			}
-
-		case zk.EventNodeDeleted:
-			if fileInfo, err := os.Stat(localFile); err != nil {
-				if !os.IsNotExist(err) {
-					logger.Warn("open file ", localFile, " error ", err)
-				}
-			} else if fileInfo.IsDir() {
-				logger.Warn("delete folder ", localFile, " error ", os.RemoveAll(localFile))
-			} else {
-				logger.Warn("delete file ", localFile, " error ", os.Remove(localFile))
-			}
-			zks.publishFileChangedEvent()
-
-		case zk.EventNodeDataChanged:
-			data, _, _ := zks.keeper.Get(event.Path)
-			if !(bytes.Equal(data, zkDirData) || len(data) == 0) {
-				err := ioutil.WriteFile(localFile, data, 0666)
-				logger.Warn("write file changed ", localFile, " error ", err)
-			}
-			zks.publishFileChangedEvent()
 		}
+		go func() {
+			defer util.Catch()
+
+			for event := range zks.watcher.C {
+				relPath, _ := filepath.Rel(zks.folder, event.Path)
+				switch event.Type {
+				case zk.EventNodeCreated, zk.EventNodeDataChanged:
+					data, _, _ := zks.keeper.Get(event.Path)
+					if !isDir(data) {
+						events <- plugins.FileEvent{
+							Type: plugins.FileEventTypeUpdate,
+							Paths: []plugins.ConfigurationFile{{
+								Name: relPath, Content: data,
+							}},
+						}
+					}
+				case zk.EventNodeDeleted:
+					events <- plugins.FileEvent{
+						Type: plugins.FileEventTypeRemove,
+						Paths: []plugins.ConfigurationFile{{
+							Name: relPath, Content: []byte{},
+						}},
+					}
+				}
+			}
+		}()
 	}
+	return events
 }
 
 func (zks *zkStorage) Start() error {
-	_, conf, err := fileStorage.GetInfo()
-	if err != nil {
-		return err
-	}
-
-	//clear file
-	rootDir := filepath.Dir(conf)
-	if err := os.RemoveAll(rootDir); err != nil {
-		return err
-	}
-
-	zkFiles, err := zks.zkList(zks.folder, false)
-	if err != nil {
-		return err
-	}
-
-	zks.watcher.Folder(zks.folder)
-
-	for _, zkFile := range zkFiles {
-		if zkFile.Reader != nil { //file
-			filePath := rootDir + strings.Replace(zkFile.Name, zks.folder, "", 1)
-			logger.Debug("sync file ", zkFile.Name)
-			if err := util.WriteReader(filePath, zkFile); err != nil {
-				return err
-			}
-			zks.watcher.File(zkFile.Name)
-		} else {
-			zks.watcher.Folder(zkFile.Name)
-		}
-	}
-	go zks.watchEvent(rootDir)
 	return nil
 }
 

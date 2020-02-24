@@ -33,5 +33,9 @@ func CmdRun(command string, args ...string) error {
 func CmdStart(command string, args ...string) (*exec.Cmd, error) {
 	cmd := exec.Command(command, args...)
 	cmd.Stderr = &StdError{bytes.NewBufferString("")}
-	return cmd, cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	} else {
+		return cmd, nil
+	}
 }

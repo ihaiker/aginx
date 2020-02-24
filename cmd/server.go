@@ -2,148 +2,20 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/ihaiker/aginx/http"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
-	"github.com/ihaiker/aginx/nginx/client"
-	nginxDaemon "github.com/ihaiker/aginx/nginx/daemon"
-	"github.com/ihaiker/aginx/server"
-	ig "github.com/ihaiker/aginx/server/ignore"
-	"github.com/ihaiker/aginx/server/watcher"
+	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/registry"
 	"github.com/ihaiker/aginx/storage"
-	"github.com/ihaiker/aginx/storage/consul"
-	"github.com/ihaiker/aginx/storage/etcd"
-	fileStorage "github.com/ihaiker/aginx/storage/file"
-	"github.com/ihaiker/aginx/storage/zookeeper"
 	. "github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/url"
-	"strings"
+	"net"
 )
 
-var logger = logs.New("server-cmd")
-
-func clusterConfiguration(cluster string, ignore ig.Ignore) (engine storage.Engine) {
-	var err error
-	if cluster == "" {
-		engine, err = fileStorage.System()
-		PanicIfError(err)
-	} else {
-		config, err := url.Parse(cluster)
-		PanicIfError(err)
-		switch config.Scheme {
-		case "consul":
-			engine, err = consul.New(config, ignore)
-			PanicIfError(err)
-		case "etcd":
-			engine, err = etcd.New(config, ignore)
-			PanicIfError(err)
-		case "zk":
-			engine, err = zookeeper.New(config, ignore)
-			PanicIfError(err)
-		}
-	}
-	return
-}
-
-func selectDirective(api *client.Client, domain string) (queries []string, directive *nginx.Directive) {
-	serverQuery := fmt.Sprintf("server.[server_name('%s') & listen('80')]", domain)
-	queries = client.Queries("http", "include", "*", serverQuery)
-	if directives, err := api.Select(queries...); err == nil {
-		directive = directives[0]
-		return
-	}
-	queries = client.Queries("http", serverQuery)
-	if directives, err := api.Select(queries...); err == nil {
-		directive = directives[0]
-		return
-	}
-	return
-}
-
-func apiServer(domain, address string) *nginx.Directive {
-	directive := nginx.NewDirective("server")
-	directive.AddBody("listen", "80")
-	directive.AddBody("server_name", domain)
-
-	if strings.HasPrefix(address, ":") {
-		address = "127.0.0.1" + address
-	}
-	location := directive.AddBody("location", "/")
-	location.AddBody("proxy_pass", fmt.Sprintf("http://%s", address))
-	location.AddBody("proxy_set_header", "Host", domain)
-	location.AddBody("proxy_set_header", "X-Real-IP", "$remote_addr")
-	location.AddBody("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for")
-	return directive
-}
-
-func exposeApi(cmd *cobra.Command, address string, engine storage.Engine) {
-	domain := GetString(cmd, "expose", "")
-	if domain == "" {
-		return
-	}
-	logger.Info("expose api for : ", domain)
-	api, err := client.NewClient(engine)
-	PanicIfError(err)
-
-	_, directive := selectDirective(api, domain)
-	if directive == nil {
-		apiServer := apiServer(domain, address)
-
-		err = api.Add(client.Queries("http"), apiServer)
-		PanicIfError(err)
-
-		err = api.Store()
-		PanicIfError(err)
-	}
-}
-
-var ServerCmd = &cobra.Command{
-	Use: "server", Short: "the aginx server", Long: "the api server", Example: "aginx server",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		defer Catch(func(err error) {
-			fmt.Println(err)
-		})
-
-		email := GetString(cmd, "email", "aginx@renzhen.la")
-		address := GetString(cmd, "api", ":8011")
-		auth := GetString(cmd, "security", "")
-		storage := GetString(cmd, "storage", "")
-		withWatcher := (storage != "") && GetBool(cmd, "watcher")
-
-		daemon := NewDaemon()
-
-		var ignore ig.Ignore = ig.Empty()
-		if withWatcher {
-			ignore = ig.Cluster()
-		}
-		storageEngine := clusterConfiguration(storage, ignore)
-		if service, matched := storageEngine.(Service); matched {
-			daemon.Add(service)
-		}
-		exposeApi(cmd, address, storageEngine)
-
-		sslManager, err := lego.NewManager(storageEngine)
-		PanicIfError(err)
-
-		svr := new(nginxDaemon.Supervister)
-		routers := server.Routers(email, svr, storageEngine, sslManager, auth)
-		http := server.NewHttp(address, routers)
-		daemon.Add(http, svr, sslManager)
-
-		if bridge, err := findBridge(cmd); err != nil {
-			return nil
-		} else if bridge != nil {
-			daemon.Add(bridge)
-		}
-
-		if withWatcher {
-			daemon.Add(watcher.NewFileWatcher(storageEngine, ignore))
-		}
-		return daemon.Start()
-	},
-}
+var logger = logs.New("cmd")
 
 func AddServerFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("email", "u", "aginx@renzhen.la", "Register the current account to the ACME server.")
@@ -154,13 +26,65 @@ func AddServerFlags(cmd *cobra.Command) {
 	etcd://127.0.0.1:2379/aginx[?user=&password]      config from etcd.
 `)
 	cmd.PersistentFlags().StringP("expose", "e", "", "Exposing API services to NGINX。example: api.aginx.io")
-	cmd.PersistentFlags().BoolP("watcher", "w", false, `Listen to local configuration file changes and automatically sync to storage.
-If you use 'storage' to store the NGINX configuration file, it will be synchronized to the local configuration at startup.
-`)
+	cmd.PersistentFlags().BoolP("disable-watcher", "", false, `Listen to local configuration file changes and automatically sync to storage.
+If you use '--storage' to store the NGINX configuration file, it will be synchronized to the local configuration at startup.`)
+
 	AddRegistryFlag(cmd)
 }
 
 func init() {
 	AddServerFlags(ServerCmd)
 	_ = viper.BindPFlags(ServerCmd.PersistentFlags())
+}
+
+func exposeApi(cmd *cobra.Command, address string, engine plugins.StorageEngine) {
+	domain := GetString(cmd, "expose", "")
+	if domain == "" {
+		return
+	}
+	host, port, err := net.SplitHostPort(address)
+	PanicIfError(err)
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	apiAddress := fmt.Sprintf("%s:%s", host, port)
+	logger.Infof("expose api %s to %s ", domain, apiAddress)
+
+	api := nginx.MustClient(engine)
+	err = api.SimpleServer(domain, apiAddress)
+	PanicIfError(err)
+	PanicIfError(api.Store())
+}
+
+var ServerCmd = &cobra.Command{
+	Use: "server", Short: "the AGINX server", Long: "the api server", Example: "AGINX server",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		defer Catch(func(err error) {
+			fmt.Println(err)
+		})
+
+		email := GetString(cmd, "email", "aginx@renzhen.la")
+		address := GetString(cmd, "api", ":8011")
+		auth := GetString(cmd, "security", "")
+
+		daemon := NewDaemon()
+
+		storageEngine := storage.NewBridge(GetString(cmd, "storage", ""),
+			!GetBool(cmd, "disable-watcher"), nginx.MustConf())
+
+		exposeApi(cmd, address, storageEngine)
+
+		sslManager, err := lego.NewManager(storageEngine)
+		PanicIfError(err)
+
+		process := new(nginx.Process)
+		http := http.NewHttp(address, http.Routers(email, auth, process, storageEngine, sslManager))
+		daemon.Add(storageEngine, http, process, sslManager)
+
+		if registry := registry.FindRegistry(cmd); registry != nil {
+			daemon.Add(registry)
+		}
+
+		return daemon.Start()
+	},
 }

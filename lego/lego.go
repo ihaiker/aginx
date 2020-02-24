@@ -1,7 +1,7 @@
 package lego
 
 import (
-	"github.com/ihaiker/aginx/storage"
+	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"time"
 )
@@ -12,7 +12,7 @@ type Manager struct {
 	ticker             *time.Ticker
 }
 
-func NewManager(engine storage.Engine) (manager *Manager, err error) {
+func NewManager(engine plugins.StorageEngine) (manager *Manager, err error) {
 	manager = new(Manager)
 	if manager.AccountStorage, err = LoadAccounts(engine); err != nil {
 		return
@@ -31,7 +31,7 @@ func (manager *Manager) Start() error {
 			case <-manager.ticker.C:
 				for domain, certificate := range manager.CertificateStorage.data {
 					if certificate.ExpireTime.Before(time.Now().Add(time.Hour)) {
-						util.EBus.Publish(util.SSLExpire, domain)
+						util.PublishSSLExpire(domain)
 					}
 				}
 			}

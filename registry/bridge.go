@@ -5,13 +5,15 @@ import (
 	"github.com/ihaiker/aginx/api"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
+	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
 )
 
-var logger = logs.New("bridge")
+var logger = logs.New("registry")
 
 const default_template = `
 upstream {{.Domain}} { {{range .Servers}}
@@ -47,20 +49,20 @@ server { {{if .AutoSSL}}
 
 var funcMap = template.FuncMap{}
 
-type RegistorBridge struct {
-	Registrator        Registor
+type RegisterBridge struct {
+	Register           plugins.Register
 	LocalTemplateDir   string //本地模板
 	StorageTemplateDir string //使用配置存储获取模板
 	Aginx              api.Aginx
 }
 
-func (rb *RegistorBridge) listenChange() error {
+func (rb *RegisterBridge) listenChange() error {
 	go func() {
 		for {
 			select {
-			case event := <-rb.Registrator.Listener():
+			case event := <-rb.Register.Listener():
 				for domain, _ := range event.Servers.Group() {
-					servers := rb.Registrator.Get(domain)
+					servers := rb.Register.Get(domain)
 					if len(servers) == 0 {
 						relPath := "reg.d/" + domain + ".ngx.conf"
 						err := rb.Aginx.File().Remove(relPath)
@@ -70,13 +72,14 @@ func (rb *RegistorBridge) listenChange() error {
 						logger.WithError(err).Info("Publishing service changes ", domain)
 					}
 				}
+				_ = rb.Aginx.Reload()
 			}
 		}
 	}()
 	return nil
 }
 
-func (rb *RegistorBridge) createRegDInclude() (err error) {
+func (rb *RegisterBridge) createRegDInclude() (err error) {
 	if _, err = rb.Aginx.Directive().Select("http", "include('reg.d/*.ngx.conf')"); err != nil {
 		logger.Debug("create NGINX directive (include reg.d/*.ngx.conf)")
 		err = rb.Aginx.Directive().Add(api.Queries("http"),
@@ -88,7 +91,7 @@ func (rb *RegistorBridge) createRegDInclude() (err error) {
 	return
 }
 
-func (rb *RegistorBridge) findTemplate(domain string) string {
+func (rb *RegisterBridge) findTemplate(domain string) string {
 	//本地查找模板
 	if rb.LocalTemplateDir != "" {
 		localTemplate := filepath.Join(rb.LocalTemplateDir, domain+".ngx.tpl")
@@ -121,7 +124,7 @@ func (rb *RegistorBridge) findTemplate(domain string) string {
 	return default_template
 }
 
-func (rb *RegistorBridge) publishServer(domain string, servers Domains) error {
+func (rb *RegisterBridge) publishServer(domain string, servers plugins.Domains) error {
 	autoSsl := servers[0].AutoSSL
 	data := map[string]interface{}{
 		"Domain":  domain,
@@ -147,29 +150,31 @@ func (rb *RegistorBridge) publishServer(domain string, servers Domains) error {
 	}
 }
 
-func (rb *RegistorBridge) Start() error {
+func (rb *RegisterBridge) Start() error {
 	logger.Info("start")
 
 	if err := rb.createRegDInclude(); err != nil {
 		return err
 	}
 
-	if err := rb.Registrator.Start(); err != nil {
+	if err := util.StartService(rb.Register); err != nil {
 		return err
 	}
-	services := rb.Registrator.Sync().Group()
+
+	services := rb.Register.Sync().Group()
 	for domain, servers := range services {
 		if err := rb.publishServer(domain, servers); err != nil {
 			return err
 		}
 	}
 
+	_ = rb.Aginx.Reload()
 	return rb.listenChange()
 }
 
-func (rb *RegistorBridge) Stop() error {
-	if rb.Registrator != nil {
-		return rb.Registrator.Stop()
+func (rb *RegisterBridge) Stop() error {
+	if rb.Register != nil {
+		return util.StopService(rb.Register)
 	}
 	return nil
 }

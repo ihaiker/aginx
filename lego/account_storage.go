@@ -5,15 +5,14 @@ import (
 	"github.com/go-acme/lego/v3/certcrypto"
 	"github.com/go-acme/lego/v3/lego"
 	"github.com/go-acme/lego/v3/registration"
-	"github.com/ihaiker/aginx/storage"
-	"io/ioutil"
+	"github.com/ihaiker/aginx/plugins"
 )
 
 const accountDir = "lego/accounts"
 
 type AccountStorage struct {
 	store  map[string]*Account
-	engine storage.Engine
+	engine plugins.StorageEngine
 }
 
 func (acs *AccountStorage) Get(email string) (account *Account, has bool) {
@@ -75,22 +74,19 @@ func (acs *AccountStorage) New(email string, keyType certcrypto.KeyType) (*Accou
 	return account, err
 }
 
-func LoadAccounts(engine storage.Engine) (accountStorage *AccountStorage, err error) {
+func LoadAccounts(engine plugins.StorageEngine) (accountStorage *AccountStorage, err error) {
 	accountStorage = &AccountStorage{
 		store: map[string]*Account{}, engine: engine,
 	}
 
-	readers, err := engine.Search(accountDir + "/*.json")
+	files, err := engine.Search(accountDir + "/*.json")
 	if err != nil {
 		return
 	}
 
-	for _, reader := range readers {
-		path := reader.Name
-		keyBytes, err := ioutil.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
+	for _, file := range files {
+		path := file.Name
+		keyBytes := file.Content
 
 		account := new(Account)
 		err = json.Unmarshal(keyBytes, account)

@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/go-connections/nat"
-	"github.com/ihaiker/aginx/registry"
+	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kr/pretty"
 	"strings"
@@ -51,7 +51,7 @@ func (self *DockerRegistor) getServiceTaskAddress(service swarm.Service, port ui
 	return addresses
 }
 
-func (self *DockerRegistor) makeDomain(service swarm.Service, lab label, address string) registry.Domain {
+func (self *DockerRegistor) makeDomain(service swarm.Service, lab label, address string) plugins.Domain {
 	domainLabel := map[string]string{}
 	for k, v := range service.Spec.TaskTemplate.ContainerSpec.Labels {
 		domainLabel[k] = v
@@ -59,7 +59,7 @@ func (self *DockerRegistor) makeDomain(service swarm.Service, lab label, address
 	for k, v := range service.Spec.Labels {
 		domainLabel[k] = v
 	}
-	domain := registry.Domain{
+	domain := plugins.Domain{
 		ID: service.Spec.Name, Domain: lab.Domain,
 		Weight: lab.Weight, AutoSSL: lab.AutoSSL,
 		Attrs: domainLabel, Address: address,
@@ -67,7 +67,7 @@ func (self *DockerRegistor) makeDomain(service swarm.Service, lab label, address
 	return domain
 }
 
-func (self *DockerRegistor) findFromServiceById(serverId string) (registry.Domains, error) {
+func (self *DockerRegistor) findFromServiceById(serverId string) (plugins.Domains, error) {
 	if service, _, err := self.docker.ServiceInspectWithRaw(context.TODO(), serverId, types.ServiceInspectOptions{}); err != nil {
 		return nil, err
 	} else {
@@ -75,9 +75,9 @@ func (self *DockerRegistor) findFromServiceById(serverId string) (registry.Domai
 	}
 }
 
-func (self *DockerRegistor) findFromService(service swarm.Service) (registry.Domains, error) {
+func (self *DockerRegistor) findFromService(service swarm.Service) (plugins.Domains, error) {
 	serviceName := service.Spec.Name
-	domains := registry.Domains{}
+	domains := plugins.Domains{}
 	labs := findLabels(service.Spec.TaskTemplate.ContainerSpec.Labels, false)
 
 	if labs.Has() {
@@ -118,12 +118,16 @@ func (self *DockerRegistor) findFromService(service swarm.Service) (registry.Dom
 				if label.Nodes {
 					nodes, _ := self.getNodes(Normal(Or(isWorker, Not(isMulti))))
 					for i, node := range nodes {
-						domain := self.makeDomain(service, label, node)
+						address := fmt.Sprintf("%s:%d", node, usePort.PublishedPort)
+						domain := self.makeDomain(service, label, address)
 						domain.ID = fmt.Sprintf("%s:%d", serviceName, i)
 						domains = append(domains, domain)
 					}
-				} else {
+				} else if self.ip != "" {
 					address := fmt.Sprintf("%s:%d", self.ip, usePort.PublishedPort)
+					domains = append(domains, self.makeDomain(service, label, address))
+				} else {
+					address := self.getVirtualAddress(service, usePort.TargetPort)
 					domains = append(domains, self.makeDomain(service, label, address))
 				}
 			} else {

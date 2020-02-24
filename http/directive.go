@@ -1,0 +1,62 @@
+package http
+
+import (
+	"errors"
+	"github.com/ihaiker/aginx/nginx"
+	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
+	"github.com/kataras/iris/v12"
+	"strings"
+)
+
+type directiveController struct {
+	process *nginx.Process
+	engine  plugins.StorageEngine
+}
+
+func (as *directiveController) queryDirective(client *nginx.Client, queries []string) []*nginx.Directive {
+	directives, err := client.Select(queries...)
+	util.PanicIfError(err)
+	return directives
+}
+
+func (as *directiveController) addDirective(client *nginx.Client, queries []string, directives []*nginx.Directive) int {
+	util.PanicIfError(client.Add(queries, directives...))
+	util.PanicIfError(as.process.Test(client.Configuration()))
+	util.PanicIfError(client.Store())
+	return as.reload()
+}
+
+func (as *directiveController) deleteDirective(client *nginx.Client, queries []string) int {
+	util.PanicIfError(client.Delete(queries...))
+	util.PanicIfError(as.process.Test(client.Configuration()))
+	util.PanicIfError(client.Store())
+	return as.reload()
+}
+
+func (as *directiveController) modifyDirective(client *nginx.Client, queries []string, directives []*nginx.Directive) int {
+	if len(directives) == 0 {
+		panic(errors.New("new directive is empty"))
+	}
+	util.PanicIfError(client.Modify(queries, directives[0]))
+	util.PanicIfError(as.process.Test(client.Configuration()))
+	util.PanicIfError(client.Store())
+	return as.reload()
+}
+
+func (as *directiveController) reload() int {
+	util.PanicIfError(as.process.Reload())
+	return iris.StatusNoContent
+}
+
+func (as *directiveController) selectDirective(queries ...string) func(*nginx.Client) []*nginx.Directive {
+	return func(client *nginx.Client) []*nginx.Directive {
+		directives := make([]*nginx.Directive, 0)
+		for _, query := range queries {
+			if ds, err := client.Select(strings.Split(query, ",")...); err == nil {
+				directives = append(directives, ds...)
+			}
+		}
+		return directives
+	}
+}

@@ -2,12 +2,11 @@ package etcd
 
 import (
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/server/ignore"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	url2 "net/url"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -18,7 +17,7 @@ func init() {
 
 func newClient(t *testing.T) *etcdV3Storage {
 	url, _ := url2.Parse("etcd://127.0.0.1:2379/aginx")
-	engine, _ := New(url, ignore.Empty())
+	engine, _ := New(url)
 	return engine
 }
 
@@ -33,22 +32,11 @@ func TestPut(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	api := newClient(t)
-
 	r, err := api.Get("nginx.conf")
 	if err != nil {
 		t.Fatal(err)
 	}
-	bs, err := ioutil.ReadAll(r)
-	t.Log(string(bs))
-}
-
-func TestList(t *testing.T) {
-	api := newClient(t)
-
-	if err := api.Start(); err != nil {
-		t.Fatal(err)
-	}
-	_ = api.Stop()
+	t.Log(r.Content)
 }
 
 func TestSearch(t *testing.T) {
@@ -73,4 +61,53 @@ func TestRemove(t *testing.T) {
 
 	t.Log(api.Remove("test/nginx0.conf"))
 	t.Log(api.Remove("test"))
+}
+
+func TestAll(t *testing.T) {
+	api := newClient(t)
+	files, err := api.Search()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		t.Log(file)
+	}
+}
+
+func TestWatcher(t *testing.T) {
+	api := newClient(t)
+
+	gw := new(sync.WaitGroup)
+	gw.Add(1)
+	go func() {
+		defer gw.Done()
+		time.Sleep(time.Second)
+
+		gw.Add(1)
+		if err := api.Put("test", []byte("123")); err != nil {
+			gw.Done()
+		}
+
+		time.Sleep(time.Second)
+		gw.Add(1)
+		if err := api.Put("test", []byte("345")); err != nil {
+			gw.Done()
+		}
+
+		time.Sleep(time.Second)
+		gw.Add(1)
+		if err := api.Remove("test"); err != nil {
+			gw.Done()
+		}
+	}()
+
+	go func() {
+		events := api.StartListener()
+		for event := range events {
+			t.Log(event.String())
+			gw.Done()
+		}
+	}()
+
+	gw.Wait()
 }

@@ -6,10 +6,23 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 type aginxFile struct {
 	*client
+}
+
+func (a aginxFile) Get(relativePath string) (string, error) {
+	files, err := a.Search(relativePath)
+	if err == nil {
+		if content, has := files[relativePath]; has {
+			return content, nil
+		} else {
+			return "", os.ErrNotExist
+		}
+	}
+	return "", err
 }
 
 func (a aginxFile) New(relativePath, localFileAbsPath string) error {

@@ -2,7 +2,7 @@ package lego
 
 import (
 	"github.com/go-acme/lego/v3/certificate"
-	"github.com/ihaiker/aginx/storage"
+	"github.com/ihaiker/aginx/plugins"
 	"time"
 )
 
@@ -36,7 +36,7 @@ func (cfs *Certificate) GetStoreFile() *StoreFile {
 	}
 }
 
-func (cfs *Certificate) StoreFile(engine storage.Engine) (file *StoreFile, err error) {
+func (cfs *Certificate) StoreFile(engine plugins.StorageEngine) (file *StoreFile, err error) {
 	file = cfs.GetStoreFile()
 	if err = engine.Put(file.Certificate, []byte(cfs.Certificate)); err != nil {
 		return

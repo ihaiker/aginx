@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -9,24 +10,24 @@ import (
 	"strings"
 )
 
+func DiffWriteFile(path string, content []byte) (write bool, err error) {
+	var bs []byte
+	if bs, err = ioutil.ReadFile(path); err == nil {
+		if bytes.Equal(content, bs) {
+			return
+		}
+	}
+	err = WriteFile(path, content)
+	write = true
+	return
+}
+
 func WriteFile(path string, content []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(path, content, 0666)
-}
-
-func WriteReader(path string, reader io.Reader) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return err
-	}
-	bs, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(path, bs, 0666)
 }
 
 /**
@@ -90,4 +91,16 @@ func copyFile(src, dest string) (w int64, err error) {
 	defer func() { _ = dstFile.Close() }()
 
 	return io.Copy(dstFile, srcFile)
+}
+
+// 判断所给路径文件/文件夹是否存在
+func Exists(path string) bool {
+	_, err := os.Stat(path) //os.Stat获取文件信息
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
 }

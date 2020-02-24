@@ -6,9 +6,7 @@ import (
 	"github.com/go-acme/lego/v3/challenge"
 	"github.com/go-acme/lego/v3/challenge/http01"
 	"github.com/go-acme/lego/v3/lego"
-	"github.com/ihaiker/aginx/storage"
-	"github.com/ihaiker/aginx/util"
-	"io/ioutil"
+	"github.com/ihaiker/aginx/plugins"
 	"net"
 	"time"
 )
@@ -17,7 +15,7 @@ const certificateDir = "lego/certificates"
 
 type CertificateStorage struct {
 	data   map[string]*Certificate
-	engine storage.Engine
+	engine plugins.StorageEngine
 }
 
 func (cfs *CertificateStorage) Get(domain string) (cert *Certificate, has bool) {
@@ -84,21 +82,18 @@ func (cfs *CertificateStorage) restore(domain string) error {
 	return nil
 }
 
-func LoadCertificates(engine storage.Engine) (certificateStorage *CertificateStorage, err error) {
+func LoadCertificates(engine plugins.StorageEngine) (certificateStorage *CertificateStorage, err error) {
 	certificateStorage = &CertificateStorage{
 		data: map[string]*Certificate{}, engine: engine,
 	}
-	var readers []*util.NameReader
-	if readers, err = engine.Search(certificateDir + "/*.json"); err != nil {
+
+	var files []*plugins.ConfigurationFile
+	if files, err = engine.Search(certificateDir + "/*.json"); err != nil {
 		return
 	}
-
-	for _, reader := range readers {
-		path := reader.Name
-		keyBytes, err := ioutil.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
+	for _, file := range files {
+		path := file.Name
+		keyBytes := file.Content
 
 		cert := new(Certificate)
 		err = json.Unmarshal(keyBytes, cert)

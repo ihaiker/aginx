@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
-	"github.com/ihaiker/aginx/registry"
+	"github.com/ihaiker/aginx/plugins"
 	"strconv"
 )
 
@@ -83,21 +83,21 @@ func (self *DockerRegistor) findContainerPort(container types.ContainerJSON, por
 	return usePort, nil
 }
 
-func (self *DockerRegistor) findFromContainer(containerId string) (registry.Domains, error) {
+func (self *DockerRegistor) findFromContainer(containerId string) (plugins.Domains, error) {
 	if container, err := self.docker.ContainerInspect(context.TODO(), containerId); err != nil {
 		return nil, err
 	} else if labs := findLabels(container.Config.Labels, true); labs.Has() {
-		domains := registry.Domains{}
+		domains := plugins.Domains{}
 		for port, label := range labs {
 			usePort, err := self.findContainerPort(container, port)
 			if err != nil {
 				return nil, err
 			}
-			domain := registry.Domain{
+			domain := plugins.Domain{
 				ID: containerId, Domain: label.Domain,
 				Weight: label.Weight, AutoSSL: label.AutoSSL, Attrs: container.Config.Labels,
 			}
-			if usePort.PublishedPort != 0 {
+			if usePort.PublishedPort != 0 && self.ip != "" {
 				domain.Address = self.ip + ":" + strconv.Itoa(usePort.PublishedPort)
 			}
 

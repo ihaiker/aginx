@@ -1,9 +1,7 @@
 package zookeeper
 
 import (
-	"bytes"
 	"github.com/samuel/go-zookeeper/zk"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -24,7 +22,6 @@ func NewWatcher(keeper *zk.Conn) *Watcher {
 }
 
 func (br *Watcher) Folder(name string) {
-	logrus.WithField("engine", "zk").Debug("watch folder ", name)
 	br.watch(name, func(name string) (events <-chan zk.Event, err error) {
 		_, _, events, err = br.keeper.ChildrenW(name)
 		return
@@ -32,7 +29,6 @@ func (br *Watcher) Folder(name string) {
 }
 
 func (br *Watcher) File(name string) {
-	logrus.WithField("engine", "zk").Debug("watch file ", name)
 	br.watch(name, func(name string) (events <-chan zk.Event, err error) {
 		_, _, events, err = br.keeper.GetW(name)
 		return
@@ -48,7 +44,7 @@ func (br *Watcher) watch(name string, fn func(string) (<-chan zk.Event, error)) 
 			if err == zk.ErrNoNode {
 				return
 			} else if err != nil {
-				logrus.WithField("engine", "zk").WithField("path", name).Debug("watch error ", err)
+				logger.WithField("path", name).Debug("watch error ", err)
 				time.Sleep(time.Second)
 				continue
 			}
@@ -63,7 +59,6 @@ func (br *Watcher) watch(name string, fn func(string) (<-chan zk.Event, error)) 
 }
 
 func (br *Watcher) filter(event zk.Event) {
-	logrus.WithField("engine", "zk").WithField("event", event.Type.String()).Debug("filer ", event.Path)
 	switch event.Type {
 	case zk.EventNodeChildrenChanged:
 		childless, _, _ := br.keeper.Children(event.Path)
@@ -71,7 +66,7 @@ func (br *Watcher) filter(event zk.Event) {
 			path := event.Path + "/" + children
 			if _, has := br.watched[path]; !has {
 				data, _, _ := br.keeper.Get(path)
-				if bytes.Equal(data, zkDirData) || len(data) == 0 {
+				if isDir(data) {
 					br.Folder(path)
 				} else {
 					br.File(path)

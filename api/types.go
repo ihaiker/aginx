@@ -26,6 +26,8 @@ type AginxFile interface {
 	Remove(relativePath string) error
 
 	Search(relativePaths ...string) (map[string]string, error)
+
+	Get(relativePath string) (string, error)
 }
 
 type AginxSSL interface {
