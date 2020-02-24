@@ -1,30 +1,29 @@
 package client
 
 import (
-	. "github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
 	"github.com/xhaiker/codf"
-	"io/ioutil"
 )
 
-func Readable(store storage.Engine) (*Configuration, error) {
-	reader, err := store.File("nginx.conf")
+func Readable(store storage.Engine) (*nginx.Configuration, error) {
+	reader, err := store.Get("nginx.conf")
 	if err != nil {
 		return nil, err
 	}
 	return ReaderReadable(store, reader)
 }
 
-func ReaderReadable(store storage.Engine, reader *util.NameReader) (*Configuration, error) {
+func ReaderReadable(store storage.Engine, reader *util.NameReader) (*nginx.Configuration, error) {
 	parser := codf.NewParser()
 	if err := parser.Parse(codf.NewLexer(reader)); err != nil {
 		return nil, err
 	}
 	doc := parser.Document()
-	cfg := &Configuration{
+	cfg := &nginx.Configuration{
 		Name: reader.Name,
-		Body: make([]*Directive, 0),
+		Body: make([]*nginx.Directive, 0),
 	}
 	for _, child := range doc.Children {
 		if node, err := analysisNode(store, child); err == nil {
@@ -36,8 +35,8 @@ func ReaderReadable(store storage.Engine, reader *util.NameReader) (*Configurati
 	return cfg, nil
 }
 
-func analysisNode(store storage.Engine, child codf.Node) (directive *Directive, err error) {
-	directive = new(Directive)
+func analysisNode(store storage.Engine, child codf.Node) (directive *nginx.Directive, err error) {
+	directive = new(nginx.Directive)
 	switch child.(type) {
 	case *codf.Section:
 		s := child.(*codf.Section)
@@ -46,7 +45,7 @@ func analysisNode(store storage.Engine, child codf.Node) (directive *Directive, 
 		for i, param := range s.Parameters() {
 			directive.Args[i] = string(param.Token().Raw)
 		}
-		directive.Body = make([]*Directive, len(s.Nodes()))
+		directive.Body = make([]*nginx.Directive, len(s.Nodes()))
 		for i, n := range s.Nodes() {
 			if directive.Body[i], err = analysisNode(store, n); err != nil {
 				return
@@ -67,13 +66,13 @@ func analysisNode(store storage.Engine, child codf.Node) (directive *Directive, 
 	return
 }
 
-func includes(store storage.Engine, node *Directive) error {
+func includes(store storage.Engine, node *nginx.Directive) error {
 	files, err := store.Search(node.Args...)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
-		includeDirective := &Directive{Virtual: Include, Name: "file", Args: Queries(file.Name)}
+		includeDirective := &nginx.Directive{Virtual: nginx.Include, Name: "file", Args: Queries(file.Name)}
 		if doc, err := ReaderReadable(store, file); err != nil {
 			return err
 		} else {
@@ -84,29 +83,10 @@ func includes(store storage.Engine, node *Directive) error {
 	return nil
 }
 
-func fileContent(store storage.Engine, node *Directive) error {
-	directive := &Directive{Virtual: File, Name: "file", Args: Queries(node.Args[0])}
-	reader, err := store.File(node.Args[0])
-	if err != nil {
-		return err
-	}
-	body, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	directive.Args = []string{string(body)}
-	node.Body = append(node.Body, directive)
-	return nil
-}
-
-func virtual(store storage.Engine, directive *Directive) (err error) {
+func virtual(store storage.Engine, directive *nginx.Directive) (err error) {
 	switch directive.Name {
 	case "include":
 		if err = includes(store, directive); err != nil {
-			return
-		}
-	case "ssl_certificate", "ssl_certificate_key":
-		if err = fileContent(store, directive); err != nil {
 			return
 		}
 	}

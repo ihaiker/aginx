@@ -2,7 +2,6 @@ package file
 
 import (
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/nginx/configuration"
 	"github.com/ihaiker/aginx/util"
 	"os"
 	"path/filepath"
@@ -47,7 +46,7 @@ func (fs *fileStorage) Search(args ...string) ([]*util.NameReader, error) {
 		files, _ := filepath.Glob(pattern)
 
 		for _, f := range files {
-			if reader, err := fs.File(f); os.IsNotExist(err) {
+			if reader, err := fs.Get(f); os.IsNotExist(err) {
 				continue
 			} else if err != nil {
 				return nil, err
@@ -74,7 +73,7 @@ func (cs *fileStorage) Remove(file string) error {
 	}
 }
 
-func (fs *fileStorage) File(file string) (reader *util.NameReader, err error) {
+func (fs *fileStorage) Get(file string) (reader *util.NameReader, err error) {
 	path := fs.Abs(file)
 	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
 		return nil, os.ErrNotExist
@@ -84,10 +83,11 @@ func (fs *fileStorage) File(file string) (reader *util.NameReader, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return util.NamedReader(rd, path), nil
+	rel, _ := filepath.Rel(filepath.Dir(fs.conf), path)
+	return util.NamedReader(rd, rel), nil
 }
 
-func (fs *fileStorage) Store(file string, content []byte) error {
+func (fs *fileStorage) Put(file string, content []byte) error {
 	path := fs.Abs(file)
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -103,8 +103,4 @@ func (fs *fileStorage) Store(file string, content []byte) error {
 		_, _ = fio.Write(content)
 		return nil
 	}
-}
-
-func (fs *fileStorage) StoreConfiguration(cfg *configuration.Configuration) error {
-	return configuration.Down(filepath.Dir(fs.conf), cfg)
 }

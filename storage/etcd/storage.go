@@ -5,7 +5,6 @@ import (
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/nginx/configuration"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
@@ -112,7 +111,7 @@ func (cs *etcdV3Storage) localFile(file, content []byte) {
 		return
 	}
 
-	err := util.WriterFile(filePath, content)
+	err := util.WriteFile(filePath, content)
 	logger.WithError(err).Debug("down file ", string(file))
 }
 
@@ -168,7 +167,7 @@ func (cs *etcdV3Storage) Remove(file string) error {
 	return err
 }
 
-func (cs *etcdV3Storage) File(file string) (*util.NameReader, error) {
+func (cs *etcdV3Storage) Get(file string) (*util.NameReader, error) {
 	path := cs.folder + "/" + file
 	if response, err := cs.etcdApi.Get(cs.etcdApi.Ctx(), path); err != nil {
 		return nil, err
@@ -186,11 +185,6 @@ func (cs *etcdV3Storage) store(file string, content []byte) error {
 	return err
 }
 
-func (cs *etcdV3Storage) Store(file string, content []byte) error {
+func (cs *etcdV3Storage) Put(file string, content []byte) error {
 	return cs.store(cs.folder+"/"+file, content)
-}
-
-func (cs *etcdV3Storage) StoreConfiguration(cfg *configuration.Configuration) error {
-	logger.Debug("store configuration")
-	return configuration.DownWriter(cs.folder, cfg, cs.store)
 }

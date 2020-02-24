@@ -38,16 +38,16 @@ func (cfs *Certificate) GetStoreFile() *StoreFile {
 
 func (cfs *Certificate) StoreFile(engine storage.Engine) (file *StoreFile, err error) {
 	file = cfs.GetStoreFile()
-	if err = engine.Store(file.Certificate, []byte(cfs.Certificate)); err != nil {
+	if err = engine.Put(file.Certificate, []byte(cfs.Certificate)); err != nil {
 		return
 	}
-	if err = engine.Store(file.IssuerCertificate, []byte(cfs.IssuerCertificate)); err != nil {
+	if err = engine.Put(file.IssuerCertificate, []byte(cfs.IssuerCertificate)); err != nil {
 		return
 	}
-	if err = engine.Store(file.PrivateKey, []byte(cfs.PrivateKey)); err != nil {
+	if err = engine.Put(file.PrivateKey, []byte(cfs.PrivateKey)); err != nil {
 		return
 	}
-	if err = engine.Store(file.PEM, []byte(cfs.PEM)); err != nil {
+	if err = engine.Put(file.PEM, []byte(cfs.PEM)); err != nil {
 		return
 	}
 	return

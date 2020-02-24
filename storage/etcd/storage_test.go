@@ -24,7 +24,7 @@ func newClient(t *testing.T) *etcdV3Storage {
 
 func TestPut(t *testing.T) {
 	api := newClient(t)
-	err := api.Store("nginx.conf", []byte("etcd configuration "+time.Now().Format(time.RFC3339)))
+	err := api.Put("nginx.conf", []byte("etcd configuration "+time.Now().Format(time.RFC3339)))
 
 	if err != nil {
 		t.Fatal(err)
@@ -34,7 +34,7 @@ func TestPut(t *testing.T) {
 func TestGet(t *testing.T) {
 	api := newClient(t)
 
-	r, err := api.File("nginx.conf")
+	r, err := api.Get("nginx.conf")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestRemove(t *testing.T) {
 	api := newClient(t)
 
 	for i := 0; i < 10; i++ {
-		err := api.Store("test/nginx"+strconv.Itoa(i)+".conf", []byte("nginx configuration ."+strconv.Itoa(i)))
+		err := api.Put("test/nginx"+strconv.Itoa(i)+".conf", []byte("nginx configuration ."+strconv.Itoa(i)))
 		assert.Nil(t, err)
 	}
 

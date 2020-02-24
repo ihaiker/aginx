@@ -1,4 +1,4 @@
-package configuration
+package nginx
 
 import (
 	"github.com/go-acme/lego/v3/challenge/http01"
@@ -11,6 +11,8 @@ func TestQuery(t *testing.T) {
 	location.AddBody("add_header", "Content-Type", `"text/plain"`)
 	location.AddBody("return", "200", `"test"`)
 
+	t.Log(location)
+
 	server := &Directive{
 		Name: "server",
 		Body: []*Directive{
@@ -22,8 +24,6 @@ func TestQuery(t *testing.T) {
 		},
 	}
 
-	t.Log(location.Query())
-
-	t.Log(server.Query())
+	t.Log(server)
 
 }

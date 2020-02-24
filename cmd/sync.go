@@ -42,7 +42,7 @@ func syncupClusterConfiguration(root, appendRelativeDir string, engine storage.E
 				file = filepath.Join(appendRelativeDir, file)
 			}
 			logs.New("cluster").Info("sync file ", file)
-			return engine.Store(file, bs)
+			return engine.Put(file, bs)
 		}
 	})
 }

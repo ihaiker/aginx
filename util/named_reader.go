@@ -1,7 +1,7 @@
 package util
 
 import (
-	"fmt"
+	"bytes"
 	"io"
 	"io/ioutil"
 )
@@ -15,13 +15,13 @@ func NamedReader(rd io.Reader, name string) *NameReader {
 	return &NameReader{Reader: rd, Name: name}
 }
 
-func (nr *NameReader) String() string {
-	return fmt.Sprintf("file(%s)", nr.Name)
-}
-
-func (nr *NameReader) ToString() string {
-	bs, _ := ioutil.ReadAll(nr.Reader)
-	return string(bs)
+func (nr *NameReader) Bytes() []byte {
+	if out, match := nr.Reader.(*bytes.Buffer); match {
+		return out.Bytes()
+	} else {
+		bs, _ := ioutil.ReadAll(nr.Reader)
+		return bs
+	}
 }
 
 func MapNamedReader(list []*NameReader) map[string]*NameReader {

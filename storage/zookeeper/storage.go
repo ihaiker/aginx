@@ -3,7 +3,6 @@ package zookeeper
 import (
 	"bytes"
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/nginx/configuration"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
@@ -117,7 +116,7 @@ func (zks *zkStorage) Remove(file string) error {
 	return err
 }
 
-func (zks *zkStorage) File(file string) (*util.NameReader, error) {
+func (zks *zkStorage) Get(file string) (*util.NameReader, error) {
 	path := zks.folder + "/" + file
 	if data, _, err := zks.keeper.Get(path); err != nil {
 		return nil, err
@@ -161,19 +160,16 @@ func (zks *zkStorage) zkStore(file string, content []byte) error {
 	}
 }
 
-func (zks *zkStorage) Store(file string, content []byte) error {
+func (zks *zkStorage) Put(file string, content []byte) error {
 	path := zks.folder + "/" + file
 	return zks.zkStore(path, content)
-}
-
-func (zks *zkStorage) StoreConfiguration(cfg *configuration.Configuration) error {
-	return configuration.DownWriter(zks.folder, cfg, zks.zkStore)
 }
 
 func (zks *zkStorage) publishFileChangedEvent() {
 	logger.Info("publish: ", util.StorageFileChanged)
 	util.EBus.Publish(util.StorageFileChanged)
 }
+
 func (zks *zkStorage) watchEvent(rootDir string) {
 	for event := range zks.watcher.C {
 		logger.Debug("event ", event.Type.String(), " ", event.Path)
@@ -239,7 +235,7 @@ func (zks *zkStorage) Start() error {
 		if zkFile.Reader != nil { //file
 			filePath := rootDir + strings.Replace(zkFile.Name, zks.folder, "", 1)
 			logger.Debug("sync file ", zkFile.Name)
-			if err := util.WriterReader(filePath, zkFile); err != nil {
+			if err := util.WriteReader(filePath, zkFile); err != nil {
 				return err
 			}
 			zks.watcher.File(zkFile.Name)

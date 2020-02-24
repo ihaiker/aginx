@@ -14,7 +14,7 @@ func TestNginxFull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(doc.Directive().Json())
+	fmt.Println(doc.Directive())
 }
 
 func TestSystem(t *testing.T) {
@@ -26,5 +26,5 @@ func TestSystem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(conf.Directive().Json())
+	fmt.Println(conf.Directive())
 }

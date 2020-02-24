@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/nginx/client"
-	"github.com/ihaiker/aginx/nginx/configuration"
 	"github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/storage"
 	"github.com/ihaiker/aginx/util"
@@ -37,7 +37,7 @@ func Routers(email string, vister *daemon.Supervister, engine storage.Engine, ma
 		api, err := client.NewClient(engine)
 		util.PanicIfError(err)
 		return api
-	}, func(ctx iris.Context) []*configuration.Directive {
+	}, func(ctx iris.Context) []*nginx.Directive {
 		body, err := ctx.GetBody()
 		util.PanicIfError(err)
 		conf, err := client.ReaderReadable(engine, util.NamedReader(bytes.NewBuffer(body), ""))

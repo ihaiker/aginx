@@ -33,6 +33,9 @@ and AGINX flags --docker-host, --docker-tls-verify, --docker-cert-path, --docker
 	cmd.PersistentFlags().StringP("storage-template", "", "", `AGINX 'storage' template directory, It is used to generate NGINX configuration files.`)
 
 	cmd.PersistentFlags().StringP("ip", "", "", `IP for ports mapped to the host`)
+
+	//TODO reload 操作必须是API执行，或者给定参数，自从重载参数
+	cmd.PersistentFlags().BoolP("auto-reload", "", false, "Configuration file changes NGINX auto reload. no need to call API reload function.")
 }
 
 var RegistryCmd = &cobra.Command{

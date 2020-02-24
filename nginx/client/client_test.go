@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/kr/pretty"
 	"os"
@@ -28,7 +28,7 @@ func show(t *testing.T, query ...string) {
 		t.Fatal(err)
 	}
 	for _, server := range directives {
-		fmt.Println(server.Json())
+		fmt.Println(server)
 	}
 }
 
@@ -65,12 +65,12 @@ func TestClientStream(t *testing.T) {
 }
 
 func TestClient_Add(t *testing.T) {
-	access_log := configuration.NewDirective("access_log", "logs/domain2.access.log", "main")
-	headers := []*configuration.Directive{
+	access_log := nginx.NewDirective("access_log", "logs/domain2.access.log", "main")
+	headers := []*nginx.Directive{
 		access_log,
-		configuration.NewDirective("proxy_set_header", "Host", "$host"),
-		configuration.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
-		configuration.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
+		nginx.NewDirective("proxy_set_header", "Host", "$host"),
+		nginx.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
+		nginx.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
 	}
 
 	finder := Queries("http", "server.[server_name('domain1.com') & listen('443')]")
@@ -97,13 +97,13 @@ func TestClient_Delete(t *testing.T) {
 }
 
 func TestClientAll(t *testing.T) {
-	server := &configuration.Directive{
+	server := &nginx.Directive{
 		Name: "server",
-		Body: []*configuration.Directive{
-			configuration.NewDirective("server_name", "shui.renzhen.la"),
-			configuration.NewDirective("proxy_set_header", "Host", "$host"),
-			configuration.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
-			configuration.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
+		Body: []*nginx.Directive{
+			nginx.NewDirective("server_name", "shui.renzhen.la"),
+			nginx.NewDirective("proxy_set_header", "Host", "$host"),
+			nginx.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
+			nginx.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
 		},
 	}
 	if err := api.Add(Queries("http"), server); err != nil {
@@ -118,7 +118,7 @@ func TestClientAll(t *testing.T) {
 	shui, _ = api.Select("http", "server.server_name('shui.renzhen.la')")
 	_, _ = pretty.Println(shui)
 
-	modifyDirective := configuration.NewDirective("server_name", "who.renzhen.la")
+	modifyDirective := nginx.NewDirective("server_name", "who.renzhen.la")
 	if err := api.Modify(Queries("http", "server", "server_name('shui.renzhen.la')"), modifyDirective); err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestSelectInclude(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, server := range servers {
-		fmt.Println(server.Json())
+		fmt.Println(server)
 	}
 }
 
@@ -144,6 +144,6 @@ func TestServers(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, server := range servers {
-		fmt.Println(server.Pretty(0))
+		fmt.Println(server)
 	}
 }

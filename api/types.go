@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/ihaiker/aginx/lego"
-	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx"
 )
 
 func Queries(query ...string) []string {
@@ -35,35 +35,35 @@ type AginxSSL interface {
 
 type AginxDirective interface {
 	//查询配置
-	Select(queries ...string) ([]*configuration.Directive, error)
+	Select(queries ...string) ([]*nginx.Directive, error)
 
 	//添加配置
-	Add(queries []string, addDirectives ...*configuration.Directive) error
+	Add(queries []string, addDirectives ...*nginx.Directive) error
 
 	//删除
 	Delete(queries ...string) error
 
 	//更新配置
-	Modify(queries []string, directive *configuration.Directive) error
+	Modify(queries []string, directive *nginx.Directive) error
 
 	//查询 http.upstream，如果names参数存在将会命名在names参数中的upstream
-	HttpUpstream(names ...string) ([]*configuration.Directive, error)
+	HttpUpstream(names ...string) ([]*nginx.Directive, error)
 
 	//查询 http.server，如果names参数存在将会查找server_name在names中的server
-	HttpServer(names ...string) ([]*configuration.Directive, error)
+	HttpServer(names ...string) ([]*nginx.Directive, error)
 
 	//查询 stream.upstream，如果names参数存在将会命名在names参数中的upstream
-	StreamUpstream(names ...string) ([]*configuration.Directive, error)
+	StreamUpstream(names ...string) ([]*nginx.Directive, error)
 
 	//查询 stream.server，如果listens参数存在将会查找listen在listens中的server
-	StreamServer(listens ...string) ([]*configuration.Directive, error)
+	StreamServer(listens ...string) ([]*nginx.Directive, error)
 }
 
 type Aginx interface {
 	Auth(name, password string)
 
 	//获取全局配置
-	Configuration() (*configuration.Configuration, error)
+	Configuration() (*nginx.Configuration, error)
 
 	//nginx -s reload
 	Reload() error

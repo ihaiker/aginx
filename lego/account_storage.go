@@ -28,7 +28,7 @@ func (acs *AccountStorage) restore(email string) error {
 	if err != nil {
 		return err
 	}
-	if err := acs.engine.Store(file, bs); err != nil {
+	if err := acs.engine.Put(file, bs); err != nil {
 		return err
 	}
 	return nil

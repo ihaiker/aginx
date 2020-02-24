@@ -102,7 +102,7 @@ func (fw *FileWatcher) handlerEvent(events []watcher.Event) {
 
 			logger.Debug("write ", event.Path)
 			bs, _ := ioutil.ReadFile(event.Path)
-			if err := fw.engine.Store(clusterPath, bs); err != nil {
+			if err := fw.engine.Put(clusterPath, bs); err != nil {
 				logger.Warn("store file ", clusterPath, ", error:", err)
 			}
 

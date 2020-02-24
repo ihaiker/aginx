@@ -4,7 +4,6 @@ import (
 	"bytes"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/nginx/configuration"
 	ig "github.com/ihaiker/aginx/server/ignore"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
@@ -88,7 +87,7 @@ func (cs *consulStorage) downloadFile(watcher bool) bool {
 					err := os.MkdirAll(filePath, os.ModePerm)
 					logger.WithError(err).Debug("mkdir ", kv.Key, ", write to ", filePath)
 				} else {
-					err := util.WriterFile(filePath, kv.Value)
+					err := util.WriteFile(filePath, kv.Value)
 					logger.WithError(err).Debug("the file changed ", kv.Key, ", write to ", filePath)
 				}
 			}
@@ -165,7 +164,7 @@ func (cs *consulStorage) Search(args ...string) ([]*util.NameReader, error) {
 			name := strings.ReplaceAll(key, cs.folder+"/", "")
 			for _, arg := range args {
 				if matched, _ := filepath.Match(arg, name); matched {
-					reader, _ := cs.File(name)
+					reader, _ := cs.Get(name)
 					readers = append(readers, reader)
 				}
 			}
@@ -189,7 +188,7 @@ func (cs *consulStorage) Remove(file string) error {
 	return err
 }
 
-func (cs *consulStorage) File(file string) (*util.NameReader, error) {
+func (cs *consulStorage) Get(file string) (*util.NameReader, error) {
 	key := cs.folder + "/" + file
 	if value, _, err := cs.client.KV().Get(key, nil); err != nil {
 		return nil, err
@@ -211,10 +210,6 @@ func (cs *consulStorage) store(file string, content []byte) error {
 	return nil
 }
 
-func (cs *consulStorage) Store(file string, content []byte) error {
+func (cs *consulStorage) Put(file string, content []byte) error {
 	return cs.store(cs.folder+"/"+file, content)
-}
-
-func (cs *consulStorage) StoreConfiguration(cfg *configuration.Configuration) error {
-	return configuration.DownWriter(cs.folder, cfg, cs.store)
 }

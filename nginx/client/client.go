@@ -3,7 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx"
 	queryLexer "github.com/ihaiker/aginx/nginx/query"
 	"github.com/ihaiker/aginx/storage"
 	"os"
@@ -19,7 +19,7 @@ func Queries(query ...string) []string {
 }
 
 type Client struct {
-	doc    *configuration.Configuration
+	doc    *nginx.Configuration
 	Engine storage.Engine
 }
 
@@ -31,12 +31,12 @@ func NewClient(store storage.Engine) (*Client, error) {
 	return &Client{doc: doc, Engine: store}, nil
 }
 
-func (client *Client) find(directives []*configuration.Directive, query string) ([]*configuration.Directive, error) {
+func (client *Client) find(directives []*nginx.Directive, query string) ([]*nginx.Directive, error) {
 	expr, err := queryLexer.Parser(query)
 	if err != nil {
 		return nil, fmt.Errorf("Search condition error：[%s]", query)
 	}
-	matched := make([]*configuration.Directive, 0)
+	matched := make([]*nginx.Directive, 0)
 	for _, directive := range directives {
 		for _, body := range directive.Body {
 			if expr.Match(body) {
@@ -47,12 +47,17 @@ func (client *Client) find(directives []*configuration.Directive, query string) 
 	return matched, nil
 }
 
-func (client Client) Configuration() *configuration.Configuration {
+func (client Client) Configuration() *nginx.Configuration {
 	return client.doc
 }
 
-func (client *Client) Select(queries ...string) ([]*configuration.Directive, error) {
-	current := []*configuration.Directive{client.doc.Directive()}
+func (client Client) Store() error {
+	//TODO 这里未实现
+	return nil
+}
+
+func (client *Client) Select(queries ...string) ([]*nginx.Directive, error) {
+	current := []*nginx.Directive{client.doc.Directive()}
 	for _, query := range queries {
 		directives, err := client.find(current, query)
 		if err != nil {
@@ -66,12 +71,11 @@ func (client *Client) Select(queries ...string) ([]*configuration.Directive, err
 	return current, nil
 }
 
-func (client *Client) Add(queries []string, addDirectives ...*configuration.Directive) error {
+func (client *Client) Add(queries []string, addDirectives ...*nginx.Directive) error {
 	if directives, err := client.Select(queries...); err == ErrNotFound {
 		return err
 	} else {
 		for _, directive := range directives {
-			directive.Modify = true
 			directive.Body = append(directive.Body, addDirectives...)
 		}
 		return nil
@@ -104,7 +108,6 @@ func (client *Client) Delete(queries ...string) error {
 			}
 		}
 		if len(deleteDirectiveIdx) > 0 {
-			directive.Modify = true
 			err = nil
 		}
 
@@ -116,13 +119,12 @@ func (client *Client) Delete(queries ...string) error {
 	return err
 }
 
-func (client *Client) Modify(queries []string, directive *configuration.Directive) error {
+func (client *Client) Modify(queries []string, directive *nginx.Directive) error {
 	selectDirectives, err := client.Select(queries...)
 	if err != nil {
 		return err
 	}
 	for _, selectDirective := range selectDirectives {
-		selectDirective.Modify = true
 		selectDirective.Name = directive.Name
 		selectDirective.Args = directive.Args
 		selectDirective.Body = directive.Body

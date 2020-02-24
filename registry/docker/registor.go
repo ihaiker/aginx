@@ -12,7 +12,6 @@ import (
 )
 
 var ErrExplicitlyPort = errors.New("Port not explicitly specified")
-var ErrInvalidPort = errors.New("Invalid Port")
 
 type DockerRegistor struct {
 	docker *dockerClient.Client

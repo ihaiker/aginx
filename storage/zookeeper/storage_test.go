@@ -1,24 +1,18 @@
 package zookeeper
 
 import (
-	"github.com/ihaiker/aginx/logger"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/server/ignore"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	url2 "net/url"
-	"os"
 	"strconv"
 	"testing"
 	"time"
 )
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&logger.Formatter{
-		TimestampFormat: "2006-01-02 15:04:05.000",
-		FieldsOrder:     []string{"engine"},
-	})
-	logrus.SetOutput(os.Stdout)
+	logs.SetLevel(logrus.DebugLevel)
 }
 
 func newClient(t *testing.T) *zkStorage {
@@ -30,7 +24,7 @@ func newClient(t *testing.T) *zkStorage {
 func TestStore(t *testing.T) {
 	api := newClient(t)
 
-	err := api.Store("nginx.conf", []byte("zookeeper configuration "+time.Now().Format(time.RFC3339)))
+	err := api.Put("nginx.conf", []byte("zookeeper configuration "+time.Now().Format(time.RFC3339)))
 	assert.Nil(t, err)
 }
 
@@ -55,7 +49,7 @@ func TestRemove(t *testing.T) {
 	api := newClient(t)
 
 	for i := 0; i < 10; i++ {
-		err := api.Store("test/nginx"+strconv.Itoa(i)+".conf", []byte("nginx configuration ."+strconv.Itoa(i)))
+		err := api.Put("test/nginx"+strconv.Itoa(i)+".conf", []byte("nginx configuration ."+strconv.Itoa(i)))
 		assert.Nil(t, err)
 	}
 

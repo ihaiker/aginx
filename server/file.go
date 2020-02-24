@@ -29,7 +29,7 @@ func (as *fileController) Search(queries []string) map[string]string {
 func (as *fileController) Remove(ctx iris.Context) int {
 	file := ctx.URLParam("file")
 	if strings.HasPrefix(file, "/") {
-		panic("File path must be relative")
+		panic("Get path must be relative")
 	}
 	util.PanicMessage(as.engine.Remove(file), "remove file error")
 	return iris.StatusNoContent
@@ -46,7 +46,7 @@ func (as *fileController) New(ctx iris.Context) int {
 	_, err = io.Copy(out, file)
 	util.PanicIfError(err)
 
-	err = as.engine.Store(filePath, out.Bytes())
+	err = as.engine.Put(filePath, out.Bytes())
 	util.PanicIfError(err)
 
 	return iris.StatusNoContent

@@ -12,9 +12,7 @@ var (
 func Async(d time.Duration, fn func() error) (err error) {
 	errChan := make(chan error)
 	go func() {
-		defer func() {
-			_ = recover()
-		}()
+		defer Catch()
 		errChan <- fn()
 	}()
 

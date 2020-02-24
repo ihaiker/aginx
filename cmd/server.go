@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/nginx/client"
-	"github.com/ihaiker/aginx/nginx/configuration"
 	nginxDaemon "github.com/ihaiker/aginx/nginx/daemon"
 	"github.com/ihaiker/aginx/server"
 	ig "github.com/ihaiker/aginx/server/ignore"
@@ -47,7 +47,7 @@ func clusterConfiguration(cluster string, ignore ig.Ignore) (engine storage.Engi
 	return
 }
 
-func selectDirective(api *client.Client, domain string) (queries []string, directive *configuration.Directive) {
+func selectDirective(api *client.Client, domain string) (queries []string, directive *nginx.Directive) {
 	serverQuery := fmt.Sprintf("server.[server_name('%s') & listen('80')]", domain)
 	queries = client.Queries("http", "include", "*", serverQuery)
 	if directives, err := api.Select(queries...); err == nil {
@@ -62,8 +62,8 @@ func selectDirective(api *client.Client, domain string) (queries []string, direc
 	return
 }
 
-func apiServer(domain, address string) *configuration.Directive {
-	directive := configuration.NewDirective("server")
+func apiServer(domain, address string) *nginx.Directive {
+	directive := nginx.NewDirective("server")
 	directive.AddBody("listen", "80")
 	directive.AddBody("server_name", domain)
 
@@ -94,7 +94,7 @@ func exposeApi(cmd *cobra.Command, address string, engine storage.Engine) {
 		err = api.Add(client.Queries("http"), apiServer)
 		PanicIfError(err)
 
-		err = engine.StoreConfiguration(api.Configuration())
+		err = api.Store()
 		PanicIfError(err)
 	}
 }

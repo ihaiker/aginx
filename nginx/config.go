@@ -1,4 +1,4 @@
-package configuration
+package nginx
 
 import (
 	"bytes"
@@ -10,12 +10,10 @@ import (
 type Virtual string
 
 const (
-	File    Virtual = "file"
 	Include Virtual = "include"
 )
 
 type Directive struct {
-	Modify  bool         `json:"-"`
 	Virtual Virtual      `json:"virtual,omitempty"`
 	Name    string       `json:"name"`
 	Args    []string     `json:"args,omitempty"`
@@ -132,11 +130,15 @@ func (conf *Configuration) Directive() *Directive {
 	return (*Directive)(conf)
 }
 
-func (conf Configuration) String() string {
+func (conf Configuration) Bytes() []byte {
 	out := bytes.NewBufferString("")
 	for _, body := range conf.Body {
 		out.WriteString(body.Pretty(0))
 		out.WriteString("\n")
 	}
-	return out.String()
+	return out.Bytes()
+}
+
+func (conf Configuration) String() string {
+	return string(conf.Bytes())
 }

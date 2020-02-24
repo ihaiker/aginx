@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/kr/pretty"
 	"testing"
 )
@@ -29,7 +29,7 @@ func TestAginx_Add(t *testing.T) {
 		t.Log(err)
 	}
 	{
-		err := api.Directive().Add(Queries(), configuration.NewDirective("worker_rlimit_nofile", "8192"))
+		err := api.Directive().Add(Queries(), nginx.NewDirective("worker_rlimit_nofile", "8192"))
 		t.Log(err)
 	}
 
@@ -39,7 +39,7 @@ func TestAginx_Add(t *testing.T) {
 		t.Log(err)
 	}
 	{
-		err := api.Directive().Modify(Queries("worker_rlimit_nofile"), configuration.NewDirective("worker_rlimit_nofile", "1024"))
+		err := api.Directive().Modify(Queries("worker_rlimit_nofile"), nginx.NewDirective("worker_rlimit_nofile", "1024"))
 		t.Log(err)
 	}
 	{

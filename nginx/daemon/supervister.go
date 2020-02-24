@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"github.com/ihaiker/aginx/logs"
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/nginx/configuration"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
 	"github.com/ihaiker/aginx/util"
@@ -63,7 +64,7 @@ func (sp *Supervister) Reload() error {
 	return err
 }
 
-func (sp *Supervister) Test(cfg *configuration.Configuration) (err error) {
+func (sp *Supervister) Test(cfg *nginx.Configuration) (err error) {
 	_, conf, _ := fileStorage.GetInfo()
 
 	dir := filepath.Dir(conf)

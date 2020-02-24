@@ -11,15 +11,6 @@ type StdError struct {
 }
 
 func (std *StdError) Error() error {
-	/*lastLine := ""
-	reader := bufio.NewReader(std)
-	for {
-		line, _, err := reader.ReadLine()
-		if err == io.EOF {
-			break
-		}
-		lastLine = string(line)
-	}*/
 	return errors.New(std.String())
 }
 

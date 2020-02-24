@@ -78,7 +78,7 @@ func (cfs *CertificateStorage) restore(domain string) error {
 	if err != nil {
 		return err
 	}
-	if err := cfs.engine.Store(file, bs); err != nil {
+	if err := cfs.engine.Put(file, bs); err != nil {
 		return err
 	}
 	return nil

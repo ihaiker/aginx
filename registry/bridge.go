@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"github.com/ihaiker/aginx/api"
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/nginx/configuration"
+	"github.com/ihaiker/aginx/nginx"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -80,7 +80,7 @@ func (rb *RegistorBridge) createRegDInclude() (err error) {
 	if _, err = rb.Aginx.Directive().Select("http", "include('reg.d/*.ngx.conf')"); err != nil {
 		logger.Debug("create NGINX directive (include reg.d/*.ngx.conf)")
 		err = rb.Aginx.Directive().Add(api.Queries("http"),
-			configuration.NewDirective("include", "reg.d/*.ngx.conf"))
+			nginx.NewDirective("include", "reg.d/*.ngx.conf"))
 		if err != nil {
 			logger.Debug("create NGINX directive  (include reg.d/*.ngx.conf) error ", err)
 		}
