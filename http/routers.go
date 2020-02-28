@@ -44,7 +44,7 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 		},
 	)
 
-	fileCtrl := &fileController{engine: engine}
+	fileCtrl := &fileController{engine: engine, process: process}
 	directive := &directiveController{process: process, engine: engine}
 	ssl := &sslController{email: email, process: process, manager: manager, engine: engine, lock: new(sync.Mutex)}
 	util.SubscribeSSLExpire(ssl.Expire)

@@ -1,6 +1,15 @@
 package plugins
 
-import "bytes"
+import (
+	"bytes"
+	"net/url"
+)
+
+type StoragePluginMethod func(config *url.URL) (StorageEngine, error)
+
+const (
+	PLUGIN_INIT_METHOD_NAME = "LoadStorage" // LoadStorage(config url.URL) StorageEngine
+)
 
 type FileEventType string
 

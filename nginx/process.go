@@ -52,17 +52,17 @@ func (sp *Process) Reload() error {
 	return err
 }
 
-func (sp *Process) Test(cfg *Configuration) (err error) {
+func (sp *Process) Test(cfg *Configuration, beforeHocks ...func(testDir string) error) (err error) {
 	defer util.CatchError(err)
-
-	_, conf, _ := GetInfo()
-
-	configDir := filepath.Dir(conf)
+	configDir := MustConfigDir()
 	testDir := filepath.Dir(os.TempDir()) + "/aginx"
 	util.PanicIfError(os.RemoveAll(testDir))
 	util.PanicIfError(util.CopyDir(configDir, testDir))
-
 	util.PanicIfError(WriteTo(testDir, cfg))
+
+	for _, beforeHock := range beforeHocks {
+		util.PanicIfError(beforeHock(testDir))
+	}
 
 	util.PanicIfError(util.CmdRun("nginx", "-t" /*"-p", path,*/, "-c", filepath.Join(testDir, NGINX_CONF)))
 	return

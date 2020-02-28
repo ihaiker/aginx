@@ -25,7 +25,17 @@ func FindStorage(cluster string) (storage plugins.StorageEngine) {
 			case "zk":
 				storage, err = zookeeper.New(config)
 			default:
-				err = errors.New("not support: " + config.Scheme)
+				storagePlugins := FindPlugins("storage")
+				if storagePlugin, has := storagePlugins[config.Scheme]; has {
+					if fn, err := storagePlugin.Lookup(plugins.PLUGIN_INIT_METHOD_NAME); err == nil {
+						if storagePluginMethod, match := fn.(plugins.StoragePluginMethod); match {
+							storage, err = storagePluginMethod(config)
+						}
+					}
+				}
+				if storage == nil {
+					err = errors.New("storage plugin not support: " + cluster)
+				}
 			}
 		}
 		PanicIfError(err)
