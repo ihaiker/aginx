@@ -64,7 +64,7 @@ var ServerCmd = &cobra.Command{
 		})
 
 		email := GetString(cmd, "email", "aginx@renzhen.la")
-		address := GetString(cmd, "api", ":8011")
+		address := GetString(cmd, "api", "127.0.0.1:8011")
 		auth := GetString(cmd, "security", "")
 
 		daemon := NewDaemon()
@@ -84,7 +84,6 @@ var ServerCmd = &cobra.Command{
 		if registry := registry.FindRegistry(cmd); registry != nil {
 			daemon.Add(registry)
 		}
-
 		return daemon.Start()
 	},
 }

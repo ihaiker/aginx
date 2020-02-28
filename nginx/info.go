@@ -3,7 +3,6 @@ package nginx
 import (
 	"bufio"
 	"bytes"
-	"github.com/ihaiker/aginx/util"
 	"io"
 	"os/exec"
 	"path/filepath"
@@ -11,9 +10,11 @@ import (
 )
 
 func MustConf() string {
-	_, conf, err := GetInfo()
-	util.PanicIfError(err)
-	return conf
+	if _, conf, err := GetInfo(); err != nil {
+		return "/etc/nginx/nginx.conf"
+	} else {
+		return conf
+	}
 }
 
 func MustConfigDir() string {

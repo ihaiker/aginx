@@ -21,10 +21,10 @@ func TestEnv(t *testing.T) {
 }
 
 func TestDocker(t *testing.T) {
-	docker, err := Register("10.24.0.1")
+	docker, err := LabelsRegister("10.24.0.1")
 	PanicIfError(err)
 
-	servers := docker.Sync()
+	servers := docker.allDomains()
 
 	for s, d := range servers.Group() {
 		fmt.Println("Domain ", s)
@@ -38,8 +38,8 @@ func TestDocker(t *testing.T) {
 
 	for event := range docker.Listener() {
 		fmt.Println("============================================")
-		fmt.Println("event: ", event.EventType == plugins.Online)
-		for domain, servers := range event.Servers.Group() {
+		servers := event.(plugins.LabelsRegistryEvent)
+		for domain, servers := range servers {
 			fmt.Println("Domain: ", domain)
 			for _, server := range servers {
 				fmt.Println("\t", server.Domain, server.Address, ", Weight:", server.Weight, ", ssl:", server.AutoSSL)

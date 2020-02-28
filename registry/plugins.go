@@ -1,0 +1,42 @@
+package registry
+
+import (
+	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/registry/docker"
+	"github.com/ihaiker/aginx/util"
+	"reflect"
+)
+
+func userPlugins(registryPlugins map[string]*plugins.RegistryPlugin) {
+	userPlugins := util.FindPlugins("registry")
+	for name, userPlugin := range userPlugins {
+		if method, err := userPlugin.Lookup(plugins.PLUGIN_REGISTRY); err != nil {
+			logger.Warnf("plugin %s error: %s", name, err)
+		} else if loadRegistry, match := method.(plugins.LoadRegistry); !match {
+			register := loadRegistry()
+			registryPlugins[register.Name] = register
+		} else {
+			logger.Warnf("plugin %s error: %s not match %s",
+				name, plugins.PLUGIN_REGISTRY, reflect.TypeOf(new(plugins.LoadRegistry)).String())
+		}
+	}
+}
+
+func findPlugins() map[string]*plugins.RegistryPlugin {
+	registryPlugins := map[string]*plugins.RegistryPlugin{
+		"docker.v1.19.3": {
+			Name:             "docker",
+			LoadRegistry:     docker.LoadRegistry,
+			AddRegistryFlags: docker.AddRegistryFlags,
+			Support:          plugins.RegistrySupportAll,
+		},
+
+		//"consul": {
+		//	LoadRegistry:     nil,
+		//	AddRegistryFlags: consul.AddRegistryFlags,
+		//	Support:          plugins.RegistrySupportAll,
+		//},
+	}
+	userPlugins(registryPlugins)
+	return registryPlugins
+}

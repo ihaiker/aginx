@@ -94,7 +94,7 @@ func LoadAccounts(engine plugins.StorageEngine) (accountStorage *AccountStorage,
 			accountStorage.store[account.Email] = account
 		}
 
-		logrus.WithError(err).Info("load account file ", path)
+		logrus.WithError(err).Debug("load account file ", path)
 	}
 	return
 }

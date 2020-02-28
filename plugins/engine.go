@@ -5,10 +5,10 @@ import (
 	"net/url"
 )
 
-type StoragePluginMethod func(config *url.URL) (StorageEngine, error)
+type LoadStorage func(config *url.URL) (StorageEngine, error)
 
 const (
-	PLUGIN_INIT_METHOD_NAME = "LoadStorage" // LoadStorage(config url.URL) StorageEngine
+	PLUGIN_STORAGE = "LoadStorage"
 )
 
 type FileEventType string

@@ -75,7 +75,9 @@ func (sb *bridge) StartWatcher() {
 						}
 					}
 				}
-				if changed {
+
+				if sb.watcher && (sb.LocalStorageEngine == nil || changed) {
+					logger.Info("file changed :", event.String())
 					util.PublishFileChanged()
 				}
 			}
@@ -102,6 +104,7 @@ func (sb *bridge) StartWatcher() {
 					}
 				}
 				if changed {
+					logger.Info("file changed :", event.String())
 					util.PublishFileChanged()
 				}
 			}

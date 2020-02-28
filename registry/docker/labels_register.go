@@ -13,10 +13,10 @@ import (
 
 var ErrExplicitlyPort = errors.New("Port not explicitly specified")
 
-type DockerRegistor struct {
+type DockerLabelsRegister struct {
 	docker *dockerClient.Client
 
-	events chan plugins.RegistryDomainEvent
+	events chan interface{}
 
 	closeC chan struct{}
 
@@ -25,18 +25,22 @@ type DockerRegistor struct {
 	ip string
 }
 
-func Register(ip string) (*DockerRegistor, error) {
+func (self *DockerLabelsRegister) Support() plugins.RegistrySupport {
+	return plugins.RegistrySupportLabel
+}
+
+func LabelsRegister(ip string) (*DockerLabelsRegister, error) {
 	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv)
 	if err != nil {
 		return nil, err
 	}
-	return &DockerRegistor{
-		docker: docker, events: make(chan plugins.RegistryDomainEvent), ip: ip,
+	return &DockerLabelsRegister{
+		docker: docker, events: make(chan interface{}, 10), ip: ip,
 		closeC: make(chan struct{}), servers: map[string]map[string]plugins.Domain{},
 	}, nil
 }
 
-func (self *DockerRegistor) Sync() plugins.Domains {
+func (self *DockerLabelsRegister) allDomains() plugins.Domains {
 	logger.Debug("Search all containers and services")
 	domains := make([]plugins.Domain, 0)
 
@@ -56,8 +60,6 @@ func (self *DockerRegistor) Sync() plugins.Domains {
 						logger.Info("found service ", service.Spec.Name, " domains: ", strings.Join(ds.GetDomains(), ","))
 						self.appendDomains(ds)
 						domains = append(domains, ds...)
-					} else {
-						logger.WithError(err).Warn("ignore service ", service.Spec.Name)
 					}
 				}
 			}
@@ -74,15 +76,13 @@ func (self *DockerRegistor) Sync() plugins.Domains {
 				logger.Info("found container ", strings.Join(container.Names, ","), " domains: ", strings.Join(ds.GetDomains(), ","))
 				self.appendDomains(ds)
 				domains = append(domains, ds...)
-			} else {
-				logger.WithError(err).Warn("ignore container ", container.Names)
 			}
 		}
 	}
 	return domains
 }
 
-func (self *DockerRegistor) Get(domain string) plugins.Domains {
+func (self *DockerLabelsRegister) Get(domain string) plugins.Domains {
 	services := plugins.Domains{}
 	if ss, has := self.servers[domain]; has {
 		for _, server := range ss {
@@ -92,7 +92,7 @@ func (self *DockerRegistor) Get(domain string) plugins.Domains {
 	return services
 }
 
-func (self *DockerRegistor) appendDomains(domains plugins.Domains) {
+func (self *DockerLabelsRegister) appendDomains(domains plugins.Domains) {
 	for domain, servers := range domains.Group() {
 		for _, server := range servers {
 			if _, has := self.servers[domain]; has {
@@ -104,7 +104,7 @@ func (self *DockerRegistor) appendDomains(domains plugins.Domains) {
 	}
 }
 
-func (self *DockerRegistor) serviceEvent(event events.Message) {
+func (self *DockerLabelsRegister) serviceEvent(event events.Message) {
 	serviceName := event.Actor.Attributes["name"]
 	switch event.Action {
 	case /*"create",*/ "update":
@@ -115,68 +115,64 @@ func (self *DockerRegistor) serviceEvent(event events.Message) {
 					delete(self.servers, domain)
 				}
 				self.appendDomains(domains)
-				self.events <- plugins.RegistryDomainEvent{
-					EventType: plugins.Online, Servers: domains,
-				}
-			} else {
-				logger.Debug("ignore service ", serviceName)
+				self.events <- domains.Group()
 			}
 		}
 	case "remove":
 		{
+			labelsEvents := map[string]plugins.Domains{}
 			for domain, servicesMap := range self.servers {
 				for id, _ := range servicesMap {
 					if id == serviceName || strings.HasPrefix(id, serviceName+":") {
 						logger.Info("remove domain ", domain)
-						services := plugins.Domains{}
-						for _, s := range servicesMap {
-							services = append(services, s)
-						}
+						labelsEvents[domain] = plugins.Domains{}
 						delete(self.servers, domain)
-						self.events <- plugins.RegistryDomainEvent{
-							EventType: plugins.Offline, Servers: services,
-						}
 						break
 					}
 				}
 			}
+			self.events <- labelsEvents
 		}
 	}
 }
 
-func (self *DockerRegistor) containerEvent(event events.Message) {
-	containerName := event.Actor.Attributes["name"]
+func (self *DockerLabelsRegister) containerEvent(event events.Message) {
+	//containerName := event.Actor.Attributes["name"]
 	if event.Status == "start" {
 		if domains, err := self.findFromContainer(event.ID); err == nil && len(domains) > 0 {
 			self.appendDomains(domains)
-			self.events <- plugins.RegistryDomainEvent{
-				EventType: plugins.Online, Servers: domains,
+
+			labelsEvents := map[string]plugins.Domains{}
+			for domain, _ := range domains.Group() {
+				labelsEvents[domain] = self.Get(domain)
 			}
-		} else {
-			logger.WithError(err).Warn("ignore container: ", containerName)
+			self.events <- labelsEvents
 		}
 	} else if event.Status == "die" {
 		if labs := findLabels(event.Actor.Attributes, true); labs.Has() {
+			labelsEvents := map[string]plugins.Domains{}
 			for _, label := range labs {
 				domain := label.Domain
 				if serverMap, has := self.servers[domain]; has {
-					if server, has := serverMap[event.ID]; has {
+					if _, has := serverMap[event.ID]; has {
 						delete(self.servers[domain], event.ID)
-						self.events <- plugins.RegistryDomainEvent{
-							EventType: plugins.Offline, Servers: plugins.Domains{server},
-						}
 					}
 				}
+				labelsEvents[domain] = self.Get(domain)
 				if len(self.servers[domain]) == 0 {
 					delete(self.servers, domain)
 				}
 			}
+			self.events <- labelsEvents
 		}
 	}
 }
 
-func (self *DockerRegistor) Start() error {
+func (self *DockerLabelsRegister) Start() error {
 	logger.Info("start DOCKER registry")
+
+	self.events <- self.allDomains().Group()
+
 	eventChannel, errChannel := self.docker.Events(context.TODO(), types.EventsOptions{})
 	go func() {
 		for {
@@ -203,11 +199,11 @@ func (self *DockerRegistor) Start() error {
 	return nil
 }
 
-func (self *DockerRegistor) Stop() error {
+func (self *DockerLabelsRegister) Stop() error {
 	close(self.closeC)
 	return nil
 }
 
-func (self *DockerRegistor) Listener() <-chan plugins.RegistryDomainEvent {
+func (self *DockerLabelsRegister) Listener() <-chan interface{} {
 	return self.events
 }

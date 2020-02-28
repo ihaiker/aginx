@@ -43,7 +43,7 @@ func (up *UsePort) IsSet(portmap nat.PortMap, port int) bool {
 	return false
 }
 
-func (self *DockerRegistor) findContainerPort(container types.ContainerJSON, port int) (*UsePort, error) {
+func (self *DockerLabelsRegister) findContainerPort(container types.ContainerJSON, port int) (*UsePort, error) {
 	usePort := &UsePort{}
 	//单价欧
 	if port == 0 {
@@ -83,7 +83,7 @@ func (self *DockerRegistor) findContainerPort(container types.ContainerJSON, por
 	return usePort, nil
 }
 
-func (self *DockerRegistor) findFromContainer(containerId string) (plugins.Domains, error) {
+func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins.Domains, error) {
 	if container, err := self.docker.ContainerInspect(context.TODO(), containerId); err != nil {
 		return nil, err
 	} else if labs := findLabels(container.Config.Labels, true); labs.Has() {

@@ -13,20 +13,20 @@ import (
 	"strings"
 )
 
-func (self *DockerRegistor) firstPort(portSet nat.PortSet) int {
+func (self *DockerLabelsRegister) firstPort(portSet nat.PortSet) int {
 	for p, _ := range portSet {
 		return p.Int()
 	}
 	return 0 //ignore
 }
 
-func (self *DockerRegistor) imagePort(service swarm.Service) nat.PortSet {
+func (self *DockerLabelsRegister) imagePort(service swarm.Service) nat.PortSet {
 	imageName := service.Spec.Annotations.Labels["com.docker.stack.image"]
 	imageInpsect, _, _ := self.docker.ImageInspectWithRaw(context.TODO(), imageName)
 	return imageInpsect.Config.ExposedPorts
 }
 
-func (self *DockerRegistor) getVirtualAddress(service swarm.Service, port uint32) (address string) {
+func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32) (address string) {
 	defer util.Catch(func(err error) {
 		logger.Warn("get virtual address error: ", err)
 		pretty.Println(service.Endpoint.VirtualIPs)
@@ -37,7 +37,7 @@ func (self *DockerRegistor) getVirtualAddress(service swarm.Service, port uint32
 	return
 }
 
-func (self *DockerRegistor) getServiceTaskAddress(service swarm.Service, port uint32) map[int]string {
+func (self *DockerLabelsRegister) getServiceTaskAddress(service swarm.Service, port uint32) map[int]string {
 	serviceName := service.Spec.Name
 	tasks, _ := self.docker.TaskList(context.TODO(), types.TaskListOptions{
 		Filters: filters.NewArgs(filters.Arg("desired-state", "running"), filters.Arg("service", serviceName))})
@@ -51,7 +51,7 @@ func (self *DockerRegistor) getServiceTaskAddress(service swarm.Service, port ui
 	return addresses
 }
 
-func (self *DockerRegistor) makeDomain(service swarm.Service, lab label, address string) plugins.Domain {
+func (self *DockerLabelsRegister) makeDomain(service swarm.Service, lab label, address string) plugins.Domain {
 	domainLabel := map[string]string{}
 	for k, v := range service.Spec.TaskTemplate.ContainerSpec.Labels {
 		domainLabel[k] = v
@@ -67,7 +67,7 @@ func (self *DockerRegistor) makeDomain(service swarm.Service, lab label, address
 	return domain
 }
 
-func (self *DockerRegistor) findFromServiceById(serverId string) (plugins.Domains, error) {
+func (self *DockerLabelsRegister) findFromServiceById(serverId string) (plugins.Domains, error) {
 	if service, _, err := self.docker.ServiceInspectWithRaw(context.TODO(), serverId, types.ServiceInspectOptions{}); err != nil {
 		return nil, err
 	} else {
@@ -75,7 +75,7 @@ func (self *DockerRegistor) findFromServiceById(serverId string) (plugins.Domain
 	}
 }
 
-func (self *DockerRegistor) findFromService(service swarm.Service) (plugins.Domains, error) {
+func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugins.Domains, error) {
 	serviceName := service.Spec.Name
 	domains := plugins.Domains{}
 	labs := findLabels(service.Spec.TaskTemplate.ContainerSpec.Labels, false)

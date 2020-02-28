@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -37,11 +38,13 @@ func (self *client) response(resp *http.Response, ret interface{}) error {
 		if strings.HasPrefix(resp.Header.Get("Content-Type"), "application/json") {
 			errApi := &ApiError{}
 			if err := json.Unmarshal(bs, errApi); err == nil {
+				if errApi.Message == "file does not exist" {
+					return os.ErrNotExist
+				}
 				return errApi
 			}
 		}
 		return errors.New(string(bs))
-
 	} else {
 		return json.Unmarshal(bs, ret)
 	}

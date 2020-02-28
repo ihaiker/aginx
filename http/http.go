@@ -61,7 +61,7 @@ func (this *Http) Start() error {
 	}); err != nil && err != util.ErrTimeout {
 		return err
 	}
-	logger.Info("start at: ", this.address)
+	logger.Info("start restful api at: ", this.address)
 	return nil
 }
 

@@ -55,7 +55,7 @@ func And(aa ...nodeCheckMethod) nodeCheckMethod {
 	}
 }
 
-func (dr *DockerRegistor) getNodes(filters ...nodeCheckMethod) ([]string, error) {
+func (dr *DockerLabelsRegister) getNodes(filters ...nodeCheckMethod) ([]string, error) {
 	if nodes, err := dr.docker.NodeList(context.TODO(), types.NodeListOptions{}); err != nil {
 		return nil, err
 	} else {

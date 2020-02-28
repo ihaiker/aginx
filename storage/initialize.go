@@ -27,9 +27,9 @@ func FindStorage(cluster string) (storage plugins.StorageEngine) {
 			default:
 				storagePlugins := FindPlugins("storage")
 				if storagePlugin, has := storagePlugins[config.Scheme]; has {
-					if fn, err := storagePlugin.Lookup(plugins.PLUGIN_INIT_METHOD_NAME); err == nil {
-						if storagePluginMethod, match := fn.(plugins.StoragePluginMethod); match {
-							storage, err = storagePluginMethod(config)
+					if fn, err := storagePlugin.Lookup(plugins.PLUGIN_STORAGE); err == nil {
+						if loadStorage, match := fn.(plugins.LoadStorage); match {
+							storage, err = loadStorage(config)
 						}
 					}
 				}
