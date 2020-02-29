@@ -58,20 +58,38 @@ func FindRegistry(cmd *cobra.Command) *MultiRegister {
 		if register, err := registryPlugin.LoadRegistry(cmd); err != nil {
 			logger.Errorf("load %s registry error: %s", name, err.Error())
 		} else if register != nil {
-			logger.Info("use registry ", name)
+			logger.Info("start using registry ", name)
 			if register.Support().Support(plugins.RegistrySupportLabel) {
 
 				templateDir := util.GetString(cmd,
 					fmt.Sprintf("%s-labels-template-dir", registryPlugin.Name),
 					fmt.Sprintf("templates/%s", registryPlugin.Name))
-
+				if strings.HasPrefix(templateDir, "/") {
+					templateDir = templateDir[1:]
+				}
 				registerBridge := &bridge.LabelRegisterBridge{
-					Aginx: api, Register: register,
-					Name: registryPlugin.Name, TemplateDir: templateDir,
+					Aginx:         api,
+					Register:      register,
+					Name:          registryPlugin.Name,
+					TemplateDir:   templateDir,
+					TemplateFuncs: registryPlugin.TemplateFuns(),
 				}
 				registries.Add(registerBridge)
+
 			} else if register.Support().Support(plugins.RegistrySupportTemplate) {
-				//reg.TemplateFile = util.GetString(cmd, fmt.Sprintf("%s-template", name), fmt.Sprintf("templates/%s.tpl", name))
+
+				templateFile := util.GetString(cmd, fmt.Sprintf("%s-template", name), fmt.Sprintf("templates/%s.tpl", registryPlugin.Name))
+				if strings.HasPrefix(templateFile, "/") {
+					templateFile = templateFile[1:]
+				}
+				registerBridge := &bridge.TemplateRegisterBridge{
+					Aginx:         api,
+					Register:      register,
+					Name:          registryPlugin.Name,
+					Template:      templateFile,
+					TemplateFuncs: registryPlugin.TemplateFuns(),
+				}
+				registries.Add(registerBridge)
 			}
 		}
 	}

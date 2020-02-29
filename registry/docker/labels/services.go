@@ -1,4 +1,4 @@
-package docker
+package dockerLabels
 
 import (
 	"context"
@@ -44,9 +44,12 @@ func (self *DockerLabelsRegister) getServiceTaskAddress(service swarm.Service, p
 
 	addresses := map[int]string{}
 	for _, task := range tasks {
-		address := task.NetworksAttachments[0].Addresses[0]
-		idx := strings.Index(address, "/")
-		addresses[task.Slot] = fmt.Sprintf("%s:%d", address[0:idx], port)
+		for _, attachment := range task.NetworksAttachments {
+			for _, address := range attachment.Addresses {
+				idx := strings.Index(address, "/")
+				addresses[task.Slot] = fmt.Sprintf("%s:%d", address[0:idx], port)
+			}
+		}
 	}
 	return addresses
 }

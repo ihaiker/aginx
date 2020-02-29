@@ -16,6 +16,19 @@ func GetString(cmd *cobra.Command, key, def string) string {
 	}
 	return value
 }
+
+func GetStringArray(cmd *cobra.Command, key string, def []string) []string {
+	value, err := cmd.PersistentFlags().GetStringArray(key)
+	PanicIfError(err)
+	if len(value) == 0 {
+		value = viper.GetStringSlice(key)
+	}
+	if len(value) == 0 {
+		return def
+	}
+	return value
+}
+
 func GetBool(cmd *cobra.Command, key string) bool {
 	value, err := cmd.PersistentFlags().GetBool(key)
 	PanicIfError(err)

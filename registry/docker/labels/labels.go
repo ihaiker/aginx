@@ -1,4 +1,4 @@
-package docker
+package dockerLabels
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-var logger = logs.New("registor", "engine", "docker")
+var logger = logs.New("register", "engine", "docker.labels")
 
 var keyRegexp = regexp.MustCompile("aginx.domain(\\.(\\d+))?")
 var valueRegexp = regexp.MustCompile("([a-zA-Z0-9-_\\.]*)(,(weight=(\\d+)))?(,(internal))?(,(ssl))?(,(virtual))?(,(nodes))?")

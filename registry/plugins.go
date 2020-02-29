@@ -24,13 +24,7 @@ func userPlugins(registryPlugins map[string]*plugins.RegistryPlugin) {
 
 func findPlugins() map[string]*plugins.RegistryPlugin {
 	registryPlugins := map[string]*plugins.RegistryPlugin{
-		"docker.v1.19.3": {
-			Name:             "docker",
-			LoadRegistry:     docker.LoadRegistry,
-			AddRegistryFlags: docker.AddRegistryFlags,
-			Support:          plugins.RegistrySupportAll,
-		},
-
+		"docker.v1.19.3": docker.Plugin,
 		//"consul": {
 		//	LoadRegistry:     nil,
 		//	AddRegistryFlags: consul.AddRegistryFlags,

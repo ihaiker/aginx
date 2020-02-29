@@ -50,22 +50,24 @@ func Catch(fns ...func(error)) {
 	}
 }
 
+type PanicError error
+
 func AssertTrue(check bool, msg string) {
 	if !check {
-		panic(errors.New(msg))
+		panic(PanicError(errors.New(msg)))
 	}
 }
 
 //如果不为空，使用msg panic错误，
 func PanicMessage(err interface{}, msg string) {
 	if err != nil {
-		panic(fmt.Errorf("%s : %v", msg, err))
+		panic(PanicError(fmt.Errorf("%s : %v", msg, err)))
 	}
 }
 
 func PanicIfError(err interface{}) {
 	if err != nil {
-		panic(err)
+		panic(PanicError(fmt.Errorf("%v", err)))
 	}
 }
 

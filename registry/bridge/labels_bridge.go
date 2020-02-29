@@ -7,6 +7,7 @@ import (
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -47,13 +48,12 @@ server { {{if .AutoSSL}}
 }
 `
 
-var funcMap = template.FuncMap{}
-
 type LabelRegisterBridge struct {
 	Aginx api.Aginx
 	plugins.Register
-	Name        string
-	TemplateDir string
+	Name          string
+	TemplateDir   string
+	TemplateFuncs template.FuncMap
 }
 
 func (rb *LabelRegisterBridge) listenChange() error {
@@ -151,11 +151,11 @@ func (rb *LabelRegisterBridge) publishServer(domain string, servers plugins.Doma
 	out := bytes.NewBufferString("")
 	if t, err := template.New("").Parse(templateFile); err != nil {
 		return err
-	} else if err := t.Funcs(funcMap).Execute(out, data); err != nil {
+	} else if err := t.Funcs(rb.TemplateFuncs).Execute(out, data); err != nil {
 		return err
 	} else {
 		relPath := fmt.Sprintf("%s.d/%s.ngx.conf", rb.Name, domain)
-		return rb.Aginx.File().NewWithContent(relPath, out.Bytes())
+		return rb.Aginx.File().NewWithContent(relPath, util.CleanEmptyLine(out.Bytes()))
 	}
 }
 

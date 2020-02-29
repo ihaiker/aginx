@@ -3,6 +3,7 @@ package plugins
 import (
 	"github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
+	"text/template"
 )
 
 const (
@@ -23,6 +24,7 @@ type (
 	RegistryPlugin struct {
 		LoadRegistry     func(cmd *cobra.Command) (Register, error)
 		AddRegistryFlags func(cmd *cobra.Command)
+		TemplateFuns     func() template.FuncMap
 		Support          RegistrySupport
 		Name             string
 	}

@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
@@ -45,12 +46,26 @@ func (as *fileController) New(ctx iris.Context, client *nginx.Client) int {
 		panic("path must be relative")
 	}
 	bodys := as.readFile(ctx)
-	if filepath.Ext(filePath) == "conf" {
-		_ = client.Add(nginx.Queries("http"), nginx.NewDirective("include", filePath))
+	//如果是配置文件需要测试是否可用
+	if filepath.Ext(filePath) == ".conf" {
+		need := true
+		if includes, err := client.Select("http", "include"); err == nil {
+			for _, include := range includes {
+				if matched, _ := filepath.Match(include.Args[0], filePath); matched {
+					need = false
+				}
+			}
+		}
+		if need {
+			_ = client.Add(nginx.Queries("http"), nginx.NewDirective("include", filePath))
+		}
 		util.PanicIfError(as.process.Test(client.Configuration(), func(testDir string) error {
 			path := filepath.Join(testDir, filePath)
 			return util.WriteFile(path, bodys)
 		}))
+		if need {
+			_ = client.Delete("http", fmt.Sprintf("include('%s')", filePath))
+		}
 	}
 	util.PanicIfError(as.engine.Put(filePath, bodys))
 	util.PanicIfError(as.process.Reload())

@@ -32,7 +32,9 @@ func (this *Http) Start() error {
 					"error":   "InternalServerError",
 					"message": fmt.Sprintf("%v", err),
 				})
-				logger.Error("handler error: ", err)
+				if _, match := err.(util.PanicError); !match {
+					logger.Error("handler error: ", err)
+				}
 				ctx.StopExecution()
 			}
 		}()

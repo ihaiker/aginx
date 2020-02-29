@@ -1,10 +1,14 @@
 package docker
 
 import (
+	"errors"
 	"github.com/ihaiker/aginx/plugins"
+	dockerLabels "github.com/ihaiker/aginx/registry/docker/labels"
+	dockerTemplates "github.com/ihaiker/aginx/registry/docker/templates"
 	"github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -22,6 +26,9 @@ and AGINX flags --docker-host, --docker-tls-verify, --docker-cert-path, --docker
 		"You can use system variables DOCKER_API_VERSION or AGINX_DOCKER_API_VERSION")
 
 	cmd.PersistentFlags().BoolP("docker-template-mode", "", false, "Use template mode, You can use system variables AGINX_DOCKER_TEMPLATE_MODE")
+
+	cmd.PersistentFlags().StringArrayP("docker-filter-service", "", []string{".*"}, "Filter services that need attention, see regexp")
+	cmd.PersistentFlags().StringArrayP("docker-filter-container", "", []string{".*"}, "Filtering containers that need attention, see regexp")
 
 	cmd.PersistentFlags().StringP("ip", "", "", `IP for ports mapped to the host`)
 }
@@ -42,5 +49,29 @@ func LoadRegistry(cmd *cobra.Command) (plugins.Register, error) {
 	ip := util.GetString(cmd, "ip", "")
 	dockerEnv(cmd, "docker-host", "docker-tls-verify", "docker-cert-path")
 
-	return LabelsRegister(ip)
+	if util.GetBool(cmd, "docker-template-mode") {
+		filterServices := util.GetStringArray(cmd, "docker-filter-service", []string{".*"})
+		for _, filterService := range filterServices {
+			if _, err := regexp.Compile(filterService); err != nil {
+				return nil, errors.New("--docker-filter-service error : " + err.Error())
+			}
+		}
+		filterContainers := util.GetStringArray(cmd, "docker-filter-container", []string{".*"})
+		for _, filterContainer := range filterContainers {
+			if _, err := regexp.Compile(filterContainer); err != nil {
+				return nil, errors.New("--docker-filter-container error : " + err.Error())
+			}
+		}
+		return dockerTemplates.TemplateRegister(ip, filterServices, filterContainers)
+	}
+
+	return dockerLabels.LabelsRegister(ip)
+}
+
+var Plugin = &plugins.RegistryPlugin{
+	Name:             "docker",
+	LoadRegistry:     LoadRegistry,
+	AddRegistryFlags: AddRegistryFlags,
+	Support:          plugins.RegistrySupportAll,
+	TemplateFuns:     templateFuncs,
 }

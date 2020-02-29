@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io"
@@ -103,4 +104,19 @@ func Exists(path string) bool {
 		return false
 	}
 	return true
+}
+
+//清楚空行
+func CleanEmptyLine(content []byte) []byte {
+	reader := bufio.NewReader(bytes.NewBuffer(content))
+	out := bytes.NewBufferString("")
+	for {
+		if line, _, err := reader.ReadLine(); err == io.EOF {
+			break
+		} else if strings.TrimSpace(string(line)) != "" {
+			out.Write(line)
+			out.WriteRune('\n')
+		}
+	}
+	return out.Bytes()
 }
