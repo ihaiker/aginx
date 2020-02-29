@@ -25,7 +25,9 @@ var rootCmd = &cobra.Command{
 	Version: "" + VERSION + "",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		defer util.CatchError(err)
-		util.PanicIfError(logs.SetLogger(cmd))
+		debug := viper.GetBool("debug")
+		level := viper.GetString("level")
+		util.PanicIfError(logs.SetLogger(debug, level))
 		return
 	},
 }

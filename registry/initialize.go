@@ -8,6 +8,7 @@ import (
 	"github.com/ihaiker/aginx/registry/bridge"
 	"github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"net"
 	"strings"
 )
@@ -17,7 +18,7 @@ var logger = logs.New("registry")
 var registryPlugins = findPlugins()
 
 func RegisterFlags(cmd *cobra.Command) {
-	for name, registryPlugin := range registryPlugins {
+	for _, registryPlugin := range registryPlugins {
 		registryPlugin.AddRegistryFlags(cmd)
 		if registryPlugin.Support.Support(plugins.RegistrySupportLabel) {
 			cmd.PersistentFlags().StringP(fmt.Sprintf("%s-labels-template-dir", registryPlugin.Name), "", "",
@@ -26,7 +27,7 @@ It is used to search ${domain}.ngx.tpl or default.tpl generate NGINX configurati
 default: templates/%s`, registryPlugin.Name))
 		}
 		if registryPlugin.Support.Support(plugins.RegistrySupportTemplate) {
-			cmd.PersistentFlags().StringP(fmt.Sprintf("%s-template", name), "", "",
+			cmd.PersistentFlags().StringP(fmt.Sprintf("%s-template", registryPlugin.Name), "", "",
 				fmt.Sprintf(`Template file, It is used to generate NGINX configuration files. 
 default: templates/%s.tpl`, registryPlugin.Name))
 		}
@@ -34,7 +35,7 @@ default: templates/%s.tpl`, registryPlugin.Name))
 }
 
 func withAginx(cmd *cobra.Command) aginx.Aginx {
-	address := util.GetString(cmd, "api", "127.0.0.1:8011")
+	address := viper.GetString("api")
 	host, port, err := net.SplitHostPort(address)
 	util.PanicIfError(err)
 
@@ -42,7 +43,7 @@ func withAginx(cmd *cobra.Command) aginx.Aginx {
 		host = "127.0.0.1"
 	}
 	api := aginx.New(fmt.Sprintf("http://%s:%s", host, port))
-	if security := util.GetString(cmd, "security", ""); security != "" {
+	if security := viper.GetString("security"); security != "" {
 		userAndPwd := strings.SplitN(security, ":", 2)
 		api.Auth(userAndPwd[0], userAndPwd[1])
 	}
@@ -61,9 +62,8 @@ func FindRegistry(cmd *cobra.Command) *MultiRegister {
 			logger.Info("start using registry ", name)
 			if register.Support().Support(plugins.RegistrySupportLabel) {
 
-				templateDir := util.GetString(cmd,
-					fmt.Sprintf("%s-labels-template-dir", registryPlugin.Name),
-					fmt.Sprintf("templates/%s", registryPlugin.Name))
+				templateDir := viper.GetString(fmt.Sprintf("%s-labels-template-dir", registryPlugin.Name))
+
 				if strings.HasPrefix(templateDir, "/") {
 					templateDir = templateDir[1:]
 				}
@@ -78,7 +78,7 @@ func FindRegistry(cmd *cobra.Command) *MultiRegister {
 
 			} else if register.Support().Support(plugins.RegistrySupportTemplate) {
 
-				templateFile := util.GetString(cmd, fmt.Sprintf("%s-template", name), fmt.Sprintf("templates/%s.tpl", registryPlugin.Name))
+				templateFile := viper.GetString(fmt.Sprintf("%s-template", name))
 				if strings.HasPrefix(templateFile, "/") {
 					templateFile = templateFile[1:]
 				}

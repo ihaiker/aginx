@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/ihaiker/aginx/conf"
 	"github.com/ihaiker/aginx/http"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
@@ -38,7 +39,7 @@ func init() {
 }
 
 func exposeApi(cmd *cobra.Command, address string, engine plugins.StorageEngine) {
-	domain := GetString(cmd, "expose", "")
+	domain := viper.GetString("expose")
 	if domain == "" {
 		return
 	}
@@ -58,19 +59,24 @@ func exposeApi(cmd *cobra.Command, address string, engine plugins.StorageEngine)
 
 var ServerCmd = &cobra.Command{
 	Use: "server", Short: "the AGINX server", Long: "the api server", Example: "AGINX server",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		if configFile := viper.GetString("conf"); configFile != "" {
+			return conf.ReadConfig(configFile, cmd)
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer Catch(func(err error) {
-			fmt.Println(err)
+			fmt.Println("error ", err)
 		})
 
-		email := GetString(cmd, "email", "aginx@renzhen.la")
-		address := GetString(cmd, "api", "127.0.0.1:8011")
-		auth := GetString(cmd, "security", "")
+		email := viper.GetString("email")
+		address := viper.GetString("api")
+		auth := viper.GetString("security")
 
 		daemon := NewDaemon()
 
-		storageEngine := storage.NewBridge(GetString(cmd, "storage", ""),
-			!GetBool(cmd, "disable-watcher"), nginx.MustConf())
+		storageEngine := storage.NewBridge(viper.GetString("storage"), !viper.GetBool("disable-watcher"), nginx.MustConf())
 
 		exposeApi(cmd, address, storageEngine)
 

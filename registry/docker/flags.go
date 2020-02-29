@@ -5,8 +5,8 @@ import (
 	"github.com/ihaiker/aginx/plugins"
 	dockerLabels "github.com/ihaiker/aginx/registry/docker/labels"
 	dockerTemplates "github.com/ihaiker/aginx/registry/docker/templates"
-	"github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"os"
 	"regexp"
 	"strings"
@@ -27,15 +27,15 @@ and AGINX flags --docker-host, --docker-tls-verify, --docker-cert-path, --docker
 
 	cmd.PersistentFlags().BoolP("docker-template-mode", "", false, "Use template mode, You can use system variables AGINX_DOCKER_TEMPLATE_MODE")
 
-	cmd.PersistentFlags().StringArrayP("docker-filter-service", "", []string{".*"}, "Filter services that need attention, see regexp")
-	cmd.PersistentFlags().StringArrayP("docker-filter-container", "", []string{".*"}, "Filtering containers that need attention, see regexp")
+	cmd.PersistentFlags().StringArrayP("docker-service-filter", "", []string{".*"}, "Filter services that need attention, see regexp")
+	cmd.PersistentFlags().StringArrayP("docker-container-filter", "", []string{".*"}, "Filtering containers that need attention, see regexp")
 
 	cmd.PersistentFlags().StringP("ip", "", "", `IP for ports mapped to the host`)
 }
 
-func dockerEnv(cmd *cobra.Command, keys ...string) {
+func dockerEnv(keys ...string) {
 	for _, key := range keys {
-		if value := util.GetString(cmd, key, ""); value != "" {
+		if value := viper.GetString(key); value != "" {
 			envKey := strings.ToUpper(strings.ReplaceAll(key, "-", "_"))
 			_ = os.Setenv(envKey, value)
 		}
@@ -43,20 +43,20 @@ func dockerEnv(cmd *cobra.Command, keys ...string) {
 }
 
 func LoadRegistry(cmd *cobra.Command) (plugins.Register, error) {
-	if util.GetBool(cmd, "docker") == false {
+	if viper.GetBool("docker") == false {
 		return nil, nil
 	}
-	ip := util.GetString(cmd, "ip", "")
-	dockerEnv(cmd, "docker-host", "docker-tls-verify", "docker-cert-path")
+	ip := viper.GetString("ip")
+	dockerEnv("docker-host", "docker-tls-verify", "docker-cert-path")
 
-	if util.GetBool(cmd, "docker-template-mode") {
-		filterServices := util.GetStringArray(cmd, "docker-filter-service", []string{".*"})
+	if viper.GetBool("docker-template-mode") {
+		filterServices := viper.GetStringSlice("docker-filter-service")
 		for _, filterService := range filterServices {
 			if _, err := regexp.Compile(filterService); err != nil {
 				return nil, errors.New("--docker-filter-service error : " + err.Error())
 			}
 		}
-		filterContainers := util.GetStringArray(cmd, "docker-filter-container", []string{".*"})
+		filterContainers := viper.GetStringSlice("docker-filter-container")
 		for _, filterContainer := range filterContainers {
 			if _, err := regexp.Compile(filterContainer); err != nil {
 				return nil, errors.New("--docker-filter-container error : " + err.Error())
