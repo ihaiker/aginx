@@ -9,7 +9,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
-	"github.com/kr/pretty"
 	"strings"
 )
 
@@ -22,14 +21,13 @@ func (self *DockerLabelsRegister) firstPort(portSet nat.PortSet) int {
 
 func (self *DockerLabelsRegister) imagePort(service swarm.Service) nat.PortSet {
 	imageName := service.Spec.Annotations.Labels["com.docker.stack.image"]
-	imageInpsect, _, _ := self.docker.ImageInspectWithRaw(context.TODO(), imageName)
-	return imageInpsect.Config.ExposedPorts
+	imageInspect, _, _ := self.docker.ImageInspectWithRaw(context.TODO(), imageName)
+	return imageInspect.Config.ExposedPorts
 }
 
 func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32) (address string) {
 	defer util.Catch(func(err error) {
 		logger.Warn("get virtual address error: ", err)
-		pretty.Println(service.Endpoint.VirtualIPs)
 		address = self.ip
 	})
 	idx := strings.Index(service.Endpoint.VirtualIPs[0].Addr, "/")
@@ -54,7 +52,7 @@ func (self *DockerLabelsRegister) getServiceTaskAddress(service swarm.Service, p
 	return addresses
 }
 
-func (self *DockerLabelsRegister) makeDomain(service swarm.Service, lab label, address string) plugins.Domain {
+func (self *DockerLabelsRegister) makeDomain(service swarm.Service, lab Label, address string) plugins.Domain {
 	domainLabel := map[string]string{}
 	for k, v := range service.Spec.TaskTemplate.ContainerSpec.Labels {
 		domainLabel[k] = v
@@ -81,7 +79,7 @@ func (self *DockerLabelsRegister) findFromServiceById(serverId string) (plugins.
 func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugins.Domains, error) {
 	serviceName := service.Spec.Name
 	domains := plugins.Domains{}
-	labs := findLabels(service.Spec.TaskTemplate.ContainerSpec.Labels, false)
+	labs := FindLabels(service.Spec.TaskTemplate.ContainerSpec.Labels, false)
 
 	if labs.Has() {
 		for port, label := range labs {

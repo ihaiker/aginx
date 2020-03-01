@@ -7,9 +7,9 @@ import (
 	dockerClient "github.com/docker/docker/client"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
-	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
 var logger = logs.New("register", "engine", "docker.template")
@@ -40,14 +40,6 @@ func (self *DockerTemplateRegister) allInfo() {
 	data := new(DockerTemplateRegisterEvents)
 	data.PublishIP = self.ip
 	data.Docker = self.docker
-
-	data.Envs = map[string]string{}
-	for _, kv := range os.Environ() {
-		keyAndValue := strings.SplitAfterN(kv, "=", 2)
-		if len(keyAndValue) == 2 {
-			data.Envs[keyAndValue[0]] = keyAndValue[1]
-		}
-	}
 
 	//service
 	if info, err := self.docker.Info(context.TODO()); err != nil {
@@ -144,4 +136,8 @@ func (self *DockerTemplateRegister) Support() plugins.RegistrySupport {
 
 func (self *DockerTemplateRegister) Listener() <-chan interface{} {
 	return self.events
+}
+
+func (self *DockerTemplateRegister) TemplateFuncMap() template.FuncMap {
+	return templateFuncs(self.docker)
 }

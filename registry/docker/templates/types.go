@@ -12,5 +12,4 @@ type DockerTemplateRegisterEvents struct {
 	PublishIP  string
 	Nodes      []swarm.Node
 	Docker     *dockerClient.Client
-	Envs       map[string]string
 }

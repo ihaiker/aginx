@@ -73,5 +73,4 @@ var Plugin = &plugins.RegistryPlugin{
 	LoadRegistry:     LoadRegistry,
 	AddRegistryFlags: AddRegistryFlags,
 	Support:          plugins.RegistrySupportAll,
-	TemplateFuns:     templateFuncs,
 }

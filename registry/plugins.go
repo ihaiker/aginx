@@ -2,6 +2,7 @@ package registry
 
 import (
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/registry/consul"
 	"github.com/ihaiker/aginx/registry/docker"
 	"github.com/ihaiker/aginx/util"
 	"reflect"
@@ -25,11 +26,7 @@ func userPlugins(registryPlugins map[string]*plugins.RegistryPlugin) {
 func findPlugins() map[string]*plugins.RegistryPlugin {
 	registryPlugins := map[string]*plugins.RegistryPlugin{
 		"docker.v1.19.3": docker.Plugin,
-		//"consul": {
-		//	LoadRegistry:     nil,
-		//	AddRegistryFlags: consul.AddRegistryFlags,
-		//	Support:          plugins.RegistrySupportAll,
-		//},
+		"consul.1.7.1":   consul.Plugin,
 	}
 	userPlugins(registryPlugins)
 	return registryPlugins

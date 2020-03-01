@@ -7,6 +7,7 @@ import (
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/registry/functions"
 	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
 	"os"
@@ -17,25 +18,25 @@ import (
 var logger = logs.New("registry", "module", "bridge")
 
 const default_template = `
-upstream {{.Domain}} { {{range .Servers}}
+upstream {{ upstreamName .Data.Domain }} { {{range .Data.Servers}}
 	server {{.Address}} {{if ne .Weight 0}} weight={{.Weight}}{{end}};{{end}}
 }
-{{if .AutoSSL}}server {
+{{if .Data.AutoSSL}}server {
 	listen       80;
 	server_name {{.Domain}};	
 	return 301 https://$host$request_uri;
 }{{end}}
-server { {{if .AutoSSL}}
+server { {{if .Data.AutoSSL}}
 	listen 443 ssl;
-	ssl_certificate     {{.SSL.Certificate}};        
-	ssl_certificate_key {{.SSL.PrivateKey}};
+	ssl_certificate     {{.Data.SSL.Certificate}};        
+	ssl_certificate_key {{.Data.SSL.PrivateKey}};
 	ssl_session_timeout 5m;
 	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
 	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
 	ssl_prefer_server_ciphers on; {{else}}
 	listen 80; {{end}}
 
-    server_name {{.Domain}};
+    server_name {{.Data.Domain}};
     try_files $uri @tornado;
 
     location @tornado {
@@ -43,7 +44,7 @@ server { {{if .AutoSSL}}
         proxy_set_header        Host            $host;
         proxy_set_header        X-Real-IP       $remote_addr;
         proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_pass http://{{.Domain}};
+        proxy_pass http://{{ upstreamName .Data.Domain }};
     }
 }
 `
@@ -51,9 +52,9 @@ server { {{if .AutoSSL}}
 type LabelRegisterBridge struct {
 	Aginx api.Aginx
 	plugins.Register
-	Name          string
-	TemplateDir   string
-	TemplateFuncs template.FuncMap
+	Name                  string
+	TemplateDir           string
+	AppendTemplateFuncMap template.FuncMap
 }
 
 func (rb *LabelRegisterBridge) listenChange() error {
@@ -148,10 +149,11 @@ func (rb *LabelRegisterBridge) publishServer(domain string, servers plugins.Doma
 		}
 	}
 	templateFile := rb.findTemplate(domain)
+	funcs := functions.Merge(rb.AppendTemplateFuncMap, rb.TemplateFuncMap())
 	out := bytes.NewBufferString("")
-	if t, err := template.New("").Parse(templateFile); err != nil {
+	if t, err := template.New("").Funcs(funcs).Parse(templateFile); err != nil {
 		return err
-	} else if err := t.Funcs(rb.TemplateFuncs).Execute(out, data); err != nil {
+	} else if err := t.Execute(out, Data(rb.Aginx, data)); err != nil {
 		return err
 	} else {
 		relPath := fmt.Sprintf("%s.d/%s.ngx.conf", rb.Name, domain)

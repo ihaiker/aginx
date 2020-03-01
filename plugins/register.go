@@ -24,7 +24,6 @@ type (
 	RegistryPlugin struct {
 		LoadRegistry     func(cmd *cobra.Command) (Register, error)
 		AddRegistryFlags func(cmd *cobra.Command)
-		TemplateFuns     func() template.FuncMap
 		Support          RegistrySupport
 		Name             string
 	}
@@ -33,6 +32,7 @@ type (
 
 	Register interface {
 		util.Service
+		TemplateFuncMap() template.FuncMap
 		Support() RegistrySupport
 		Listener() <-chan interface{}
 	}

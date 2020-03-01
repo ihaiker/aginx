@@ -19,7 +19,7 @@ COPY --from=builder /build/aginx /usr/sbin/aginx
 ENV AGINX_EMAIL="aginx@renzhen.la"
 ENV AGINX_DEBUG="false" AGINX_LEVEL="info"
 
-ENV AGINX_API=":8011" AGINX_SECURITY=""
+ENV AGINX_CONF="" AGINX_API=":8011" AGINX_SECURITY=""
 
 ENV AGINX_CLUSTER=""
 ENV AGINX_EXPOSE=""

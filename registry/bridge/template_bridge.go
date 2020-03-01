@@ -6,6 +6,7 @@ import (
 	"github.com/ihaiker/aginx/api"
 	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/registry/functions"
 	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
 	"os"
@@ -15,10 +16,10 @@ import (
 
 type TemplateRegisterBridge struct {
 	plugins.Register
-	Aginx         api.Aginx
-	Name          string
-	Template      string
-	TemplateFuncs template.FuncMap
+	Aginx                 api.Aginx
+	Name                  string
+	Template              string
+	AppendTemplateFuncMap template.FuncMap
 }
 
 func (self *TemplateRegisterBridge) createRegisterInclude() (err error) {
@@ -56,11 +57,11 @@ func (self *TemplateRegisterBridge) publishEvent(data interface{}) error {
 	if templateContent == "" {
 		return fmt.Errorf("Failed to find template file: %s ", self.Template)
 	}
-
+	funcs := functions.Merge(self.AppendTemplateFuncMap, self.TemplateFuncMap())
 	out := bytes.NewBufferString(fmt.Sprintf("# generate by %s template register\n", self.Name))
-	if t, err := template.New("").Parse(templateContent); err != nil {
+	if t, err := template.New("").Funcs(funcs).Parse(templateContent); err != nil {
 		return err
-	} else if err := t.Funcs(self.TemplateFuncs).Execute(out, data); err != nil {
+	} else if err := t.Execute(out, Data(self.Aginx, data)); err != nil {
 		return err
 	} else {
 		relPath := fmt.Sprintf("register.d/%s.ngx.conf", self.Name)

@@ -1,4 +1,4 @@
-package docker
+package dockerTemplates
 
 import (
 	"context"
@@ -38,21 +38,23 @@ func serviceVirtualAddress(service swarm.Service, port int) []string {
 	return address
 }
 
-func serviceInternalAddress(docker *dockerClient.Client, service swarm.Service, port int) []string {
-	serviceName := service.Spec.Name
-	tasks, _ := docker.TaskList(context.TODO(), types.TaskListOptions{
-		Filters: filters.NewArgs(filters.Arg("desired-state", "running"), filters.Arg("service", serviceName))})
+func serviceInternalAddress(docker *dockerClient.Client) func(service swarm.Service, port int) []string {
+	return func(service swarm.Service, port int) []string {
+		serviceName := service.Spec.Name
+		tasks, _ := docker.TaskList(context.TODO(), types.TaskListOptions{
+			Filters: filters.NewArgs(filters.Arg("desired-state", "running"), filters.Arg("service", serviceName))})
 
-	addresses := make([]string, 0)
-	for _, task := range tasks {
-		for _, attachment := range task.NetworksAttachments {
-			for _, address := range attachment.Addresses {
-				idx := strings.Index(address, "/")
-				addresses = append(addresses, fmt.Sprintf("%s:%d", address[0:idx], port))
+		addresses := make([]string, 0)
+		for _, task := range tasks {
+			for _, attachment := range task.NetworksAttachments {
+				for _, address := range attachment.Addresses {
+					idx := strings.Index(address, "/")
+					addresses = append(addresses, fmt.Sprintf("%s:%d", address[0:idx], port))
+				}
 			}
 		}
+		return addresses
 	}
-	return addresses
 }
 
 func servicePublishedPort(service swarm.Service, internalPort int) int {
@@ -77,7 +79,7 @@ func containerAddress(container types.ContainerJSON, network string) string {
 	}
 }
 
-func templateFuncs() template.FuncMap {
+func templateFuncs(docker *dockerClient.Client) template.FuncMap {
 	return template.FuncMap{
 		"upstreamName": nginx.UpstreamName,
 
@@ -97,7 +99,7 @@ func templateFuncs() template.FuncMap {
 			return service.Spec.Name
 		},
 		"serviceVirtualAddress":  serviceVirtualAddress,
-		"serviceInternalAddress": serviceInternalAddress,
+		"serviceInternalAddress": serviceInternalAddress(docker),
 		"servicePublishedPort":   servicePublishedPort,
 		"serviceHasLabel":        serviceHasLabel,
 		"containerAddress":       containerAddress,

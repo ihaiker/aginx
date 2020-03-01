@@ -24,7 +24,7 @@
 
     {{else if eq $name "consul_consul-server"}}
         upstream {{ $name }} {
-        {{ range serviceInternalAddress $.Docker . 8500 }}
+        {{ range serviceInternalAddress . 8500 }}
             server {{.}};
         {{end}}
         }

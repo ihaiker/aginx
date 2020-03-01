@@ -7,10 +7,13 @@ import (
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	dockerClient "github.com/docker/docker/client"
+	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
 	"strings"
+	"text/template"
 )
 
+var logger = logs.New("register", "engine", "docker.labels")
 var ErrExplicitlyPort = errors.New("Port not explicitly specified")
 
 type DockerLabelsRegister struct {
@@ -23,6 +26,10 @@ type DockerLabelsRegister struct {
 	servers map[string] /*domain*/ map[string] /*container id or service name[1..replaced]*/ plugins.Domain
 
 	ip string
+}
+
+func (self *DockerLabelsRegister) TemplateFuncMap() template.FuncMap {
+	return template.FuncMap{}
 }
 
 func (self *DockerLabelsRegister) Support() plugins.RegistrySupport {
@@ -149,7 +156,7 @@ func (self *DockerLabelsRegister) containerEvent(event events.Message) {
 			self.events <- labelsEvents
 		}
 	} else if event.Status == "die" {
-		if labs := findLabels(event.Actor.Attributes, true); labs.Has() {
+		if labs := FindLabels(event.Actor.Attributes, true); labs.Has() {
 			labelsEvents := map[string]plugins.Domains{}
 			for _, label := range labs {
 				domain := label.Domain

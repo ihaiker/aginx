@@ -86,7 +86,7 @@ func (self *DockerLabelsRegister) findContainerPort(container types.ContainerJSO
 func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins.Domains, error) {
 	if container, err := self.docker.ContainerInspect(context.TODO(), containerId); err != nil {
 		return nil, err
-	} else if labs := findLabels(container.Config.Labels, true); labs.Has() {
+	} else if labs := FindLabels(container.Config.Labels, true); labs.Has() {
 		domains := plugins.Domains{}
 		for port, label := range labs {
 			usePort, err := self.findContainerPort(container, port)
