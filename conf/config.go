@@ -40,36 +40,63 @@ func key(pre, cur string) string {
 	}
 }
 
+func simpleServer(directive *nginx.Directive) ([]string, error) {
+	services := make([]string, 0)
+	for _, body := range directive.Body {
+		domain := body.Name
+		if len(body.Args) != 0 {
+			return nil, fmt.Errorf("%s %s", domain, strings.Join(body.Args, " "))
+		}
+		proxies := make([]string, 0)
+		for _, d := range body.Body {
+			proxies = append(proxies, d.Args[0])
+		}
+		if len(proxies) == 0 {
+			return nil, fmt.Errorf("No proxy address found：%s", domain)
+		}
+		services = append(services, fmt.Sprintf("%s=%s", domain, strings.Join(proxies, ",")))
+	}
+	return services, nil
+}
+
 func convert(cmd *cobra.Command, previousLayer string, directives []*nginx.Directive) (map[string]interface{}, error) {
 	parameters := make(map[string]interface{})
 	for _, directive := range directives {
-		key := key(previousLayer, directive.Name)
-		flag := cmd.PersistentFlags().Lookup(key)
-		if flag == nil {
-			return nil, fmt.Errorf("not flag found : %s.%s ", previousLayer, directive.Name)
-		}
-
-		if len(directive.Args) > 0 && len(directive.Body) > 0 {
-			return nil, fmt.Errorf("error at : %s.%s ", previousLayer, directive.Name)
-		} else if len(directive.Args) == 0 && len(directive.Body) == 0 {
-			parameters[key] = "true"
-		} else if len(directive.Args) > 0 {
-			valueType := strings.ToLower(flag.Value.Type())
-			if strings.HasSuffix(valueType, "array") || strings.HasSuffix(valueType, "slice") {
-				parameters[key] = directive.Args
-			} else if len(directive.Args) > 1 {
-				return nil, fmt.Errorf(`error %s.%s Parameter up to one. (%s) `,
-					previousLayer, directive.Name, strings.Join(directive.Args, " "))
-			} else {
-				parameters[key] = directive.Args[0]
-			}
-		} else {
-			parameters[key] = "true"
-			if subParams, err := convert(cmd, key, directive.Body); err != nil {
+		if directive.Name == "server" {
+			if servers, err := simpleServer(directive); err != nil {
 				return nil, err
 			} else {
-				for k, v := range subParams {
-					parameters[k] = v
+				parameters["server"] = servers
+			}
+		} else {
+			key := key(previousLayer, directive.Name)
+			flag := cmd.PersistentFlags().Lookup(key)
+			if flag == nil {
+				return nil, fmt.Errorf("not flag found : %s.%s ", previousLayer, directive.Name)
+			}
+
+			if len(directive.Args) > 0 && len(directive.Body) > 0 {
+				return nil, fmt.Errorf("error at : %s.%s ", previousLayer, directive.Name)
+			} else if len(directive.Args) == 0 && len(directive.Body) == 0 {
+				parameters[key] = "true"
+			} else if len(directive.Args) > 0 {
+				valueType := strings.ToLower(flag.Value.Type())
+				if strings.HasSuffix(valueType, "array") || strings.HasSuffix(valueType, "slice") {
+					parameters[key] = directive.Args
+				} else if len(directive.Args) > 1 {
+					return nil, fmt.Errorf(`error %s.%s Parameter up to one. (%s) `,
+						previousLayer, directive.Name, strings.Join(directive.Args, " "))
+				} else {
+					parameters[key] = directive.Args[0]
+				}
+			} else {
+				parameters[key] = "true"
+				if subParams, err := convert(cmd, key, directive.Body); err != nil {
+					return nil, err
+				} else {
+					for k, v := range subParams {
+						parameters[k] = v
+					}
 				}
 			}
 		}

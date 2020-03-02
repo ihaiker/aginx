@@ -26,14 +26,12 @@ func RegisterFlags(cmd *cobra.Command) {
 		registryPlugin.AddRegistryFlags(cmd)
 		if registryPlugin.Support.Support(plugins.RegistrySupportLabel) {
 			cmd.PersistentFlags().StringP(fmt.Sprintf("%s-labels-template-dir", name), "", fmt.Sprintf("templates/%s", name),
-				fmt.Sprintf("Template file directory (must be a relative path),\n"+
-					"It is used to search ${domain}.ngx.tpl or default.tpl generate NGINX configuration files.\n"+
-					"default: templates/%s\n", name))
+				"Template file directory (must be a relative path),\n"+
+					"It is used to search ${domain}.ngx.tpl or default.tpl generate NGINX configuration files.")
 		}
 		if registryPlugin.Support.Support(plugins.RegistrySupportTemplate) {
 			cmd.PersistentFlags().StringP(fmt.Sprintf("%s-template", name), "", fmt.Sprintf("templates/%s.tpl", name),
-				fmt.Sprintf("Template file, It is used to generate NGINX configuration files."+
-					"default: templates/%s.tpl\n", name))
+				"Template file, It is used to generate NGINX configuration files.")
 		}
 		cmd.PersistentFlags().StringP(fmt.Sprintf("%s-template-funcmap", name), "", "", "")
 	}

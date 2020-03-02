@@ -125,9 +125,17 @@ func (client *Client) Modify(queries []string, directive *Directive) error {
 	return nil
 }
 
-//添加domain对应的负载
-func (client *Client) AppendServer(domain string, address ...string) error {
-	return nil
+func (client *Client) hostsd(include string) {
+	directives, err := client.Select("http", "include")
+	exists := os.IsNotExist(err)
+	for _, directive := range directives {
+		if include == directive.Args[0] {
+			exists = true
+		}
+	}
+	if !exists {
+		util.PanicIfError(client.Add(Queries("http"), NewDirective("include", include)))
+	}
 }
 
 //设置domain对应的负载
@@ -135,10 +143,12 @@ func (client *Client) SimpleServer(domain string, address ...string) (err error)
 	defer util.Catch(func(e error) {
 		logger.WithError(err).Debug("new simple server ", domain, strings.Join(address, ","))
 	})
-	upstreamName := UpstreamName(domain)
-	upstream, server := SimpleServer(domain, address...)
 
-	_, selectServer := client.selectServer("http", domain)
+	client.hostsd("hosts.d/*.conf")
+
+	upstreamName := UpstreamName(domain)
+
+	serverQueries, selectServer := client.selectServer("http", domain)
 	if selectServer != nil {
 		if proxyPassDirectives, err := selectServer.Select("location", "proxy_pass"); err == nil {
 			proxyPassAddress := proxyPassDirectives[0].Args[0]
@@ -147,18 +157,25 @@ func (client *Client) SimpleServer(domain string, address ...string) (err error)
 			}
 		}
 	}
-	_, selectUpstream := client.selectUpStream("http", upstreamName)
+	upstreamQueries, selectUpstream := client.selectUpStream("http", upstreamName)
 
-	if selectUpstream == nil {
-		err = client.Add(Queries("http"), upstream)
-	} else {
-		selectUpstream.Body = upstream.Body
+	if selectServer != nil {
+		_ = client.Delete(serverQueries...)
+	}
+	if selectUpstream != nil {
+		_ = client.Delete(upstreamQueries...)
 	}
 
-	if selectServer == nil {
-		err = client.Add(Queries("http"), server)
+	upstream, server := SimpleServer(domain, address...)
+	files, err := client.Select("http", "include('hosts.d/*.conf')", fmt.Sprintf("file('hosts.d/%s.ngx.conf')", domain))
+
+	if os.IsNotExist(err) {
+		file := NewDirective("file", fmt.Sprintf("hosts.d/%s.ngx.conf", domain))
+		file.Virtual = Include
+		file.AddBodyDirective(upstream, server)
+		err = client.Add(Queries("http", "include('hosts.d/*.conf')"), file)
 	} else {
-		selectServer.Body = server.Body
+		files[0].Body = append(files[0].Body, upstream, server)
 	}
 	return
 }

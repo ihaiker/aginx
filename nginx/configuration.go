@@ -57,11 +57,11 @@ func (d *Directive) AddBody(name string, args ...string) *Directive {
 	return body
 }
 
-func (d *Directive) AddBodyDirective(directive *Directive) {
+func (d *Directive) AddBodyDirective(directive ...*Directive) {
 	if d.Body == nil {
 		d.Body = make([]*Directive, 0)
 	}
-	d.Body = append(d.Body, directive)
+	d.Body = append(d.Body, directive...)
 }
 
 func (d *Directive) Pretty(prefix int) string {

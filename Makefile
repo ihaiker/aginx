@@ -12,9 +12,6 @@ param=-X main.VERSION=${Version} -X main.GITLOG_VERSION=${GitCommit} -X 'main.BU
 build:
 	go build -ldflags "${debug} ${param}" -o ${binout}
 
-release:
-	make -C . -e P=release
-
 docker:
 	docker build --build-arg LDFLAGS="${debug} ${param}" -t xhaiker/aginx:${Version} .
 

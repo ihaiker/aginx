@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"net"
+	"strings"
 )
 
 var logger = logs.New("cmd")
@@ -30,6 +31,9 @@ func AddServerFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().BoolP("disable-watcher", "", false, `Listen to local configuration file changes and automatically sync to storage.
 If you use '--storage' to store the NGINX configuration file, it will be synchronized to the local configuration at startup.`)
 
+	cmd.PersistentFlags().StringArrayP("server", "", []string{}, "Adding a simple service proxy.\n"+
+		"example: --server 'a1.aginx.io=172.0.0.1:8080' --server 'a2.aginx.io=172.0.0.1:8083,127.0.0.1:8084'")
+
 	AddRegistryFlag(cmd)
 }
 
@@ -38,7 +42,7 @@ func init() {
 	_ = viper.BindPFlags(ServerCmd.PersistentFlags())
 }
 
-func exposeApi(cmd *cobra.Command, address string, engine plugins.StorageEngine) {
+func exposeApi(address string, engine plugins.StorageEngine) {
 	domain := viper.GetString("expose")
 	if domain == "" {
 		return
@@ -55,6 +59,20 @@ func exposeApi(cmd *cobra.Command, address string, engine plugins.StorageEngine)
 	err = api.SimpleServer(domain, apiAddress)
 	PanicIfError(err)
 	PanicIfError(api.Store())
+}
+
+func simpleServer(engine plugins.StorageEngine) {
+	services := viper.GetStringSlice("server")
+	api := nginx.MustClient(engine)
+	for _, server := range services {
+		kva := strings.SplitN(server, "=", 2)
+		domain := kva[0]
+		proxies := strings.Split(kva[1], ",")
+		PanicIfError(api.SimpleServer(domain, proxies...))
+	}
+	if len(services) > 0 {
+		PanicIfError(api.Store())
+	}
 }
 
 var ServerCmd = &cobra.Command{
@@ -76,9 +94,11 @@ var ServerCmd = &cobra.Command{
 
 		daemon := NewDaemon()
 
-		storageEngine := storage.NewBridge(viper.GetString("storage"), !viper.GetBool("disable-watcher"), nginx.MustConf())
+		storageEngine := storage.NewBridge(viper.GetString("storage"),
+			!viper.GetBool("disable-watcher"), nginx.MustConf())
 
-		exposeApi(cmd, address, storageEngine)
+		exposeApi(address, storageEngine)
+		simpleServer(storageEngine)
 
 		sslManager, err := lego.NewManager(storageEngine)
 		PanicIfError(err)
