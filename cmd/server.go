@@ -61,8 +61,8 @@ func exposeApi(address string, engine plugins.StorageEngine) {
 	PanicIfError(api.Store())
 }
 
-func simpleServer(engine plugins.StorageEngine) {
-	services := viper.GetStringSlice("server")
+func simpleServer(cmd *cobra.Command, engine plugins.StorageEngine) {
+	services := GetStringArray(cmd, "server")
 	api := nginx.MustClient(engine)
 	for _, server := range services {
 		kva := strings.SplitN(server, "=", 2)
@@ -98,7 +98,7 @@ var ServerCmd = &cobra.Command{
 			!viper.GetBool("disable-watcher"), nginx.MustConf())
 
 		exposeApi(address, storageEngine)
-		simpleServer(storageEngine)
+		simpleServer(cmd, storageEngine)
 
 		sslManager, err := lego.NewManager(storageEngine)
 		PanicIfError(err)

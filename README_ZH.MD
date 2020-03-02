@@ -2,57 +2,37 @@
 
 为 [NGINX][NGINX] 添加管理API的服务
 
-## 简介
 
-在项目中
+## 支持特征 
 
-## 安装 
+- [X] 提供 restful api 管理 NGINX。
+- [X] 体用SDK管理NGINX
+- [X] 获取免费ssl证书和配置
+- [X] 使用`consul k/v`存储 NGINX 配置文件，多NGINX可以统一配置和管理。
+- [X] 使用`etcd k/v`存储 NGINX 配置文件，多NGINX可以统一配置和管理。
+- [X] 使用`zookeeper`存储 NGINX 配置文件，多NGINX可以统一配置和管理。
+- [X] 发布 `docker` 服务到 nginx 配置。
+- [X] 发布 `consul` 服务到 nginx 配置。
 
-### 源码安装
-### 二进制安装
-### Docker 安装
 
-下载
+## 安装
 
-## Features 功能列表
+[安装文档](./docs/INSTALL.MD)
 
-[X] restful api for nginx.
-[X] cluster config use consul key/value.
-[X] cluster config use etcd key/value.
-[X] cluster config use zookeeper.
+## 使用
 
-## 命令介绍
+查阅：[使用文档](./docs/USAGE.MD)
 
-```shell script
-api for nginx. 
-Build: 2020-02-13 16:20:41, Go: go1.13.7, Commit: e427d7ca051f88719acbeaff982344a26a1e4602
+## 贡献
 
-Usage:
-  aginx [flags]
-  aginx [command]
+- 如果遇到错误，可以将其直接提交给dev分支。
+- 如果遇到问题，可以通过问题反馈。
+- 该项目正在开发中，仍有很大的改进空间。如果您可以贡献代码，请向PR分支提交PR。
+- 如果有关于新功能的反馈，您可以通过问题或qq组、dingtalk组反馈。
 
-Available Commands:
-  cluster     Sync configuration files from nginx to cluster storage
-  help        Help about any command
-  server      the aginx server
+## 技术支持群
 
-Flags:
-  -a, --api string        restful api port. (default :8081)
-  -c, --cluster string    cluster config
-                          for example. 
-                                consul://127.0.0.1:8500/aginx[?token=authtoken]   config from consul.  
-                                zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
-                                etcd://127.0.0.1:1234/aginx[?user=&password]      config from etcd.
-                          
-  -d, --debug             debug mode
-  -e, --expose string     expose api use domain
-  -h, --help              help for aginx
-  -l, --level string      log level (default "info")
-  -s, --security string   base auth for restful api, example: user:passwd
-      --version           version for aginx
-
-```
+![dingtalk](./docs/dingtalk2.png)
+![qq](./docs/qq1.png)
 
 [NGINX]: http://nginx.org
-[DEMO]: https://www.airpair.com/scalable-architecture-with-docker-consul-and-nginx
-[DOWNLOAD]: https://api.github.com/repos/ihaiker/aginx/releases/latest

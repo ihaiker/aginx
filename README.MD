@@ -1,58 +1,38 @@
 # Aginx 
 
-Add management API service for [NGINX][NGINX]
+Add management API service for [nginx][NGINX]
 
-## Summary
 
-在项目中
+## Feature
 
-## 安装 
+- [X] Support restful api for aginx to manager nginx.
+- [X] SDK for aginx
+- [X] Obtain a free SSL certificate and configure it.
+- [X] Configure nginx with consul k/v.
+- [X] Configure nginx with etcd k/v.
+- [X] Configure nginx with zookeeper.
+- [X] Publish `docker` service to NGINX configuration.
+- [X] Publish `consul` service to NGINX configuration.
 
-### 源码安装
-### 二进制安装
-### Docker 安装
 
-下载
+## Installation
 
-## Features 功能列表  
+[docs/INSTALL.MD](./docs/INSTALL.MD)
 
-[X] restful api for nginx.
-[X] cluster config use consul key/value.
-[X] cluster config use etcd key/value.
-[X] cluster config use zookeeper.
+## Usage
 
-## 命令介绍
+You can consult the usage documentation。[usage](./docs/USAGE.MD)
 
-```shell script
-api for nginx. 
-Build: 2020-02-13 16:20:41, Go: go1.13.7, Commit: e427d7ca051f88719acbeaff982344a26a1e4602
+## Contribution
 
-Usage:
-  aginx [flags]
-  aginx [command]
+- If you encounter a bug, you can submit it to the dev branch directly.
+- If you encounter a problem, you can feedback through the issue.
+- The project is under development, and there is still a lot of room for improvement. If you can contribute code, please submit PR to the dev branch.
+- If there is feedback on new features, you can feedback via issues or qq group , dingtalk group.
 
-Available Commands:
-  cluster     Sync configuration files from nginx to cluster storage
-  help        Help about any command
-  server      the aginx server
+## Technical support
 
-Flags:
-  -a, --api string        restful api port. (default :8081)
-  -c, --cluster string    cluster config
-                          for example. 
-                                consul://127.0.0.1:8500/aginx[?token=authtoken]   config from consul.  
-                                zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
-                                etcd://127.0.0.1:1234/aginx[?user=&password]      config from etcd.
-                          
-  -d, --debug             debug mode
-  -e, --expose string     expose api use domain
-  -h, --help              help for aginx
-  -l, --level string      log level (default "info")
-  -s, --security string   base auth for restful api, example: user:passwd
-      --version           version for aginx
-
-```
+![dingtalk](./docs/dingtalk2.png)
+![qq](./docs/qq1.png)
 
 [NGINX]: http://nginx.org
-[DEMO]: https://www.airpair.com/scalable-architecture-with-docker-consul-and-nginx 
-[DOWNLOAD]: https://api.github.com/repos/ihaiker/aginx/releases/latest
