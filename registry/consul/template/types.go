@@ -6,6 +6,6 @@ import (
 
 type ConsulTemplateEvent struct {
 	Services map[string][]*consulApi.ServiceEntry
-	Keys     map[string]consulApi.KVPair
+	Keys     map[string]*consulApi.KVPair
 	Consul   *consulApi.Client
 }

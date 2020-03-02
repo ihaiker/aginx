@@ -1,8 +1,8 @@
 package consulTemplate
 
 import (
+	"fmt"
 	consulApi "github.com/hashicorp/consul/api"
-	"github.com/kr/pretty"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ func TestNewLabelRegister(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	reg := NewTemplateRegister(consul)
+	reg := NewTemplateRegister(consul, []string{".*"})
 	if err = reg.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +22,15 @@ func TestNewLabelRegister(t *testing.T) {
 		select {
 		case event, has := <-events:
 			if has {
-				pretty.Println(event)
+				val := event.(*ConsulTemplateEvent)
+				for name, entries := range val.Services {
+					fmt.Print(name)
+					fmt.Print(" (")
+					for _, entry := range entries {
+						fmt.Print(" ", entry.Service.ID)
+					}
+					fmt.Println(" )")
+				}
 			}
 		}
 	}

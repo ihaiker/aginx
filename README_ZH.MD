@@ -1,8 +1,8 @@
 # Aginx 
 
-Add management API service for [NGINX][NGINX]
+为 [NGINX][NGINX] 添加管理API的服务
 
-## Summary
+## 简介
 
 在项目中
 
@@ -14,7 +14,7 @@ Add management API service for [NGINX][NGINX]
 
 下载
 
-## Features 功能列表  
+## Features 功能列表
 
 [X] restful api for nginx.
 [X] cluster config use consul key/value.
@@ -54,5 +54,5 @@ Flags:
 ```
 
 [NGINX]: http://nginx.org
-[DEMO]: https://www.airpair.com/scalable-architecture-with-docker-consul-and-nginx 
+[DEMO]: https://www.airpair.com/scalable-architecture-with-docker-consul-and-nginx
 [DOWNLOAD]: https://api.github.com/repos/ihaiker/aginx/releases/latest

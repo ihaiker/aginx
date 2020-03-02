@@ -30,7 +30,7 @@ and AGINX flags --docker-host, --docker-tls-verify, --docker-cert-path, --docker
 	cmd.PersistentFlags().StringArrayP("docker-service-filter", "", []string{".*"}, "Filter services that need attention, see regexp")
 	cmd.PersistentFlags().StringArrayP("docker-container-filter", "", []string{".*"}, "Filtering containers that need attention, see regexp")
 
-	cmd.PersistentFlags().StringP("ip", "", "", `IP for ports mapped to the host`)
+	cmd.PersistentFlags().StringP("docker-ip", "", "", `IP for ports mapped to the host`)
 }
 
 func dockerEnv(keys ...string) {
@@ -46,20 +46,21 @@ func LoadRegistry(cmd *cobra.Command) (plugins.Register, error) {
 	if viper.GetBool("docker") == false {
 		return nil, nil
 	}
-	ip := viper.GetString("ip")
+
+	ip := viper.GetString("docker-ip")
 	dockerEnv("docker-host", "docker-tls-verify", "docker-cert-path")
 
 	if viper.GetBool("docker-template-mode") {
-		filterServices := viper.GetStringSlice("docker-filter-service")
+		filterServices := viper.GetStringSlice("docker-service-filter")
 		for _, filterService := range filterServices {
 			if _, err := regexp.Compile(filterService); err != nil {
-				return nil, errors.New("--docker-filter-service error : " + err.Error())
+				return nil, errors.New("--docker-service-filter error : " + err.Error())
 			}
 		}
-		filterContainers := viper.GetStringSlice("docker-filter-container")
+		filterContainers := viper.GetStringSlice("docker-container-filter")
 		for _, filterContainer := range filterContainers {
 			if _, err := regexp.Compile(filterContainer); err != nil {
-				return nil, errors.New("--docker-filter-container error : " + err.Error())
+				return nil, errors.New("--docker-container-filter error : " + err.Error())
 			}
 		}
 		return dockerTemplates.TemplateRegister(ip, filterServices, filterContainers)

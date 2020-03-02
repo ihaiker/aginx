@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"errors"
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/ihaiker/aginx/plugins"
 	consulLabels "github.com/ihaiker/aginx/registry/consul/labels"
@@ -8,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -65,13 +67,20 @@ func LoadRegistry(cmd *cobra.Command) (plugins.Register, error) {
 		"consul-http-auth", "consul-http-ssl", "consul-cacert", "consul-capath", "consul-client-cert", "consul-client-key",
 		"consul-tls-server-name", "consul-http-ssl-verify")
 
+	filters := viper.GetStringSlice("consul-filter")
+	for _, filter := range filters {
+		if _, err := regexp.Compile(filter); err != nil {
+			return nil, errors.New("--consul-filter error : " + err.Error())
+		}
+	}
+
 	config := consulApi.DefaultConfig()
 	config.Datacenter = viper.GetString("consul-datacenter")
 
 	if client, err := consulApi.NewClient(config); err != nil {
 		return nil, err
 	} else if viper.GetBool("consul-template-mode") {
-		return consulTemplate.NewTemplateRegister(client), nil
+		return consulTemplate.NewTemplateRegister(client, filters), nil
 	} else {
 		return consulLabels.NewLabelRegister(client), nil
 	}
