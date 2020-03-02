@@ -1,13 +1,11 @@
 FROM golang:1.13.6-alpine3.11 as builder
 
 ADD . /build
-
-ARG LDFLAGS=""
-
 ENV GOPROXY="https://goproxy.io"
 ENV GO111MODULE="on"
+ARG LDFLAGS=""
 
-WORKDIR /build
+RUN apk add --no-cache make build-base
 RUN go build -ldflags "${LDFLAGS}" -o aginx aginx.go
 
 
