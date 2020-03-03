@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 type client struct {
@@ -47,6 +48,12 @@ func (self *client) response(resp *http.Response, ret interface{}) error {
 		return errors.New(string(bs))
 	} else {
 		return json.Unmarshal(bs, ret)
+	}
+}
+
+func (self *client) timeout(timeout time.Duration) func(r *http.Request) {
+	return func(r *http.Request) {
+		self.httpClient.Timeout = timeout
 	}
 }
 

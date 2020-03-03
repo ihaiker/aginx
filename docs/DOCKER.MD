@@ -78,7 +78,7 @@ upstream {{ upstreamName .Data.Domain }} { {{range .Data.Servers}}
 }
 {{if .Data.AutoSSL}}server {
 	listen       80;
-	server_name {{.Domain}};	
+	server_name {{.Data.Domain}};	
 	return 301 https://$host$request_uri;
 }{{end}}
 server { {{if .Data.AutoSSL}}
