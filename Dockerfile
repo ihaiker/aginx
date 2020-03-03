@@ -5,6 +5,8 @@ ENV GOPROXY="https://goproxy.io"
 ENV GO111MODULE="on"
 ARG LDFLAGS=""
 
+WORKDIR /build
+
 RUN apk add --no-cache make build-base
 RUN go build -ldflags "${LDFLAGS}" -o aginx aginx.go
 
