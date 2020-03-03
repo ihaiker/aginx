@@ -101,6 +101,10 @@ func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins
 				domain.Address = self.ip + ":" + strconv.Itoa(usePort.PublishedPort)
 			}
 
+			if container.HostConfig.NetworkMode.IsHost() {
+				domain.Address = self.ip + ":" + strconv.Itoa(usePort.InternalPort)
+			}
+
 			if label.Internal || domain.Address == "" {
 				nm := container.HostConfig.NetworkMode
 				if nm != "bridge" && nm != "default" && nm != "host" {

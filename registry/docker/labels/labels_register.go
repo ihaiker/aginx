@@ -127,7 +127,7 @@ func (self *DockerLabelsRegister) serviceEvent(event events.Message) {
 		}
 	case "remove":
 		{
-			labelsEvents := map[string]plugins.Domains{}
+			labelsEvents := plugins.LabelsRegistryEvent(map[string]plugins.Domains{})
 			for domain, servicesMap := range self.servers {
 				for id, _ := range servicesMap {
 					if id == serviceName || strings.HasPrefix(id, serviceName+":") {
@@ -149,7 +149,7 @@ func (self *DockerLabelsRegister) containerEvent(event events.Message) {
 		if domains, err := self.findFromContainer(event.ID); err == nil && len(domains) > 0 {
 			self.appendDomains(domains)
 
-			labelsEvents := map[string]plugins.Domains{}
+			labelsEvents := plugins.LabelsRegistryEvent(map[string]plugins.Domains{})
 			for domain, _ := range domains.Group() {
 				labelsEvents[domain] = self.Get(domain)
 			}
@@ -157,7 +157,7 @@ func (self *DockerLabelsRegister) containerEvent(event events.Message) {
 		}
 	} else if event.Status == "die" {
 		if labs := FindLabels(event.Actor.Attributes, true); labs.Has() {
-			labelsEvents := map[string]plugins.Domains{}
+			labelsEvents := plugins.LabelsRegistryEvent(map[string]plugins.Domains{})
 			for _, label := range labs {
 				domain := label.Domain
 				if serverMap, has := self.servers[domain]; has {
