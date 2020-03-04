@@ -47,14 +47,23 @@ func simpleServer(directive *nginx.Directive) ([]string, error) {
 		if len(body.Args) != 0 {
 			return nil, fmt.Errorf("%s %s", domain, strings.Join(body.Args, " "))
 		}
+		ssl := false
 		proxies := make([]string, 0)
 		for _, d := range body.Body {
-			proxies = append(proxies, d.Args[0])
+			if d.Name == "ssl" {
+				ssl = true
+			} else if d.Name == "server" {
+				proxies = append(proxies, d.Args...)
+			}
 		}
 		if len(proxies) == 0 {
 			return nil, fmt.Errorf("No proxy address found：%s", domain)
 		}
-		services = append(services, fmt.Sprintf("%s=%s", domain, strings.Join(proxies, ",")))
+		if ssl {
+			services = append(services, fmt.Sprintf("%s=ssl,%s", domain, strings.Join(proxies, ",")))
+		} else {
+			services = append(services, fmt.Sprintf("%s=%s", domain, strings.Join(proxies, ",")))
+		}
 	}
 	return services, nil
 }

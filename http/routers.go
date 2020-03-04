@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
@@ -11,7 +12,6 @@ import (
 	"github.com/kataras/iris/v12/hero"
 	"github.com/kataras/iris/v12/middleware/basicauth"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -33,7 +33,7 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 			return ctx.Request().URL.Query()["q"]
 		},
 		func(ctx iris.Context) *nginx.Client {
-			return nginx.MustClient(engine)
+			return nginx.MustClient(email, engine, manager, process)
 		},
 		func(ctx iris.Context) []*nginx.Directive {
 			body, err := ctx.GetBody()
@@ -45,9 +45,13 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 	)
 
 	fileCtrl := &fileController{engine: engine, process: process}
-	directive := &directiveController{process: process, engine: engine}
-	ssl := &sslController{email: email, process: process, manager: manager, engine: engine, lock: new(sync.Mutex)}
-	util.SubscribeSSLExpire(ssl.Expire)
+	directive := &directiveController{process: process}
+	ssl := &sslController{email: email}
+	simpleCtl := &simpleController{}
+
+	manager.Expire(func(domain string) {
+		ssl.Renew(nginx.MustClient(email, engine, manager, process), domain)
+	})
 
 	return func(app *iris.Application) {
 		api := app.Party("/api", handlers...)
@@ -58,16 +62,19 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 			api.Post("", h.Handler(directive.modifyDirective))
 		}
 
-		for _, f := range []string{"http", "stream"} {
-			extendApi := app.Party("/"+f, handlers...)
-			{
-				for _, s := range []string{"server", "upstream"} {
-					extendApi.Get("/"+s, h.Handler(directive.selectDirective(
-						f+","+s,
-						f+",include,*,"+s,
-					)))
+		simple := app.Party("/simple", handlers...)
+		{
+			for _, directiveNameTop := range []string{"http", "stream"} {
+				for _, directiveNameSub := range []string{"server", "upstream"} {
+					simple.Get(fmt.Sprintf("/%s/%s", directiveNameTop, directiveNameSub),
+						h.Handler(simpleCtl.selectDirective(
+							[]string{directiveNameTop, directiveNameSub},
+							[]string{directiveNameTop, "include", "*", directiveNameSub},
+						)),
+					)
 				}
 			}
+			simple.Put("/server", h.Handler(simpleCtl.newSimpleServer))
 		}
 
 		limit := iris.LimitRequestBodySize(1024 * 1024 * 10)

@@ -27,29 +27,27 @@ func NewBridge(cluster string, watcher bool, conf string) *bridge {
 		configDir:     filepath.Dir(conf),
 		closeC:        make(chan struct{}),
 	}
-	if b.StorageEngine.IsCluster() {
-		b.LocalStorageEngine = file.New(conf)
-	}
-	b.Initalize()
+	b.initalize(conf)
 	return b
 }
 
 //更新配置文件，如果是非本地存储调用才有效果
-func (sb *bridge) Initalize() {
+func (sb *bridge) initalize(conf string) {
 	if sb.IsCluster() {
+		sb.LocalStorageEngine = file.New(conf)
 		util.PanicIfError(Sync(sb.StorageEngine, sb.LocalStorageEngine))
 	}
-	sb.clusterWatcher = sb.StorageEngine.StartListener()
+}
 
+func (sb *bridge) StartWatcher() {
+
+	sb.clusterWatcher = sb.StorageEngine.StartListener()
 	if sb.watcher && sb.LocalStorageEngine != nil {
 		sb.localWatcher = sb.LocalStorageEngine.StartListener()
 	} else {
 		sb.localWatcher = make(chan plugins.FileEvent)
 	}
-	go sb.StartWatcher()
-}
 
-func (sb *bridge) StartWatcher() {
 	for {
 		select {
 		case <-sb.closeC:
@@ -113,6 +111,7 @@ func (sb *bridge) StartWatcher() {
 }
 
 func (sb *bridge) Start() error {
+	go sb.StartWatcher()
 	return util.StartService(sb.StorageEngine)
 }
 

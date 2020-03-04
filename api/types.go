@@ -47,6 +47,9 @@ type AginxDirective interface {
 
 	//更新配置
 	Modify(queries []string, directive *nginx.Directive) error
+}
+
+type AginxSimple interface {
 
 	//查询 http.upstream，如果names参数存在将会命名在names参数中的upstream
 	HttpUpstream(names ...string) ([]*nginx.Directive, error)
@@ -59,6 +62,9 @@ type AginxDirective interface {
 
 	//查询 stream.server，如果listens参数存在将会查找listen在listens中的server
 	StreamServer(listens ...string) ([]*nginx.Directive, error)
+
+	//创建一个简单代理
+	SimpleServer(domain string, ssl bool, addresses []string) error
 }
 
 type Aginx interface {
@@ -75,4 +81,6 @@ type Aginx interface {
 	Directive() AginxDirective
 
 	SSL() AginxSSL
+
+	Simple() AginxSimple
 }
