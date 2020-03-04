@@ -3,6 +3,7 @@ package nginx
 import (
 	"bytes"
 	"fmt"
+	"github.com/ihaiker/aginx/util"
 	"strings"
 )
 
@@ -119,4 +120,10 @@ func (d *Directive) Select(queries ...string) ([]*Directive, error) {
 		current = directives
 	}
 	return current, nil
+}
+
+func (d *Directive) MustSelect(queries ...string) []*Directive {
+	directives, err := d.Select(queries...)
+	util.PanicIfError(err)
+	return directives
 }

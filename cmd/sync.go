@@ -25,7 +25,7 @@ var SyncCmd = &cobra.Command{
 		engine := fileStorage.MustSystem()
 
 		//format
-		client := nginx.MustClient(engine)
+		client := nginx.MustClient("", engine, nil, nil)
 		PanicIfError(client.Store())
 
 		return storage.Sync(engine, cluster)

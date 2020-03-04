@@ -7,7 +7,6 @@ import (
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
-	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/registry"
 	"github.com/ihaiker/aginx/storage"
 	. "github.com/ihaiker/aginx/util"
@@ -27,12 +26,12 @@ func AddServerFlags(cmd *cobra.Command) {
 	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         config from zookeeper.
 	etcd://127.0.0.1:2379/aginx[?user=&password]      config from etcd.
 `)
-	cmd.PersistentFlags().StringP("expose", "e", "", "Exposing API services to NGINX。example: api.aginx.io")
+	cmd.PersistentFlags().StringP("expose", "e", "", "Exposing API services to NGINX。example: api.aginx.io or api.aginx.io,ssl")
 	cmd.PersistentFlags().BoolP("disable-watcher", "", false, `Listen to local configuration file changes and automatically sync to storage.
 If you use '--storage' to store the NGINX configuration file, it will be synchronized to the local configuration at startup.`)
 
 	cmd.PersistentFlags().StringArrayP("server", "", []string{}, "Adding a simple service proxy.\n"+
-		"example: --server 'a1.aginx.io=172.0.0.1:8080' --server 'a2.aginx.io=172.0.0.1:8083,127.0.0.1:8084'")
+		"example: --server 'a1.aginx.io=172.0.0.1:8080' --server 'a2.aginx.io=ssl,172.0.0.1:8083,127.0.0.1:8084'")
 
 	AddRegistryFlag(cmd)
 }
@@ -42,10 +41,10 @@ func init() {
 	_ = viper.BindPFlags(ServerCmd.PersistentFlags())
 }
 
-func exposeApi(address string, engine plugins.StorageEngine) {
+func exposeApi(address string, api *nginx.Client) bool {
 	domain := viper.GetString("expose")
 	if domain == "" {
-		return
+		return false
 	}
 	host, port, err := net.SplitHostPort(address)
 	PanicIfError(err)
@@ -55,24 +54,29 @@ func exposeApi(address string, engine plugins.StorageEngine) {
 	apiAddress := fmt.Sprintf("%s:%s", host, port)
 	logger.Infof("expose api %s to %s ", domain, apiAddress)
 
-	api := nginx.MustClient(engine)
-	err = api.SimpleServer(domain, apiAddress)
+	domainAndSsl := strings.Split(domain, ",")
+	ssl := len(domainAndSsl) == 2 && domainAndSsl[1] == "ssl"
+	if ssl {
+		domain = domainAndSsl[0]
+	}
+	err = api.SimpleServer(domain, ssl, apiAddress)
 	PanicIfError(err)
-	PanicIfError(api.Store())
+	return true
 }
 
-func simpleServer(cmd *cobra.Command, engine plugins.StorageEngine) {
+func simpleServer(cmd *cobra.Command, api *nginx.Client) bool {
 	services := GetStringArray(cmd, "server")
-	api := nginx.MustClient(engine)
 	for _, server := range services {
 		kva := strings.SplitN(server, "=", 2)
 		domain := kva[0]
 		proxies := strings.Split(kva[1], ",")
-		PanicIfError(api.SimpleServer(domain, proxies...))
+		ssl := proxies[0] == "ssl"
+		if ssl {
+			proxies = proxies[1:]
+		}
+		PanicIfError(api.SimpleServer(domain, ssl, proxies...))
 	}
-	if len(services) > 0 {
-		PanicIfError(api.Store())
-	}
+	return len(services) > 0
 }
 
 var ServerCmd = &cobra.Command{
@@ -93,19 +97,25 @@ var ServerCmd = &cobra.Command{
 		auth := viper.GetString("security")
 
 		daemon := NewDaemon()
-
 		storageEngine := storage.NewBridge(viper.GetString("storage"),
 			!viper.GetBool("disable-watcher"), nginx.MustConf())
 
-		exposeApi(address, storageEngine)
-		simpleServer(cmd, storageEngine)
-
-		sslManager, err := lego.NewManager(storageEngine)
+		manager, err := lego.NewManager(storageEngine)
 		PanicIfError(err)
 
 		process := new(nginx.Process)
-		http := http.NewHttp(address, http.Routers(email, auth, process, storageEngine, sslManager))
-		daemon.Add(storageEngine, http, process, sslManager)
+		http := http.NewHttp(address, http.Routers(email, auth, process, storageEngine, manager))
+
+		daemon.Add(storageEngine, http, process, manager)
+		daemon.AddStart(func() error {
+			api := nginx.MustClient(email, storageEngine, manager, process)
+			writeApi := exposeApi(address, api)
+			writeSimpleServer := simpleServer(cmd, api)
+			if writeApi || writeSimpleServer {
+				return api.Store()
+			}
+			return nil
+		})
 
 		if registry := registry.FindRegistry(cmd); registry != nil {
 			daemon.Add(registry)

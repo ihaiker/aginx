@@ -11,30 +11,6 @@ type aginxDirective struct {
 	*client
 }
 
-func (self *aginxDirective) HttpUpstream(names ...string) (directives []*nginx.Directive, err error) {
-	directives = make([]*nginx.Directive, 0)
-	err = self.request(http.MethodGet, self.get("/http/upstream", names), nil, &directives)
-	return
-}
-
-func (self *aginxDirective) HttpServer(names ...string) (directives []*nginx.Directive, err error) {
-	directives = make([]*nginx.Directive, 0)
-	err = self.request(http.MethodGet, self.get("/http/server", names), nil, &directives)
-	return
-}
-
-func (self *aginxDirective) StreamUpstream(names ...string) (directives []*nginx.Directive, err error) {
-	directives = make([]*nginx.Directive, 0)
-	err = self.request(http.MethodGet, self.get("/stream/upstream", names), nil, &directives)
-	return
-}
-
-func (self *aginxDirective) StreamServer(listens ...string) (directives []*nginx.Directive, err error) {
-	directives = make([]*nginx.Directive, 0)
-	err = self.request(http.MethodGet, self.get("/stream/server", listens), nil, &directives)
-	return
-}
-
 func (self *aginxDirective) Select(queries ...string) (directives []*nginx.Directive, err error) {
 	directives = make([]*nginx.Directive, 0)
 	err = self.request(http.MethodGet, self.get("/api", queries), nil, &directives)

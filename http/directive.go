@@ -3,15 +3,12 @@ package http
 import (
 	"errors"
 	"github.com/ihaiker/aginx/nginx"
-	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
-	"strings"
 )
 
 type directiveController struct {
 	process *nginx.Process
-	engine  plugins.StorageEngine
 }
 
 func (as *directiveController) queryDirective(client *nginx.Client, queries []string) []*nginx.Directive {
@@ -47,16 +44,4 @@ func (as *directiveController) modifyDirective(client *nginx.Client, queries []s
 func (as *directiveController) reload() int {
 	util.PanicIfError(as.process.Reload())
 	return iris.StatusNoContent
-}
-
-func (as *directiveController) selectDirective(queries ...string) func(*nginx.Client) []*nginx.Directive {
-	return func(client *nginx.Client) []*nginx.Directive {
-		directives := make([]*nginx.Directive, 0)
-		for _, query := range queries {
-			if ds, err := client.Select(strings.Split(query, ",")...); err == nil {
-				directives = append(directives, ds...)
-			}
-		}
-		return directives
-	}
 }

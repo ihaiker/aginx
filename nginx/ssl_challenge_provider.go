@@ -1,31 +1,30 @@
-package http
+package nginx
 
 import (
 	"fmt"
 	"github.com/go-acme/lego/v3/challenge/http01"
-	"github.com/ihaiker/aginx/nginx"
 	"time"
 )
 
 type sslProvider struct {
 	queries   []string
-	directive *nginx.Directive
-	api       *nginx.Client
-	process   *nginx.Process
+	directive *Directive
+	api       *Client
+	process   *Process
 }
 
-func NewAginxProvider(api *nginx.Client, process *nginx.Process) *sslProvider {
+func NewAginxProvider(api *Client, process *Process) *sslProvider {
 	return &sslProvider{api: api, process: process}
 }
 
-func (self *sslProvider) selectDirective(domain string) (queries []string, directive *nginx.Directive) {
+func (self *sslProvider) selectDirective(domain string) (queries []string, directive *Directive) {
 	serverQuery := fmt.Sprintf("server.[server_name('%s') & listen('80')]", domain)
-	queries = nginx.Queries("http", "include", "*", serverQuery)
+	queries = Queries("http", "include", "*", serverQuery)
 	if directives, err := self.api.Select(queries...); err == nil {
 		directive = directives[0]
 		return
 	}
-	queries = nginx.Queries("http", serverQuery)
+	queries = Queries("http", serverQuery)
 	if directives, err := self.api.Select(queries...); err == nil {
 		directive = directives[0]
 		return
@@ -33,15 +32,15 @@ func (self *sslProvider) selectDirective(domain string) (queries []string, direc
 	return
 }
 
-func (self *sslProvider) location(token, keyAuth string) *nginx.Directive {
-	location := nginx.NewDirective("location", http01.ChallengePath(token))
+func (self *sslProvider) location(token, keyAuth string) *Directive {
+	location := NewDirective("location", http01.ChallengePath(token))
 	location.AddBody("add_header", "Content-Type", `"text/plain"`)
 	location.AddBody("return", "200", fmt.Sprintf("'%s'", keyAuth))
 	return location
 }
 
-func (self *sslProvider) server(domain, token, keyAuth string) *nginx.Directive {
-	server := nginx.NewDirective("server")
+func (self *sslProvider) server(domain, token, keyAuth string) *Directive {
+	server := NewDirective("server")
 	server.AddBody("listen", "80")
 	server.AddBody("server_name", domain)
 	server.AddBodyDirective(self.location(token, keyAuth))
@@ -65,7 +64,7 @@ func (self *sslProvider) Present(domain, token, keyAuth string) error {
 		}
 	} else {
 		server := self.server(domain, token, keyAuth)
-		if err := self.api.Add(nginx.Queries("http"), server); err != nil {
+		if err := self.api.Add(Queries("http"), server); err != nil {
 			return err
 		}
 	}

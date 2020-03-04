@@ -60,3 +60,7 @@ func (self *aginx) Directive() AginxDirective {
 func (self *aginx) SSL() AginxSSL {
 	return &aginxSSL{client: self.client}
 }
+
+func (self *aginx) Simple() AginxSimple {
+	return &aginxSimple{client: self.client}
+}
