@@ -39,9 +39,8 @@ func init() {
 	})
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "debug mode")
 	rootCmd.PersistentFlags().StringP("level", "l", "info", "log level")
+	rootCmd.AddCommand(cmd.ServerCmd, cmd.SyncCmd, cmd.RegistryCmd, cmd.ClientCmd)
 	_ = viper.BindPFlags(rootCmd.PersistentFlags())
-
-	rootCmd.AddCommand(cmd.ServerCmd, cmd.SyncCmd, cmd.RegistryCmd)
 }
 
 func main() {
