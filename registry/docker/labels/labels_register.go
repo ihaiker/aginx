@@ -9,7 +9,6 @@ import (
 	dockerClient "github.com/docker/docker/client"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
-	"github.com/ihaiker/aginx/util"
 	"strings"
 	"text/template"
 )
@@ -49,10 +48,6 @@ func LabelsRegister(ip string) (*DockerLabelsRegister, error) {
 }
 
 func (self *DockerLabelsRegister) listService() (domains []plugins.Domain) {
-	defer util.Catch(func(err error) {
-		logger.Warn("list swarm worker error ", err)
-	})
-
 	domains = make([]plugins.Domain, 0)
 	if info, err := self.docker.Info(context.TODO()); err != nil {
 		logger.Warn("docker info error ", err)

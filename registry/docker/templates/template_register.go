@@ -8,7 +8,6 @@ import (
 	dockerClient "github.com/docker/docker/client"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
-	"github.com/ihaiker/aginx/util"
 	"regexp"
 	"strings"
 	"text/template"
@@ -39,9 +38,6 @@ func TemplateRegister(publishIp string, filterServices, filterContainers []strin
 }
 
 func (self *DockerTemplateRegister) listServices() []swarm.Service {
-	defer util.Catch(func(err error) {
-		logger.Warn("list swarm worker error ", err)
-	})
 	//service
 	if info, err := self.docker.Info(context.TODO()); err != nil {
 		logger.Warn("docker info error ", err)

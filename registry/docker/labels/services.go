@@ -6,9 +6,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
+	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
+	"os"
 	"strings"
 )
 
@@ -19,10 +21,36 @@ func (self *DockerLabelsRegister) firstPort(portSet nat.PortSet) int {
 	return 0 //ignore
 }
 
+func (self *DockerLabelsRegister) nodeContainerImageInspect(nodeId, containerId string) (nat.PortSet, error) {
+	node, _, err := self.docker.NodeInspectWithRaw(context.TODO(), nodeId)
+	if err != nil {
+		return nil, err
+	}
+
+	host := os.Getenv("DOCKER_HOST")
+	port := host[strings.LastIndex(host, ":")+1:]
+	dockerNode := fmt.Sprintf("tcp://%s:%s", node.Status.Addr, port)
+	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithHost(dockerNode))
+	containerInspect, err := docker.ContainerInspect(context.TODO(), containerId)
+	if err != nil {
+		return nil, err
+	}
+	imageId := containerInspect.Image
+	imageInspect, _, err := docker.ImageInspectWithRaw(context.TODO(), imageId)
+	if err != nil {
+		return nil, err
+	}
+	return imageInspect.Config.ExposedPorts, nil
+}
+
 func (self *DockerLabelsRegister) imagePort(service swarm.Service) nat.PortSet {
-	imageName := service.Spec.Annotations.Labels["com.docker.stack.image"]
-	imageInspect, _, _ := self.docker.ImageInspectWithRaw(context.TODO(), imageName)
-	return imageInspect.Config.ExposedPorts
+	tasks, _ := self.docker.TaskList(context.TODO(), types.TaskListOptions{Filters: filters.NewArgs(filters.Arg("service", service.Spec.Name))})
+	for _, task := range tasks {
+		if inspect, err := self.nodeContainerImageInspect(task.NodeID, task.Status.ContainerStatus.ContainerID); err == nil {
+			return inspect
+		}
+	}
+	return nat.PortSet{}
 }
 
 func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32) (address string) {
@@ -90,8 +118,9 @@ func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugin
 					imagePorts := self.imagePort(service)
 					if len(imagePorts) == 1 {
 						usePort = swarm.PortConfig{TargetPort: uint32(self.firstPort(imagePorts))}
+					} else {
+						return nil, ErrExplicitlyPort
 					}
-					return nil, ErrExplicitlyPort
 				} else if len(service.Endpoint.Ports) == 1 {
 					usePort = service.Endpoint.Ports[0]
 				} else {
@@ -117,7 +146,7 @@ func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugin
 				}
 			} else if usePort.PublishedPort != uint32(0) {
 				if label.Nodes {
-					nodes, _ := self.getNodes(Normal(Or(isWorker, Not(isMulti))))
+					_, nodes, _ := self.getNodes(Normal(Or(isWorker, Not(isMulti))))
 					for i, node := range nodes {
 						address := fmt.Sprintf("%s:%d", node, usePort.PublishedPort)
 						domain := self.makeDomain(service, label, address)

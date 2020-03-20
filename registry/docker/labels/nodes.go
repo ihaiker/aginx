@@ -55,13 +55,17 @@ func And(aa ...nodeCheckMethod) nodeCheckMethod {
 	}
 }
 
-func (dr *DockerLabelsRegister) getNodes(filters ...nodeCheckMethod) ([]string, error) {
+func (dr *DockerLabelsRegister) getNodes(filters ...nodeCheckMethod) ([]string, []string, error) {
 	if nodes, err := dr.docker.NodeList(context.TODO(), types.NodeListOptions{}); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		nodeIps := make([]string, 0)
+		managerIps := make([]string, 0)
 	NODES:
 		for current, node := range nodes {
+			if node.Spec.Role == swarm.NodeRoleManager {
+				managerIps = append(managerIps, node.Status.Addr)
+			}
 			for _, filter := range filters {
 				if !filter(nodes, current) {
 					continue NODES
@@ -69,6 +73,6 @@ func (dr *DockerLabelsRegister) getNodes(filters ...nodeCheckMethod) ([]string, 
 			}
 			nodeIps = append(nodeIps, node.Status.Addr)
 		}
-		return nodeIps, nil
+		return managerIps, nodeIps, nil
 	}
 }

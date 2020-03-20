@@ -1,11 +1,11 @@
 FROM golang:1.13.6-alpine3.11 as builder
 
-ADD . /build
 ENV GOPROXY="https://goproxy.io"
 ENV GO111MODULE="on"
 ARG LDFLAGS=""
 
-WORKDIR /build
+ADD . /aginx
+WORKDIR /aginx
 
 RUN apk add --no-cache make build-base
 RUN go build -ldflags "${LDFLAGS}" -o aginx aginx.go
@@ -14,8 +14,8 @@ RUN go build -ldflags "${LDFLAGS}" -o aginx aginx.go
 FROM nginx:1.17.7-alpine
 MAINTAINER Haiker ni@renzhen.la
 
-COPY --from=builder /build/aginx /usr/sbin/aginx
-COPY --from=builder /build/conf/aginx.conf /etc/nginx/aginx.conf
+COPY --from=builder /aginx/aginx /usr/sbin/aginx
+COPY --from=builder /aginx/conf/aginx.conf /etc/nginx/aginx.conf
 
 ENV AGINX_EMAIL="aginx@renzhen.la"
 ENV AGINX_DEBUG="false" AGINX_LEVEL="info"
