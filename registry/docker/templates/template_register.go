@@ -4,9 +4,11 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/swarm"
 	dockerClient "github.com/docker/docker/client"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
 	"regexp"
 	"strings"
 	"text/template"
@@ -36,11 +38,10 @@ func TemplateRegister(publishIp string, filterServices, filterContainers []strin
 	return
 }
 
-func (self *DockerTemplateRegister) allInfo() {
-	data := new(DockerTemplateRegisterEvents)
-	data.PublishIP = self.ip
-	data.Docker = self.docker
-
+func (self *DockerTemplateRegister) listServices() []swarm.Service {
+	defer util.Catch(func(err error) {
+		logger.Warn("list swarm worker error ", err)
+	})
 	//service
 	if info, err := self.docker.Info(context.TODO()); err != nil {
 		logger.Warn("docker info error ", err)
@@ -49,10 +50,18 @@ func (self *DockerTemplateRegister) allInfo() {
 			if services, err := self.docker.ServiceList(context.TODO(), types.ServiceListOptions{}); err != nil {
 				logger.Warn("docker list services error: ", err)
 			} else {
-				data.Services = services
+				return services
 			}
 		}
 	}
+	return make([]swarm.Service, 0)
+}
+
+func (self *DockerTemplateRegister) allInfo() {
+	data := new(DockerTemplateRegisterEvents)
+	data.PublishIP = self.ip
+	data.Docker = self.docker
+	data.Services = self.listServices()
 
 	//container
 	if containers, err := self.docker.ContainerList(context.TODO(), types.ContainerListOptions{

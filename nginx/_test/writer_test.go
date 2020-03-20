@@ -12,9 +12,9 @@ func TestName(t *testing.T) {
 	defer Catch(func(err error) {
 		t.Fatal(err)
 	})
-	engine := storage.FindStorage("", false)
+	engine := storage.FindStorage("")
 
-	c, err := nginx.NewClient(engine)
+	c, err := nginx.NewClient("", engine, nil, nil)
 	PanicIfError(err)
 
 	c.Add(nginx.Queries(), nginx.NewDirective("error_log", "logs/error.log"))

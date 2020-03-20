@@ -13,7 +13,7 @@ import (
 
 func FindStorage(cluster string) (storage plugins.StorageEngine) {
 	if cluster == "" {
-		storage = file.MustSystem()
+		storage = file.New("/etc/nginx/nginx.conf")
 	} else {
 		config, err := url.Parse(cluster)
 		if err == nil {

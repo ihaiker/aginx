@@ -3,6 +3,7 @@ package nginx
 import (
 	"bytes"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
 	"github.com/xhaiker/codf"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,7 @@ import (
 func Readable(store plugins.StorageEngine) (*Configuration, error) {
 	reader, err := store.Get("nginx.conf")
 	if err != nil {
-		return nil, err
+		return nil, util.Wrap(err, "get nginx.conf")
 	}
 	return ReaderReadable(store, reader)
 }
@@ -19,7 +20,7 @@ func Readable(store plugins.StorageEngine) (*Configuration, error) {
 func ReaderReadable(store plugins.StorageEngine, cfgFile *plugins.ConfigurationFile) (*Configuration, error) {
 	parser := codf.NewParser()
 	if err := parser.Parse(codf.NewLexer(bytes.NewBuffer(cfgFile.Content))); err != nil {
-		return nil, err
+		return nil, util.Wrap(err, "parse config: "+cfgFile.Name)
 	}
 	doc := parser.Document()
 	cfg := &Configuration{
@@ -27,11 +28,11 @@ func ReaderReadable(store plugins.StorageEngine, cfgFile *plugins.ConfigurationF
 		Body: make([]*Directive, 0),
 	}
 	for _, child := range doc.Children {
-		if node, err := analysisNode(store, child); err == nil {
-			cfg.Body = append(cfg.Body, node)
-		} else {
+		node, err := analysisNode(store, child)
+		if err != nil {
 			return nil, err
 		}
+		cfg.Body = append(cfg.Body, node)
 	}
 	return cfg, nil
 }

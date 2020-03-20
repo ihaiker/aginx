@@ -9,6 +9,7 @@ import (
 	dockerClient "github.com/docker/docker/client"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
 	"strings"
 	"text/template"
 )
@@ -47,10 +48,12 @@ func LabelsRegister(ip string) (*DockerLabelsRegister, error) {
 	}, nil
 }
 
-func (self *DockerLabelsRegister) allDomains() plugins.Domains {
-	logger.Debug("Search all containers and services")
-	domains := make([]plugins.Domain, 0)
+func (self *DockerLabelsRegister) listService() (domains []plugins.Domain) {
+	defer util.Catch(func(err error) {
+		logger.Warn("list swarm worker error ", err)
+	})
 
+	domains = make([]plugins.Domain, 0)
 	if info, err := self.docker.Info(context.TODO()); err != nil {
 		logger.Warn("docker info error ", err)
 
@@ -72,6 +75,12 @@ func (self *DockerLabelsRegister) allDomains() plugins.Domains {
 			}
 		}
 	}
+	return
+}
+
+func (self *DockerLabelsRegister) allDomains() plugins.Domains {
+	logger.Debug("Search all containers and services")
+	domains := self.listService()
 
 	if containers, err := self.docker.ContainerList(context.TODO(), types.ContainerListOptions{
 		All: true, Filters: filters.NewArgs(filters.Arg("status", "running")),
@@ -86,6 +95,7 @@ func (self *DockerLabelsRegister) allDomains() plugins.Domains {
 			}
 		}
 	}
+
 	return domains
 }
 

@@ -9,7 +9,8 @@ import (
 )
 
 func TestNginxFull(t *testing.T) {
-	conf, _ := filepath.Abs("../../_test/nginx.conf")
+	conf, _ := filepath.Abs("../../bin/nginx/nginx.conf")
+	t.Log(conf)
 	fileStore := file.New(conf)
 	doc, err := nginx.Readable(fileStore)
 	if err != nil {

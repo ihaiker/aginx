@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
+	"strings"
 )
 
 func Safe(fn func()) (err error) {
@@ -35,6 +37,25 @@ func CatchError(err error) {
 	})
 }
 
+type WrapError struct {
+	Err     error
+	Message string
+}
+
+func (w WrapError) Error() string {
+	return fmt.Sprintf("%s : %s", w.Message, w.Err)
+}
+
+func Wrap(err error, message string) error {
+	if _, match := err.(*WrapError); match {
+		return err
+	} else {
+		return &WrapError{
+			Err: err, Message: message,
+		}
+	}
+}
+
 func Catch(fns ...func(error)) {
 	if r := recover(); r != nil && len(fns) > 0 {
 		if err, match := r.(error); match {
@@ -50,25 +71,22 @@ func Catch(fns ...func(error)) {
 	}
 }
 
-type PanicError error
-
 func AssertTrue(check bool, msg string) {
 	if !check {
-		panic(PanicError(errors.New(msg)))
+		panic(&WrapError{Err: errors.New("AssertFalse"), Message: msg})
 	}
 }
 
 //如果不为空，使用msg panic错误，
-func PanicMessage(err interface{}, msg string) {
+func PanicMessage(err error, msg string) {
 	if err != nil {
-		panic(PanicError(fmt.Errorf("%s : %v", msg, err)))
+		panic(Wrap(err, msg))
 	}
 }
 
-func PanicIfError(err interface{}) {
-	if err != nil {
-		panic(PanicError(fmt.Errorf("%v", err)))
-	}
+func PanicIfError(err error) {
+	_, file, line, _ := runtime.Caller(1)
+	PanicMessage(err, fmt.Sprintf("%s:%d", file, line))
 }
 
 func RandomPort() (int, error) {
@@ -78,4 +96,28 @@ func RandomPort() (int, error) {
 	}
 	port := listener.Addr().(*net.TCPAddr).Port
 	return port, nil
+}
+
+func Stack() string {
+	stackBuf := make([]uintptr, 50)
+	length := runtime.Callers(3, stackBuf[:])
+	stack := stackBuf[:length]
+	trace := ""
+	frames := runtime.CallersFrames(stack)
+	for {
+		frame, more := frames.Next()
+		if strings.HasSuffix(frame.File, "/aginx/util/errors.go") ||
+			strings.HasSuffix(frame.File, "/src/runtime/panic.go") ||
+			strings.HasSuffix(frame.File, "/testing/testing.go") ||
+			frame.Function == "runtime.goexit" || frame.Function == "" {
+
+		} else {
+			trace = trace + fmt.Sprintf("  Function: %s, File: %s:%d\n", frame.Function, frame.File, frame.Line)
+		}
+
+		if !more {
+			break
+		}
+	}
+	return trace
 }

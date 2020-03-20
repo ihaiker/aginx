@@ -43,7 +43,7 @@ func NewClient(email string, engine plugins.StorageEngine, lego *lego.Manager, p
 
 func MustClient(email string, engine plugins.StorageEngine, lego *lego.Manager, process *Process) *Client {
 	client, err := NewClient(email, engine, lego, process)
-	util.PanicIfError(err)
+	util.PanicMessage(err, "parse config error")
 	return client
 }
 

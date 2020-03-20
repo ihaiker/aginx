@@ -1,6 +1,7 @@
-package nginx
+package nginx_test
 
 import (
+	"github.com/ihaiker/aginx/nginx"
 	"github.com/kr/pretty"
 	"testing"
 )
@@ -17,7 +18,7 @@ func TestLexer(t *testing.T) {
 	//str := `server.server_name()`
 	//str := `server.server_name( name | age )`
 	str := `server.server_name( 'name' | 'age' )`
-	expr, err := Parser(str)
+	expr, err := nginx.Parser(str)
 	if err != nil {
 		t.Fatal(err)
 	}

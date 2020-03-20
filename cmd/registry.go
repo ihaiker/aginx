@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/ihaiker/aginx/conf"
 	"github.com/ihaiker/aginx/registry"
 	"github.com/ihaiker/aginx/util"
@@ -25,6 +26,7 @@ var RegistryCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer util.Catch(func(err error) {
+			fmt.Println(util.Stack())
 			cmd.PrintErr(err)
 		})
 		bridge := registry.FindRegistry(cmd)
