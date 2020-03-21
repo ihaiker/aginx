@@ -1,6 +1,5 @@
 FROM golang:1.13.6-alpine3.11 as builder
 
-ENV GOPROXY="https://goproxy.io"
 ENV GO111MODULE="on"
 ARG LDFLAGS=""
 
