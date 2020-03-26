@@ -124,11 +124,13 @@ func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugin
 					if len(imagePorts) == 1 {
 						usePort = swarm.PortConfig{TargetPort: uint32(self.firstPort(imagePorts))}
 					} else {
+						logger.Warnf("server %s image has multi port, but not explicitly specified. ignore it. ", serviceName)
 						return nil, ErrExplicitlyPort
 					}
 				} else if len(service.Endpoint.Ports) == 1 {
 					usePort = service.Endpoint.Ports[0]
 				} else {
+					logger.Warnf("server %s image has multi port, but not explicitly specified. ignore it. ", serviceName)
 					return nil, ErrExplicitlyPort
 				}
 			} else { //明确指定端口

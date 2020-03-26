@@ -35,37 +35,31 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// output buffer
 	b := &bytes.Buffer{}
 
+	{
+		// write level
+		level := strings.ToUpper(entry.Level.String())
+		if !f.NoColors {
+			fmt.Fprintf(b, "\x1b[%dm", levelColor)
+		}
+		b.WriteString("[")
+		if f.ShowFullLevel {
+			b.WriteString(level)
+		} else {
+			b.WriteString(level[:4])
+		}
+		b.WriteString("] ")
+		if !f.NoColors && !f.NoFieldsColors {
+			b.WriteString("\x1b[0m")
+		}
+	}
+
 	// write time
 	b.WriteString(entry.Time.Format(timestampFormat))
+	b.WriteString(" ")
 
-	// write level
-	level := strings.ToUpper(entry.Level.String())
-
-	if !f.NoColors {
-		fmt.Fprintf(b, "\x1b[%dm", levelColor)
-	}
-
-	b.WriteString(" [")
-	if f.ShowFullLevel {
-		b.WriteString(level)
-	} else {
-		b.WriteString(level[:4])
-	}
-	b.WriteString("] ")
-
-	if !f.NoColors && f.NoFieldsColors {
-		b.WriteString("\x1b[0m")
-	}
-
-	// write fields
-	if f.FieldsOrder == nil {
-		f.writeFields(b, entry)
-	} else {
-		f.writeOrderedFields(b, entry)
-	}
-
-	if !f.NoColors && !f.NoFieldsColors {
-		b.WriteString("\x1b[0m")
+	{
+		b.WriteString(fmt.Sprintf("\x1b[36m[%v]\x1b[0m ", entry.Data["module"]))
+		delete(entry.Data, "module")
 	}
 
 	if entry.HasCaller() {
@@ -81,6 +75,13 @@ func (f *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 			file := entry.Caller.Function[0:idx] + "/" + filepath.Base(entry.Caller.File)
 			fmt.Fprintf(b, "%s:%d %s() ", file, entry.Caller.Line, fn)
 		}
+	}
+
+	// write fields
+	if f.FieldsOrder == nil {
+		f.writeFields(b, entry)
+	} else {
+		f.writeOrderedFields(b, entry)
 	}
 
 	// write message
@@ -141,11 +142,10 @@ func (f *Formatter) writeField(b *bytes.Buffer, entry *logrus.Entry, field strin
 	if value := entry.Data[field]; value == nil && !f.ShowNilField {
 		return
 	}
-
 	if f.HideKeys {
-		fmt.Fprintf(b, "[%v] ", entry.Data[field])
+		fmt.Fprintf(b, "(%v) ", entry.Data[field])
 	} else {
-		fmt.Fprintf(b, "[%s:%v] ", field, entry.Data[field])
+		fmt.Fprintf(b, "(%s=%v) ", field, entry.Data[field])
 	}
 }
 

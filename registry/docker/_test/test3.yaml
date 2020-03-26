@@ -25,4 +25,4 @@ services:
       mode: replicated
       replicas: 2
       placement:
-        constraints: [node.role == woker]
+        constraints: [node.role == worker]
