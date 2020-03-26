@@ -89,8 +89,8 @@ var ServerCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer Catch(func(err error) {
-			fmt.Println(Stack())
 			cmd.PrintErrln(err)
+			fmt.Println(Stack())
 		})
 
 		email := viper.GetString("email")

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ihaiker/aginx/cmd"
+	"github.com/ihaiker/aginx/conf"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
@@ -46,6 +47,8 @@ func init() {
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	rand.Seed(time.Now().Unix())
+
+	conf.SetDefaultCommand(rootCmd, cmd.ServerCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

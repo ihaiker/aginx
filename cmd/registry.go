@@ -26,8 +26,8 @@ var RegistryCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer util.Catch(func(err error) {
-			fmt.Println(util.Stack())
 			cmd.PrintErr(err)
+			fmt.Println(util.Stack())
 		})
 		bridge := registry.FindRegistry(cmd)
 		util.AssertTrue(bridge == nil, "Did not find any registry")

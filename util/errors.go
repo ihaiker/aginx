@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -111,8 +112,8 @@ func Stack() string {
 			strings.HasSuffix(frame.File, "/testing/testing.go") ||
 			frame.Function == "runtime.goexit" || frame.Function == "" {
 
-		} else {
-			trace = trace + fmt.Sprintf("  Function: %s, File: %s:%d\n", frame.Function, frame.File, frame.Line)
+		} else if strings.HasPrefix(frame.Function, "github.com/ihaiker/aginx") {
+			trace = trace + fmt.Sprintf("\t%s:%d %s\n", frame.File, frame.Line, filepath.Base(frame.Function))
 		}
 
 		if !more {

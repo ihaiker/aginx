@@ -44,10 +44,15 @@ func (self *DockerLabelsRegister) nodeContainerImageInspect(nodeId, containerId 
 }
 
 func (self *DockerLabelsRegister) imagePort(service swarm.Service) nat.PortSet {
-	tasks, _ := self.docker.TaskList(context.TODO(), types.TaskListOptions{Filters: filters.NewArgs(filters.Arg("service", service.Spec.Name))})
+	tasks, err := self.docker.TaskList(context.TODO(), types.TaskListOptions{Filters: filters.NewArgs(filters.Arg("service", service.Spec.Name))})
+	if err != nil {
+		return nat.PortSet{}
+	}
 	for _, task := range tasks {
-		if inspect, err := self.nodeContainerImageInspect(task.NodeID, task.Status.ContainerStatus.ContainerID); err == nil {
-			return inspect
+		if task.Status.State == swarm.TaskStateRunning || task.Status.State == swarm.TaskStateShutdown {
+			if inspect, err := self.nodeContainerImageInspect(task.NodeID, task.Status.ContainerStatus.ContainerID); err == nil {
+				return inspect
+			}
 		}
 	}
 	return nat.PortSet{}

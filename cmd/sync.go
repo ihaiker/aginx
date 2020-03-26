@@ -17,6 +17,7 @@ var SyncCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		defer Catch(func(err error) {
 			fmt.Println(err)
+			fmt.Println(Stack())
 		})
 		cluster := storage.FindStorage(args[0])
 		if cluster == nil || !cluster.IsCluster() {
