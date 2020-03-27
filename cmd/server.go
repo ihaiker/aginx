@@ -8,7 +8,6 @@ import (
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/registry"
-	"github.com/ihaiker/aginx/registry/docker"
 	"github.com/ihaiker/aginx/storage"
 	. "github.com/ihaiker/aginx/util"
 	"github.com/spf13/cobra"
@@ -51,7 +50,7 @@ func exposeApi(address string, api *nginx.Client) bool {
 	PanicIfError(err)
 	//host 如果不是指定了，就要获取地址
 	if host == "" || host == "0.0.0.0" {
-		host = docker.GetRecommendIp()
+		host = GetRecommendIp()
 	}
 	apiAddress := fmt.Sprintf("%s:%s", host, port)
 	logger.Infof("expose api %s to %s ", domain, apiAddress)
