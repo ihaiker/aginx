@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/sparrc/go-ping"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -81,4 +82,10 @@ func Ping(host string, count int, interval, timeout time.Duration) bool {
 	pinger.Run()                 // blocks until finished
 	stats := pinger.Statistics() // get send/receive/rtt stats
 	return stats.PacketsSent == stats.PacketsRecv
+}
+
+func IsSegment(a, b string) bool {
+	aseg := a[:strings.LastIndex(a, ".")]
+	bseg := b[:strings.LastIndex(b, ".")]
+	return aseg == bseg
 }
