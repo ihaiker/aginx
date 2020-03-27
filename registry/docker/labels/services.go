@@ -65,7 +65,7 @@ func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port 
 		address = self.ip
 	})
 
-	host := ""
+	host := self.ip
 	//此处，可能获取不到端口因为可能服务还未起来，端口并未打开，所以ping在其后
 	for _, vip := range service.Endpoint.VirtualIPs {
 		ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
@@ -74,10 +74,6 @@ func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port 
 			host = ip
 			break
 		}
-	}
-
-	if host == "" {
-		host = util.GetRecommendIp()
 	}
 	address = fmt.Sprintf("%s:%d", host, port)
 	return
