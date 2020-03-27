@@ -12,6 +12,7 @@ import (
 	"github.com/ihaiker/aginx/util"
 	"os"
 	"strings"
+	"time"
 )
 
 func (self *DockerLabelsRegister) firstPort(portSet nat.PortSet) int {
@@ -63,8 +64,22 @@ func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port 
 		logger.Warn("get virtual address error: ", err)
 		address = self.ip
 	})
-	idx := strings.Index(service.Endpoint.VirtualIPs[0].Addr, "/")
-	address = fmt.Sprintf("%s:%d", service.Endpoint.VirtualIPs[0].Addr[0:idx], port)
+
+	host := ""
+	//此处，可能获取不到端口因为可能服务还未起来，端口并未打开，所以ping在其后
+	for _, vip := range service.Endpoint.VirtualIPs {
+		ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
+		if util.SockTo(ip, port, time.Second) ||
+			util.Ping(ip, 3, time.Millisecond*100, time.Second) {
+			host = ip
+			break
+		}
+	}
+
+	if host == "" {
+		host = util.GetRecommendIp()
+	}
+	address = fmt.Sprintf("%s:%d", host, port)
 	return
 }
 

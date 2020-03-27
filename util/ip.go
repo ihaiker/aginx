@@ -1,6 +1,11 @@
-package docker
+package util
 
-import "net"
+import (
+	"fmt"
+	"github.com/sparrc/go-ping"
+	"net"
+	"time"
+)
 
 func GetRecommendIp() string {
 	return GetIP([]string{"docker0"}, []string{"eth0"})
@@ -55,4 +60,25 @@ FACE_LOOP:
 		return addresies[0]
 	}
 	return "0.0.0.0"
+}
+
+func SockTo(host string, port uint32, timeout time.Duration) bool {
+	c, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), timeout)
+	if err == nil {
+		_ = c.Close()
+	}
+	return err == nil
+}
+
+func Ping(host string, count int, interval, timeout time.Duration) bool {
+	pinger, err := ping.NewPinger(host)
+	if err != nil {
+		return false
+	}
+	pinger.Timeout = timeout
+	pinger.Interval = interval
+	pinger.Count = count
+	pinger.Run()                 // blocks until finished
+	stats := pinger.Statistics() // get send/receive/rtt stats
+	return stats.PacketsSent == stats.PacketsRecv
 }
