@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ihaiker/aginx/nginx"
+	"github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,7 +41,7 @@ func key(pre, cur string) string {
 	}
 }
 
-func simpleServer(directive *nginx.Directive) ([]string, error) {
+func simpleServer(directive *config.Directive) ([]string, error) {
 	services := make([]string, 0)
 	for _, body := range directive.Body {
 		domain := body.Name
@@ -68,7 +69,7 @@ func simpleServer(directive *nginx.Directive) ([]string, error) {
 	return services, nil
 }
 
-func convert(cmd *cobra.Command, previousLayer string, directives []*nginx.Directive) (map[string]interface{}, error) {
+func convert(cmd *cobra.Command, previousLayer string, directives []*config.Directive) (map[string]interface{}, error) {
 	parameters := make(map[string]interface{})
 	for _, directive := range directives {
 		if directive.Name == "server" {

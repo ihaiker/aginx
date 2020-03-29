@@ -3,11 +3,11 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"github.com/ihaiker/aginx/util"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 )
@@ -40,7 +40,7 @@ func (self *client) response(resp *http.Response, ret interface{}) error {
 			errApi := &ApiError{}
 			if err := json.Unmarshal(bs, errApi); err == nil {
 				if errApi.Message == "file does not exist" {
-					return os.ErrNotExist
+					return util.ErrNotFound
 				}
 				return errApi
 			}

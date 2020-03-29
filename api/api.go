@@ -2,7 +2,7 @@ package api
 
 import (
 	"crypto/tls"
-	"github.com/ihaiker/aginx/nginx"
+	ngx "github.com/ihaiker/aginx/nginx/config"
 	"net/http"
 	"net/url"
 	"time"
@@ -37,11 +37,11 @@ func (self *aginx) Auth(name, password string) {
 	}
 }
 
-func (self *aginx) Configuration() (*nginx.Configuration, error) {
+func (self *aginx) Configuration() (*ngx.Configuration, error) {
 	if directives, err := self.Directive().Select(); err != nil {
 		return nil, err
 	} else {
-		return (*nginx.Configuration)(directives[0]), nil
+		return (*ngx.Configuration)(directives[0]), nil
 	}
 }
 

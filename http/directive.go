@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"github.com/ihaiker/aginx/nginx"
+	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
 )
@@ -11,13 +12,13 @@ type directiveController struct {
 	process *nginx.Process
 }
 
-func (as *directiveController) queryDirective(client *nginx.Client, queries []string) []*nginx.Directive {
+func (as *directiveController) queryDirective(client *nginx.Client, queries []string) []*ngx.Directive {
 	directives, err := client.Select(queries...)
 	util.PanicIfError(err)
 	return directives
 }
 
-func (as *directiveController) addDirective(client *nginx.Client, queries []string, directives []*nginx.Directive) int {
+func (as *directiveController) addDirective(client *nginx.Client, queries []string, directives []*ngx.Directive) int {
 	util.PanicIfError(client.Add(queries, directives...))
 	util.PanicIfError(as.process.Test(client.Configuration()))
 	util.PanicIfError(client.Store())
@@ -31,7 +32,7 @@ func (as *directiveController) deleteDirective(client *nginx.Client, queries []s
 	return as.reload()
 }
 
-func (as *directiveController) modifyDirective(client *nginx.Client, queries []string, directives []*nginx.Directive) int {
+func (as *directiveController) modifyDirective(client *nginx.Client, queries []string, directives []*ngx.Directive) int {
 	if len(directives) == 0 {
 		panic(errors.New("new directive is empty"))
 	}

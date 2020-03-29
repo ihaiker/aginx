@@ -88,7 +88,7 @@ func (sb *bridge) StartWatcher() {
 					}
 				} else if event.Type == plugins.FileEventTypeUpdate {
 					for _, path := range event.Paths {
-						if file, err := sb.StorageEngine.Get(path.Name); err == os.ErrNotExist {
+						if file, err := sb.StorageEngine.Get(path.Name); err == util.ErrNotFound {
 							_ = sb.StorageEngine.Put(path.Name, path.Content)
 							changed = true
 						} else if err == nil {

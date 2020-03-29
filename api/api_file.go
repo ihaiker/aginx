@@ -2,11 +2,11 @@ package api
 
 import (
 	"bytes"
+	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 type aginxFile struct {
@@ -19,7 +19,7 @@ func (a aginxFile) Get(relativePath string) (string, error) {
 		if content, has := files[relativePath]; has {
 			return content, nil
 		} else {
-			return "", os.ErrNotExist
+			return "", util.ErrNotFound
 		}
 	}
 	return "", err

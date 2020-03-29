@@ -2,6 +2,7 @@ package nginx
 
 import (
 	"fmt"
+	"github.com/ihaiker/aginx/nginx/config"
 	"strings"
 )
 
@@ -11,8 +12,8 @@ func UpstreamName(domain string) string {
 	return name
 }
 
-func SimpleUpstream(name string, address ...string) *Directive {
-	directive := NewDirective("upstream", name)
+func SimpleUpstream(name string, address ...string) *config.Directive {
+	directive := config.NewDirective("upstream", name)
 	if len(address) == 0 {
 		directive.AddBody("server", "127.0.0.1:65535")
 	} else {
@@ -23,8 +24,8 @@ func SimpleUpstream(name string, address ...string) *Directive {
 	return directive
 }
 
-func SimpleUpstreamWithWeight(name string, address map[int]string) *Directive {
-	directive := NewDirective("upstream", name)
+func SimpleUpstreamWithWeight(name string, address map[int]string) *config.Directive {
+	directive := config.NewDirective("upstream", name)
 	if len(address) == 0 {
 		directive.AddBody("server", "127.0.0.1:65535")
 	} else {
@@ -35,11 +36,11 @@ func SimpleUpstreamWithWeight(name string, address map[int]string) *Directive {
 	return directive
 }
 
-func SimpleServer(domain string, address ...string) (upstream *Directive, server *Directive) {
+func SimpleServer(domain string, address ...string) (upstream *config.Directive, server *config.Directive) {
 	name := UpstreamName(domain)
 	upstream = SimpleUpstream(name, address...)
 
-	server = NewDirective("server")
+	server = config.NewDirective("server")
 	server.AddBody("listen", "80")
 	server.AddBody("server_name", domain)
 	location := server.AddBody("location", "/")

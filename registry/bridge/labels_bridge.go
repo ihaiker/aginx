@@ -6,6 +6,7 @@ import (
 	"github.com/ihaiker/aginx/api"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
+	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/registry/functions"
 	"github.com/ihaiker/aginx/util"
@@ -90,7 +91,7 @@ func (rb *LabelRegisterBridge) createInclude() (err error) {
 	if _, err = rb.Aginx.Directive().Select("http", fmt.Sprintf("include('%s.d/*.ngx.conf')", rb.Name)); err != nil {
 		logger.Debugf("create NGINX directive (include %s.d/*.ngx.conf)", rb.Name)
 		err = rb.Aginx.Directive().Add(api.Queries("http"),
-			nginx.NewDirective("include", fmt.Sprintf("%s.d/*.ngx.conf", rb.Name)))
+			ngx.NewDirective("include", fmt.Sprintf("%s.d/*.ngx.conf", rb.Name)))
 		if err != nil {
 			logger.Debugf("create NGINX directive  (include %s.d/*.ngx.conf) error: %s ", rb.Name, err.Error())
 		} else {

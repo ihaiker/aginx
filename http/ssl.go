@@ -19,7 +19,7 @@ func (self *sslController) New(ctx iris.Context, api *nginx.Client, domain strin
 func (self *sslController) Renew(api *nginx.Client, domain string) *lego.StoreFile {
 	cert, has := api.Lego.CertificateStorage.Get(domain)
 	if !has {
-		util.PanicIfError(nginx.ErrNotFound)
+		util.PanicIfError(util.ErrNotFound)
 	}
 	return api.NewCertificate(cert.Email, cert.Domain)
 }

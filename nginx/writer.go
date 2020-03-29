@@ -2,6 +2,7 @@ package nginx
 
 import (
 	"bytes"
+	"github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
 	"path/filepath"
@@ -10,7 +11,7 @@ import (
 type Writer func(file string, content []byte) error
 type Differ func(file string, content []byte) bool
 
-func Write2NGINX(cfg *Configuration) error {
+func Write2NGINX(cfg *config.Configuration) error {
 	if _, conf, err := GetInfo(); err != nil {
 		return err
 	} else {
@@ -18,11 +19,11 @@ func Write2NGINX(cfg *Configuration) error {
 	}
 }
 
-func WriteTo(path string, cfg *Configuration) error {
+func WriteTo(path string, cfg *config.Configuration) error {
 	return Write(cfg, FileDiffer(path), FileWriter(path))
 }
 
-func Write(cfg *Configuration, differ Differ, writer Writer) (err error) {
+func Write(cfg *config.Configuration, differ Differ, writer Writer) (err error) {
 	content := cfg.BodyBytes()
 	if differ(NGINX_CONF, content) {
 		if err = writer(NGINX_CONF, content); err != nil {
@@ -35,10 +36,10 @@ func Write(cfg *Configuration, differ Differ, writer Writer) (err error) {
 	return
 }
 
-func writeVirtual(directive *Directive, writer Writer, differ Differ) error {
+func writeVirtual(directive *config.Directive, writer Writer, differ Differ) error {
 	for _, body := range directive.Body {
 		switch body.Virtual {
-		case Include:
+		case config.Include:
 			filePath := body.Args[0]
 			content := bytes.NewBufferString("")
 			for _, d := range body.Body {

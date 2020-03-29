@@ -29,7 +29,7 @@ func TestCertificateStorage_Get(t *testing.T) {
 func TestNewDomain(t *testing.T) {
 	account, has := acs.Get("who@renzhen.la")
 	if !has {
-		t.Fatal(os.ErrNotExist)
+		t.Fatal(util.ErrNotFound)
 	}
 	domain := "who.renzhen.la"
 	cert, err := cfs.New(account, domain, ":5002")

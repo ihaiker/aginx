@@ -4,8 +4,8 @@ import (
 	consulApi "github.com/hashicorp/consul/api"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/util"
 	"net/url"
-	"os"
 	"path/filepath"
 )
 
@@ -90,7 +90,7 @@ func (cs *consulStorage) Get(file string) (*plugins.ConfigurationFile, error) {
 	if kvPair, _, err := cs.client.KV().Get(key, nil); err != nil {
 		return nil, err
 	} else if kvPair == nil {
-		return nil, os.ErrNotExist
+		return nil, util.ErrNotFound
 	} else {
 		reader := plugins.NewFile(file, kvPair.Value)
 		return reader, nil

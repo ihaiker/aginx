@@ -2,19 +2,15 @@ package nginx
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/go-acme/lego/v3/certcrypto"
 	"github.com/ihaiker/aginx/lego"
+	"github.com/ihaiker/aginx/nginx/config"
+	"github.com/ihaiker/aginx/nginx/query"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"os"
 	"strings"
-)
-
-var (
-	ErrNotFound            = os.ErrNotExist
-	ErrRootCannotBeDeleted = errors.New("root cannot be deleted")
 )
 
 func Queries(query ...string) []string {
@@ -22,7 +18,7 @@ func Queries(query ...string) []string {
 }
 
 type Client struct {
-	doc     *Configuration
+	doc     *config.Configuration
 	Email   string
 	Engine  plugins.StorageEngine
 	Lego    *lego.Manager
@@ -47,7 +43,7 @@ func MustClient(email string, engine plugins.StorageEngine, lego *lego.Manager, 
 	return client
 }
 
-func (client Client) Configuration() *Configuration {
+func (client Client) Configuration() *config.Configuration {
 	return client.doc
 }
 
@@ -65,22 +61,22 @@ func (client Client) Store() error {
 	)
 }
 
-func (client *Client) Select(queries ...string) ([]*Directive, error) {
+func (client *Client) Select(queries ...string) ([]*config.Directive, error) {
 	if len(queries) == 0 {
 		return client.doc.Body, nil
 	} else {
-		return client.doc.Select(queries...)
+		return Select(client.doc, queries...)
 	}
 }
 
-func (client *Client) MustSelect(queries ...string) []*Directive {
+func (client *Client) MustSelect(queries ...string) []*config.Directive {
 	directives, err := client.Select(queries...)
 	util.PanicIfError(err)
 	return directives
 }
 
-func (client *Client) Add(queries []string, addDirectives ...*Directive) error {
-	if directives, err := client.Select(queries...); err == ErrNotFound {
+func (client *Client) Add(queries []string, addDirectives ...*config.Directive) error {
+	if directives, err := client.Select(queries...); err == util.ErrNotFound {
 		return err
 	} else {
 		for _, directive := range directives {
@@ -92,7 +88,7 @@ func (client *Client) Add(queries []string, addDirectives ...*Directive) error {
 
 func (client *Client) Delete(queries ...string) error {
 	if len(queries) == 0 {
-		return ErrRootCannotBeDeleted
+		return util.ErrRootCannotBeDeleted
 	}
 	finder := queries[0 : len(queries)-1]
 	directives, err := client.Select(finder...)
@@ -101,12 +97,12 @@ func (client *Client) Delete(queries ...string) error {
 	}
 
 	deleteQuery := queries[len(queries)-1]
-	expr, err := Parser(deleteQuery)
+	expr, err := query.Lexer(deleteQuery)
 	if err != nil {
 		return err
 	}
 
-	err = ErrNotFound
+	err = util.ErrNotFound
 	for _, directive := range directives {
 
 		deleteDirectiveIdx := make([]int, 0)
@@ -127,7 +123,7 @@ func (client *Client) Delete(queries ...string) error {
 	return err
 }
 
-func (client *Client) Modify(queries []string, directive *Directive) error {
+func (client *Client) Modify(queries []string, directive *config.Directive) error {
 	selectDirectives, err := client.Select(queries...)
 	if err != nil {
 		return err
@@ -149,7 +145,7 @@ func (client *Client) hostsd(include string) {
 		}
 	}
 	if !exists {
-		util.PanicIfError(client.Add(Queries("http"), NewDirective("include", include)))
+		util.PanicIfError(client.Add(Queries("http"), config.NewDirective("include", include)))
 	}
 }
 
@@ -164,7 +160,7 @@ func (client *Client) SimpleServer(domain string, ssl bool, address ...string) (
 
 	serverQueries, selectServers := client.selectServer("http", domain)
 	for _, selectServer := range selectServers {
-		if proxyPassDirectives, err := selectServer.Select("location", "proxy_pass"); err == nil {
+		if proxyPassDirectives, err := Select(selectServer, "location", "proxy_pass"); err == nil {
 			proxyPassAddress := proxyPassDirectives[0].Args[0]
 			if !strings.Contains(proxyPassAddress[7:], ":") {
 				upstreamName = proxyPassAddress[len("http://"):]
@@ -183,7 +179,7 @@ func (client *Client) SimpleServer(domain string, ssl bool, address ...string) (
 	upstream, server := SimpleServer(domain, address...)
 	if ssl {
 		sslFile := client.NewCertificate(client.Email, domain)
-		listen := server.MustSelect("listen")[0]
+		listen := MustSelect(server, "listen")[0]
 		listen.Args = []string{"443", "ssl"}
 
 		server.AddBody("ssl_certificate", sslFile.Certificate)
@@ -193,7 +189,7 @@ func (client *Client) SimpleServer(domain string, ssl bool, address ...string) (
 		server.AddBody("ssl_protocols", "TLSv1", "TLSv1.1", "TLSv1.2")
 		server.AddBody("ssl_prefer_server_ciphers", "on")
 	}
-	rewrite := NewDirective("server")
+	rewrite := config.NewDirective("server")
 	{
 		rewrite.AddBody("listen", "80")
 		rewrite.AddBody("server_name", domain)
@@ -202,8 +198,8 @@ func (client *Client) SimpleServer(domain string, ssl bool, address ...string) (
 
 	files, err := client.Select("http", "include('hosts.d/*.conf')", fmt.Sprintf("file('hosts.d/%s.ngx.conf')", domain))
 	if os.IsNotExist(err) {
-		file := NewDirective("file", fmt.Sprintf("hosts.d/%s.ngx.conf", domain))
-		file.Virtual = Include
+		file := config.NewDirective("file", fmt.Sprintf("hosts.d/%s.ngx.conf", domain))
+		file.Virtual = config.Include
 		if ssl {
 			file.AddBodyDirective(upstream, rewrite, server)
 		} else {
@@ -220,7 +216,7 @@ func (client *Client) SimpleServer(domain string, ssl bool, address ...string) (
 	return
 }
 
-func (client *Client) selectServer(first, domain string) (queries []string, selectDirectives []*Directive) {
+func (client *Client) selectServer(first, domain string) (queries []string, selectDirectives []*config.Directive) {
 	serverQuery := fmt.Sprintf("server.server_name('%s')", domain)
 	queries = Queries(first, "include", "*", serverQuery)
 	if directives, err := client.Select(queries...); err == nil {
@@ -235,7 +231,7 @@ func (client *Client) selectServer(first, domain string) (queries []string, sele
 	return
 }
 
-func (client *Client) selectUpStream(first, name string) (queries []string, directive *Directive) {
+func (client *Client) selectUpStream(first, name string) (queries []string, directive *config.Directive) {
 	serverQuery := fmt.Sprintf("upstream('%s')", name)
 	queries = Queries(first, "include", "*", serverQuery)
 	if directives, err := client.Select(queries...); err == nil {

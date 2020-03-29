@@ -5,6 +5,7 @@ import (
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
+	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
@@ -35,7 +36,7 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 		func(ctx iris.Context) *nginx.Client {
 			return nginx.MustClient(email, engine, manager, process)
 		},
-		func(ctx iris.Context) []*nginx.Directive {
+		func(ctx iris.Context) []*ngx.Directive {
 			body, err := ctx.GetBody()
 			util.PanicIfError(err)
 			conf, err := nginx.ReaderReadable(engine, plugins.NewFile("", body))

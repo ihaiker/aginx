@@ -8,7 +8,6 @@ import (
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"net/url"
-	"os"
 	"path/filepath"
 )
 
@@ -85,7 +84,7 @@ func (cs *etcdV3Storage) Get(file string) (*plugins.ConfigurationFile, error) {
 	if response, err := cs.api.Get(cs.api.Ctx(), path); err != nil {
 		return nil, err
 	} else if response.Count == 0 {
-		return nil, os.ErrNotExist
+		return nil, util.ErrNotFound
 	} else {
 		reader := plugins.NewFile(file, response.Kvs[0].Value)
 		return reader, nil

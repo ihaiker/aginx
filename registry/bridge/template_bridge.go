@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/api"
 	"github.com/ihaiker/aginx/nginx"
+	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/registry/functions"
 	"github.com/ihaiker/aginx/util"
@@ -26,7 +27,7 @@ func (self *TemplateRegisterBridge) createRegisterInclude() (err error) {
 	if _, err = self.Aginx.Directive().Select("http", "include('register.d/*.ngx.conf')"); err != nil {
 		logger.Debug("create NGINX directive (include register.d/*.ngx.conf)")
 		err = self.Aginx.Directive().Add(api.Queries("http"),
-			nginx.NewDirective("include", "register.d/*.ngx.conf"))
+			ngx.NewDirective("include", "register.d/*.ngx.conf"))
 		if err != nil {
 			logger.Debug("create NGINX directive  (include register.d/*.ngx.conf error: ", err.Error())
 		} else {

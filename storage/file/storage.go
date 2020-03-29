@@ -91,7 +91,7 @@ func (cs *fileStorage) Remove(file string) error {
 func (fs *fileStorage) Get(file string) (reader *plugins.ConfigurationFile, err error) {
 	path := fs.Abs(file)
 	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
-		return nil, os.ErrNotExist
+		return nil, util.ErrNotFound
 	}
 
 	rd, err := ioutil.ReadFile(path)

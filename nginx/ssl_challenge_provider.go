@@ -3,12 +3,13 @@ package nginx
 import (
 	"fmt"
 	"github.com/go-acme/lego/v3/challenge/http01"
+	"github.com/ihaiker/aginx/nginx/config"
 	"time"
 )
 
 type sslProvider struct {
 	queries   []string
-	directive *Directive
+	directive *config.Directive
 	api       *Client
 	process   *Process
 }
@@ -17,7 +18,7 @@ func NewAginxProvider(api *Client, process *Process) *sslProvider {
 	return &sslProvider{api: api, process: process}
 }
 
-func (self *sslProvider) selectDirective(domain string) (queries []string, directive *Directive) {
+func (self *sslProvider) selectDirective(domain string) (queries []string, directive *config.Directive) {
 	serverQuery := fmt.Sprintf("server.[server_name('%s') & listen('80')]", domain)
 	queries = Queries("http", "include", "*", serverQuery)
 	if directives, err := self.api.Select(queries...); err == nil {
@@ -32,15 +33,15 @@ func (self *sslProvider) selectDirective(domain string) (queries []string, direc
 	return
 }
 
-func (self *sslProvider) location(token, keyAuth string) *Directive {
-	location := NewDirective("location", http01.ChallengePath(token))
+func (self *sslProvider) location(token, keyAuth string) *config.Directive {
+	location := config.NewDirective("location", http01.ChallengePath(token))
 	location.AddBody("add_header", "Content-Type", `"text/plain"`)
 	location.AddBody("return", "200", fmt.Sprintf("'%s'", keyAuth))
 	return location
 }
 
-func (self *sslProvider) server(domain, token, keyAuth string) *Directive {
-	server := NewDirective("server")
+func (self *sslProvider) server(domain, token, keyAuth string) *config.Directive {
+	server := config.NewDirective("server")
 	server.AddBody("listen", "80")
 	server.AddBody("server_name", domain)
 	server.AddBodyDirective(self.location(token, keyAuth))

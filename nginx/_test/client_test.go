@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/nginx"
+	"github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/storage/file"
 	"github.com/kr/pretty"
 	"github.com/sirupsen/logrus"
@@ -60,12 +61,12 @@ func TestClientStream(t *testing.T) {
 }
 
 func TestClient_Add(t *testing.T) {
-	access_log := nginx.NewDirective("access_log", "logs/domain2.access.log", "main")
-	headers := []*nginx.Directive{
+	access_log := config.NewDirective("access_log", "logs/domain2.access.log", "main")
+	headers := []*config.Directive{
 		access_log,
-		nginx.NewDirective("proxy_set_header", "Host", "$host"),
-		nginx.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
-		nginx.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
+		config.NewDirective("proxy_set_header", "Host", "$host"),
+		config.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
+		config.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
 	}
 
 	finder := nginx.Queries("http", "server.[server_name('domain1.com') & listen('443')]")
@@ -92,13 +93,13 @@ func TestClient_Delete(t *testing.T) {
 }
 
 func TestClientAll(t *testing.T) {
-	server := &nginx.Directive{
+	server := &config.Directive{
 		Name: "server",
-		Body: []*nginx.Directive{
-			nginx.NewDirective("server_name", "shui.renzhen.la"),
-			nginx.NewDirective("proxy_set_header", "Host", "$host"),
-			nginx.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
-			nginx.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
+		Body: []*config.Directive{
+			config.NewDirective("server_name", "shui.renzhen.la"),
+			config.NewDirective("proxy_set_header", "Host", "$host"),
+			config.NewDirective("proxy_set_header", "X-Real-IP", "$remote_addr"),
+			config.NewDirective("proxy_set_header", "X-Forwarded-For", "$proxy_add_x_forwarded_for"),
 		},
 	}
 	if err := api.Add(nginx.Queries("http"), server); err != nil {
@@ -113,7 +114,7 @@ func TestClientAll(t *testing.T) {
 	shui, _ = api.Select("http", "server.server_name('shui.renzhen.la')")
 	_, _ = pretty.Println(shui)
 
-	modifyDirective := nginx.NewDirective("server_name", "who.renzhen.la")
+	modifyDirective := config.NewDirective("server_name", "who.renzhen.la")
 	if err := api.Modify(nginx.Queries("http", "server", "server_name('shui.renzhen.la')"), modifyDirective); err != nil {
 		t.Fatal(err)
 	}

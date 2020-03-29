@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+var (
+	ErrNotFound            = errors.New("NotFound")
+	ErrRootCannotBeDeleted = errors.New("root cannot be deleted")
+)
+
 func Safe(fn func()) (err error) {
 	Try(fn, func(e error) {
 		err = e

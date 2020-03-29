@@ -1,4 +1,4 @@
-package nginx
+package query
 
 import (
 	"github.com/alecthomas/participle"
@@ -48,7 +48,7 @@ type Expression struct {
 	Children  []*QueryChildren `("." @@)*`
 }
 
-func Parser(str string) (expr *Expression, err error) {
+func Lexer(str string) (expr *Expression, err error) {
 	expr = &Expression{}
 	parser := participle.MustBuild(expr)
 	err = parser.ParseString(str, expr)

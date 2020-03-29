@@ -7,7 +7,6 @@ import (
 	"github.com/ihaiker/aginx/util"
 	"github.com/samuel/go-zookeeper/zk"
 	"net/url"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -122,11 +121,11 @@ func (zks *zkStorage) Get(file string) (*plugins.ConfigurationFile, error) {
 	path := zks.folder + "/" + file
 	if data, _, err := zks.keeper.Get(path); err != nil {
 		if err.Error() == "zk: node does not exist" {
-			err = os.ErrNotExist
+			err = util.ErrNotFound
 		}
 		return nil, err
 	} else if bytes.Equal(data, zkDirData) {
-		return nil, os.ErrNotExist
+		return nil, util.ErrNotFound
 	} else {
 		return plugins.NewFile(file, data), nil
 	}

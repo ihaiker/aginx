@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ihaiker/aginx/nginx"
+	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
@@ -57,7 +58,7 @@ func (as *fileController) New(ctx iris.Context, client *nginx.Client) int {
 			}
 		}
 		if need {
-			_ = client.Add(nginx.Queries("http"), nginx.NewDirective("include", filePath))
+			_ = client.Add(nginx.Queries("http"), ngx.NewDirective("include", filePath))
 		}
 		util.PanicIfError(as.process.Test(client.Configuration(), func(testDir string) error {
 			path := filepath.Join(testDir, filePath)

@@ -1,10 +1,11 @@
-package nginx
+package query
 
 import (
+	"github.com/ihaiker/aginx/nginx/config"
 	"strings"
 )
 
-func (a QueryArgs) Match(directive *Directive) bool {
+func (a QueryArgs) Match(directive *config.Directive) bool {
 	if !match(a.Arg.Comparison, directive.Args, a.Arg.Value) {
 		return false
 	}
@@ -24,7 +25,7 @@ func (a QueryArgs) Match(directive *Directive) bool {
 	return true
 }
 
-func (c *QueryChildren) Match(directive *Directive) bool {
+func (c *QueryChildren) Match(directive *config.Directive) bool {
 	if c.Directive != nil {
 		return c.Directive.MatchAny(directive.Body)
 	} else {
@@ -44,7 +45,7 @@ func (c *QueryChildren) Match(directive *Directive) bool {
 	return false
 }
 
-func (e *QueryDirective) Match(directive *Directive) bool {
+func (e *QueryDirective) Match(directive *config.Directive) bool {
 
 	if e.Name != "" && !match(e.Comparison, []string{directive.Name}, e.Name) {
 		return false
@@ -61,7 +62,7 @@ func (e *QueryDirective) Match(directive *Directive) bool {
 	return true
 }
 
-func (e *QueryDirective) MatchAny(directive []*Directive) bool {
+func (e *QueryDirective) MatchAny(directive []*config.Directive) bool {
 	for _, d := range directive {
 		if e.Match(d) {
 			return true
@@ -70,15 +71,15 @@ func (e *QueryDirective) MatchAny(directive []*Directive) bool {
 	return false
 }
 
-func (e *Expression) Match(directive *Directive) bool {
+func (e *Expression) Match(directive *config.Directive) bool {
 	if !e.Directive.Match(directive) {
 		return false
 	}
 
 	if e.Children != nil {
-		search := &Directive{Body: directive.Body}
+		search := &config.Directive{Body: directive.Body}
 		for _, child := range e.Children {
-			match := &Directive{Body: make([]*Directive, 0)}
+			match := &config.Directive{Body: make([]*config.Directive, 0)}
 			if child.Match(search) {
 				match.Body = append(match.Body, search.Body...)
 			}

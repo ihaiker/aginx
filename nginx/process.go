@@ -2,6 +2,7 @@ package nginx
 
 import (
 	"github.com/ihaiker/aginx/logs"
+	"github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/util"
 	"os"
 	"os/exec"
@@ -52,7 +53,7 @@ func (sp *Process) Reload() error {
 	return err
 }
 
-func (sp *Process) Test(cfg *Configuration, beforeHocks ...func(testDir string) error) (err error) {
+func (sp *Process) Test(cfg *config.Configuration, beforeHocks ...func(testDir string) error) (err error) {
 	defer util.CatchError(err)
 	configDir := MustConfigDir()
 	testDir := filepath.Dir(os.TempDir()) + "/aginx"

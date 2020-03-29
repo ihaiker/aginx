@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/ihaiker/aginx/nginx"
+	"github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
 )
@@ -10,8 +11,8 @@ type simpleController struct {
 }
 
 func (simple *simpleController) selectDirective(queries ...[]string) interface{} {
-	return func(client *nginx.Client) []*nginx.Directive {
-		directives := make([]*nginx.Directive, 0)
+	return func(client *nginx.Client) []*config.Directive {
+		directives := make([]*config.Directive, 0)
 		for _, query := range queries {
 			if ds, err := client.Select(query...); err == nil {
 				directives = append(directives, ds...)

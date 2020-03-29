@@ -3,7 +3,7 @@ package api
 import (
 	"bytes"
 	"errors"
-	"github.com/ihaiker/aginx/nginx"
+	nginx "github.com/ihaiker/aginx/nginx/config"
 	"net/http"
 )
 

@@ -1,26 +1,25 @@
-package nginx
+package config
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/ihaiker/aginx/util"
 	"strings"
 )
 
-type Virtual string
+type (
+	Virtual string
 
-const (
-	Include Virtual = "include"
+	Directive struct {
+		Line    int          `json:"line"`
+		Virtual Virtual      `json:"virtual,omitempty"`
+		Name    string       `json:"name"`
+		Args    []string     `json:"args,omitempty"`
+		Body    []*Directive `json:"body,omitempty"`
+	}
+	Configuration = Directive
 )
 
-type Directive struct {
-	Virtual Virtual      `json:"virtual,omitempty"`
-	Name    string       `json:"name"`
-	Args    []string     `json:"args,omitempty"`
-	Body    []*Directive `json:"body,omitempty"`
-}
-
-type Configuration = Directive
+var Include Virtual = "include"
 
 func NewDirective(name string, args ...string) *Directive {
 	return &Directive{Name: name, Args: args}
@@ -67,7 +66,9 @@ func (d *Directive) AddBodyDirective(directive ...*Directive) {
 
 func (d *Directive) Pretty(prefix int) string {
 	prefixString := strings.Repeat(" ", prefix*4)
-	if d.Virtual != "" {
+	if d.Name == "#" {
+		return fmt.Sprintf("%s%s", prefixString, d.Args[0])
+	} else if d.Virtual != "" {
 		return ""
 	} else {
 		out := bytes.NewBufferString(prefixString)
@@ -89,41 +90,4 @@ func (d *Directive) Pretty(prefix int) string {
 		}
 		return out.String()
 	}
-}
-
-func (d *Directive) find(directives []*Directive, query string) ([]*Directive, error) {
-	expr, err := Parser(query)
-	if err != nil {
-		return nil, fmt.Errorf("Search condition error：[%s]", query)
-	}
-	matched := make([]*Directive, 0)
-	for _, directive := range directives {
-		for _, body := range directive.Body {
-			if expr.Match(body) {
-				matched = append(matched, body)
-			}
-		}
-	}
-	return matched, nil
-}
-
-func (d *Directive) Select(queries ...string) ([]*Directive, error) {
-	current := []*Directive{d}
-	for _, query := range queries {
-		directives, err := d.find(current, query)
-		if err != nil {
-			return nil, err
-		}
-		if directives == nil || len(directives) == 0 {
-			return nil, ErrNotFound
-		}
-		current = directives
-	}
-	return current, nil
-}
-
-func (d *Directive) MustSelect(queries ...string) []*Directive {
-	directives, err := d.Select(queries...)
-	util.PanicIfError(err)
-	return directives
 }
