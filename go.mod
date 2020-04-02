@@ -2,9 +2,11 @@ module github.com/ihaiker/aginx
 
 go 1.13.7
 
-replace github.com/h2non/gock => gopkg.in/h2non/gock.v1 v1.0.14
-
-replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200204220554-5f6d6f3f2203
+replace (
+	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
+	github.com/docker/docker => github.com/docker/engine v1.4.2-0.20200204220554-5f6d6f3f2203
+	github.com/h2non/gock => gopkg.in/h2non/gock.v1 v1.0.14
+)
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect

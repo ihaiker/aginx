@@ -50,7 +50,7 @@ func exposeApi(address string, api *nginx.Client) bool {
 	PanicIfError(err)
 	//host 如果不是指定了，就要获取地址
 	if host == "" || host == "0.0.0.0" {
-		host = GetRecommendIp()
+		host = GetRecommendIp()[0]
 	}
 	apiAddress := fmt.Sprintf("%s:%s", host, port)
 	logger.Infof("expose api %s to %s ", domain, apiAddress)

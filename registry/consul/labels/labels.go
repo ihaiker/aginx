@@ -3,6 +3,7 @@ package consulLabels
 import (
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var keyRegexp = "aginx-domain"
@@ -14,15 +15,20 @@ type Label struct {
 	AutoSSL bool
 }
 
-func FindLabel(labs map[string]string) *Label {
+func FindLabel(labs map[string]string) []*Label {
 	label, has := labs[keyRegexp]
 	if !has {
 		return nil
 	}
-	groups := valueRegexp.FindStringSubmatch(label)
-	weight, _ := strconv.Atoi(groups[4])
-	return &Label{
-		Domain: groups[1], Weight: weight,
-		AutoSSL: groups[6] == "ssl",
+	values := strings.Split(label, ";")
+	labels := make([]*Label, 0)
+	for _, value := range values {
+		groups := valueRegexp.FindStringSubmatch(value)
+		weight, _ := strconv.Atoi(groups[4])
+		labels = append(labels, &Label{
+			Domain: groups[1], Weight: weight,
+			AutoSSL: groups[6] == "ssl",
+		})
 	}
+	return labels
 }

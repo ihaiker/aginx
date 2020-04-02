@@ -26,7 +26,7 @@ func subDirectives(it tokenIterator) ([]*Directive, error) {
 		if !has {
 			break
 		}
-		if token == "}" {
+		if token == ";" || token == "}" {
 			break
 		} else if token[0] == '#' { //注释
 			directives = append(directives, &Directive{

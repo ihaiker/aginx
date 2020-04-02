@@ -1,4 +1,4 @@
-# docker 
+# docker
 
 本章节将详细介绍如何使docker的服务发布到nginx. 
 
@@ -24,7 +24,7 @@ aginx.domain(\.(\d+))?
 
 **value的正则**
 ```goregexp
-([a-zA-Z0-9-_\.]*)(,(weight=(\d+)))?(,(internal))?(,(ssl))?(,(virtual))?(,(nodes))?
+([a-zA-Z0-9-_\.]*)(,(weight=(\d+)))?(,(internal))?(,(ssl))?(,(virtual))?(,(nodes))?(,(networks=(\\d))
 ```
 
 **内容说明：**
@@ -34,15 +34,17 @@ aginx.domain(\.(\d+))?
 - internal 获取容器的内部地址发布到nginx上。
 - virtual 使用vip地址发布到nginx上。（仅在swarm service起效）
 - nodes 使用swarm所有节点地址发布到nginx上。（仅在swarm service起效）
+- networks 多网络绑定情况下，优先选择网络。例如：10.24.0
 
 **实例：**
+
 - 1、aginx.domain=api.aginx.io
 - 2、aginx.domain.8500=api.aginx.io,weight=2
 - 3、aginx.domain=api.aginx.io,ssl
 - 3、aginx.domain=api.aginx.io,weight=1,ssl
 - 4、aginx.domain=api.aginx.io,internal
 - 5、aginx.domain=api.aginx.io,virtual
-
+- 6、aginx.domain=api.aginx.io,virtual;api2.aginx.io,internal (1.1.3后版本支持，多域名绑定)
 
 **模板使用：**
 

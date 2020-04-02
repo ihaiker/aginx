@@ -49,20 +49,19 @@ func (self *ConsulLabelRegister) allServices() {
 			continue
 		} else {
 			for _, serviceEntry := range catalogServiceEntries {
-				if label := FindLabel(serviceEntry.Service.Meta); label != nil {
-					if serviceEntry.Checks.AggregatedStatus() == consulApi.HealthPassing {
-						weight := label.Weight
-						if weight == 0 {
-							weight = serviceEntry.Service.Weights.Passing
+				if labels := FindLabel(serviceEntry.Service.Meta); labels != nil && len(labels) > 0 {
+					for _, label := range labels {
+						if serviceEntry.Checks.AggregatedStatus() == consulApi.HealthPassing {
+							weight := label.Weight
+							if weight == 0 {
+								weight = serviceEntry.Service.Weights.Passing
+							}
+							searchServices = append(searchServices, plugins.Domain{
+								ID: serviceEntry.Service.ID, Domain: label.Domain,
+								Weight: weight, AutoSSL: label.AutoSSL, Attrs: serviceEntry.Service.Meta,
+								Address: fmt.Sprintf("%s:%d", serviceEntry.Service.Address, serviceEntry.Service.Port),
+							})
 						}
-						searchServices = append(searchServices, plugins.Domain{
-							ID:      serviceEntry.Service.ID,
-							Domain:  label.Domain,
-							Address: fmt.Sprintf("%s:%d", serviceEntry.Service.Address, serviceEntry.Service.Port),
-							Weight:  weight,
-							AutoSSL: label.AutoSSL,
-							Attrs:   serviceEntry.Service.Meta,
-						})
 					}
 				}
 			}

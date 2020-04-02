@@ -8,18 +8,19 @@ import (
 	"time"
 )
 
-func GetRecommendIp() string {
+func GetRecommendIp() []string {
 	return GetIP([]string{"docker0"}, []string{"eth0"})
 }
 
 //获取本机IP
 // IgnoredInterfaces 忽略的网卡
 // PreferredNetworks 倾向使用的地址
-func GetIP(IgnoredInterfaces, PreferredNetworks []string) string {
+func GetIP(IgnoredInterfaces, PreferredNetworks []string) []string {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return "0.0.0.0"
+		return []string{"0.0.0.0"}
 	}
+
 	addresies := []string{}
 
 FACE_LOOP:
@@ -48,7 +49,7 @@ FACE_LOOP:
 					!ipNet.IP.IsUnspecified() {
 					if ipNet.IP.To4() != nil {
 						if preferred {
-							return ipNet.IP.String()
+							return []string{ipNet.IP.String()}
 						} else {
 							addresies = append(addresies, ipNet.IP.String())
 						}
@@ -57,10 +58,7 @@ FACE_LOOP:
 			}
 		}
 	}
-	if len(addresies) != 0 {
-		return addresies[0]
-	}
-	return "0.0.0.0"
+	return addresies
 }
 
 func SockTo(host string, port uint32, timeout time.Duration) bool {
@@ -84,8 +82,15 @@ func Ping(host string, count int, interval, timeout time.Duration) bool {
 	return stats.PacketsSent == stats.PacketsRecv
 }
 
-func IsSegment(a, b string) bool {
+//是否和本地网络在同一网段
+func IsSegment(a string) bool {
+	localIps := GetRecommendIp()
 	aseg := a[:strings.LastIndex(a, ".")]
-	bseg := b[:strings.LastIndex(b, ".")]
-	return aseg == bseg
+	for _, b := range localIps {
+		bseg := b[:strings.LastIndex(b, ".")]
+		if aseg == bseg {
+			return true
+		}
+	}
+	return false
 }

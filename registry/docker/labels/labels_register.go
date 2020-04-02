@@ -6,7 +6,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
-	dockerClient "github.com/docker/docker/client"
 	"github.com/ihaiker/aginx/logs"
 	"github.com/ihaiker/aginx/plugins"
 	"strings"
@@ -15,17 +14,16 @@ import (
 
 var logger = logs.New("register", "engine", "docker.labels")
 var ErrExplicitlyPort = errors.New("Port not explicitly specified")
+var todo = context.TODO()
 
 type DockerLabelsRegister struct {
-	docker *dockerClient.Client
+	docker *dockerWrapper
 
 	events chan interface{}
 
 	closeC chan struct{}
 
 	servers map[string] /*domain*/ map[string] /*container id or service name[1..replaced]*/ plugins.Domain
-
-	ip string
 }
 
 func (self *DockerLabelsRegister) TemplateFuncMap() template.FuncMap {
@@ -36,37 +34,27 @@ func (self *DockerLabelsRegister) Support() plugins.RegistrySupport {
 	return plugins.RegistrySupportLabel
 }
 
-func LabelsRegister(ip string) (*DockerLabelsRegister, error) {
-	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv)
+func LabelsRegister(ip string, swarm bool) (*DockerLabelsRegister, error) {
+	docker, err := NewDockerWrapper(ip, swarm)
 	if err != nil {
 		return nil, err
 	}
 	return &DockerLabelsRegister{
-		docker: docker, events: make(chan interface{}, 10), ip: ip,
+		docker: docker, events: make(chan interface{}, 10),
 		closeC: make(chan struct{}), servers: map[string]map[string]plugins.Domain{},
 	}, nil
 }
 
 func (self *DockerLabelsRegister) listService() (domains []plugins.Domain) {
 	domains = make([]plugins.Domain, 0)
-	if info, err := self.docker.Info(context.TODO()); err != nil {
-		logger.Warn("docker info error ", err)
-
-	} else if info.Swarm.NodeID != "" {
-		if !info.Swarm.ControlAvailable {
-			logger.Debug("docker is swarm worker, ignore list services")
-		} else {
-			logger.Debug("docker swarm manager, list services")
-			if services, err := self.docker.ServiceList(context.TODO(), types.ServiceListOptions{}); err != nil {
-				logger.Warn("docker list services error: ", err)
-			} else {
-				for _, service := range services {
-					if ds, err := self.findFromService(service); err == nil && len(ds) > 0 {
-						logger.Info("found service ", service.Spec.Name, " domains: ", strings.Join(ds.GetDomains(), ","))
-						self.appendDomains(ds)
-						domains = append(domains, ds...)
-					}
-				}
+	if services, err := self.docker.ServiceList(types.ServiceListOptions{}); err != nil {
+		logger.Warn("docker list services error: ", err)
+	} else {
+		for _, service := range services {
+			if ds, err := self.findFromService(service); err == nil && len(ds) > 0 {
+				logger.Info("found service ", service.Spec.Name, " domains: ", strings.Join(ds.GetDomains(), ","))
+				self.appendDomains(ds)
+				domains = append(domains, ds...)
 			}
 		}
 	}
@@ -74,10 +62,9 @@ func (self *DockerLabelsRegister) listService() (domains []plugins.Domain) {
 }
 
 func (self *DockerLabelsRegister) allDomains() plugins.Domains {
-	logger.Debug("Search all containers and services")
 	domains := self.listService()
 
-	if containers, err := self.docker.ContainerList(context.TODO(), types.ContainerListOptions{
+	if containers, err := self.docker.ContainerList(types.ContainerListOptions{
 		All: true, Filters: filters.NewArgs(filters.Arg("status", "running")),
 	}); err != nil {
 		logger.Warn("list container error:", err)
@@ -180,39 +167,36 @@ func (self *DockerLabelsRegister) containerEvent(event events.Message) {
 	}
 }
 
-func (self *DockerLabelsRegister) Start() error {
-	logger.Info("start DOCKER registry")
+func (self *DockerLabelsRegister) listenerEvent() {
+	for {
+		select {
+		case <-self.closeC:
+			close(self.events)
+			return
 
-	self.events <- self.allDomains().Group()
-
-	eventChannel, errChannel := self.docker.Events(context.TODO(), types.EventsOptions{})
-	go func() {
-		for {
-			select {
-			case <-self.closeC:
-				close(self.events)
-				return
-			case err, has := <-errChannel:
-				if has {
-					logger.Warn("DOCKER event error ", err)
-				}
-			case event, has := <-eventChannel:
-				if !has {
-					continue
-				}
-				if event.Type == "service" {
-					self.serviceEvent(event)
-				} else if event.Type == "container" {
-					self.containerEvent(event)
-				}
+		case event, has := <-self.docker.Events:
+			if !has {
+				continue
+			}
+			if event.Type == "service" {
+				self.serviceEvent(event)
+			} else if event.Type == "container" {
+				self.containerEvent(event)
 			}
 		}
-	}()
+	}
+}
+
+func (self *DockerLabelsRegister) Start() error {
+	logger.Info("start docker registry")
+	self.events <- self.allDomains().Group()
+	go self.listenerEvent()
 	return nil
 }
 
 func (self *DockerLabelsRegister) Stop() error {
 	close(self.closeC)
+	self.docker.Stop()
 	return nil
 }
 

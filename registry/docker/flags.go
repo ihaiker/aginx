@@ -29,6 +29,7 @@ and AGINX flags --docker-host, --docker-tls-verify, --docker-cert-path, --docker
 	cmd.PersistentFlags().StringArrayP("docker-container-filter", "", []string{".*"}, "Filtering containers that need attention, see regexp")
 
 	cmd.PersistentFlags().StringP("docker-ip", "", "", `IP for ports mapped to the host`)
+	cmd.PersistentFlags().BoolP("docker-swarm", "", false, `docker is swarm mode. If true, you need to specify the form --docker-host=tcp://managerIp:port, otherwise the setting fails`)
 }
 
 func dockerEnv(keys ...string) {
@@ -63,13 +64,6 @@ func LoadRegistry(cmd *cobra.Command) (plugins.Register, error) {
 		}
 		return dockerTemplates.TemplateRegister(ip, filterServices, filterContainers)
 	}
-
-	return dockerLabels.LabelsRegister(ip)
-}
-
-var Plugin = &plugins.RegistryPlugin{
-	Name:             "docker",
-	LoadRegistry:     LoadRegistry,
-	AddRegistryFlags: AddRegistryFlags,
-	Support:          plugins.RegistrySupportAll,
+	swarm := viper.GetBool("docker-swarm")
+	return dockerLabels.LabelsRegister(ip, swarm)
 }

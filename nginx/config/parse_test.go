@@ -36,3 +36,12 @@ func TestParseConfig(t *testing.T) {
 	bs, _ := json.MarshalIndent(cfg, "", "\t")
 	fmt.Println(string(bs))
 }
+
+func TestParseAginx(t *testing.T) {
+	cfg, err := Parse("../../aginx.conf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bs, _ := json.MarshalIndent(cfg, "", "\t")
+	fmt.Println(string(bs))
+}

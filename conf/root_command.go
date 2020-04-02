@@ -10,8 +10,9 @@ func SetDefaultCommand(root, setDef *cobra.Command) {
 	//set node is default command
 	if runCommand, args, err := root.Find(os.Args[1:]); err == nil {
 		if runCommand == root {
-			root.SetArgs(args)
 			root.InitDefaultHelpFlag()
+			_ = root.ParseFlags(args)
+
 			if help, err := root.Flags().GetBool("help"); err == nil && help {
 				// show help
 			} else {
@@ -44,7 +45,7 @@ func SetDefaultCommand(root, setDef *cobra.Command) {
 					}
 					break
 				}
-				os.Args = append(os.Args[:idx], append([]string{setDef.Name()}, os.Args[idx:]...)...)
+				root.SetArgs(append(os.Args[1:idx], append([]string{setDef.Name()}, os.Args[idx:]...)...))
 			}
 		}
 	}

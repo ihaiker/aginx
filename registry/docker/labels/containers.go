@@ -1,12 +1,12 @@
 package dockerLabels
 
 import (
-	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 	"github.com/ihaiker/aginx/plugins"
 	"strconv"
+	"strings"
 )
 
 type UsePort struct {
@@ -84,12 +84,13 @@ func (self *DockerLabelsRegister) findContainerPort(container types.ContainerJSO
 }
 
 func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins.Domains, error) {
-	if container, err := self.docker.ContainerInspect(context.TODO(), containerId); err != nil {
+	if container, info, err := self.docker.ContainerInspect(containerId); err != nil {
 		return nil, err
 	} else if labs := FindLabels(container.Config.Labels, true); labs.Has() {
 		domains := plugins.Domains{}
-		for port, label := range labs {
-			usePort, err := self.findContainerPort(container, port)
+
+		for _, label := range labs {
+			usePort, err := self.findContainerPort(container, label.Port)
 			if err != nil {
 				return nil, err
 			}
@@ -97,24 +98,33 @@ func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins
 				ID: containerId, Domain: label.Domain,
 				Weight: label.Weight, AutoSSL: label.AutoSSL, Attrs: container.Config.Labels,
 			}
-			if usePort.PublishedPort != 0 && self.ip != "" {
-				domain.Address = self.ip + ":" + strconv.Itoa(usePort.PublishedPort)
-			}
 
-			if container.HostConfig.NetworkMode.IsHost() {
-				domain.Address = self.ip + ":" + strconv.Itoa(usePort.InternalPort)
-			}
-
-			if label.Internal || domain.Address == "" {
-				nm := container.HostConfig.NetworkMode
-				if nm != "bridge" && nm != "default" && nm != "host" {
-					domain.Address = fmt.Sprintf("%s:%d", container.NetworkSettings.Networks[string(nm)].IPAddress, usePort.InternalPort)
-				} else {
+			if label.Internal && !container.HostConfig.NetworkMode.IsHost() {
+				if label.Networks != "" {
+					for _, network := range container.NetworkSettings.Networks {
+						if strings.HasPrefix(network.IPAddress, label.Networks) {
+							domain.Address = fmt.Sprintf("%s:%d", network.IPAddress, usePort.InternalPort)
+							break
+						}
+					}
+				}
+				if domain.Address == "" {
 					for _, network := range container.NetworkSettings.Networks {
 						domain.Address = fmt.Sprintf("%s:%d", network.IPAddress, usePort.InternalPort)
+						break
 					}
 				}
 			}
+
+			if domain.Address == "" && usePort.PublishedPort != 0 && info.ip != "" {
+				domain.Address = fmt.Sprintf("%s:%d", info.ip, usePort.PublishedPort)
+			}
+
+			if domain.Address == "" {
+				host := container.NetworkSettings.Networks[string(container.HostConfig.NetworkMode)].IPAddress
+				domain.Address = fmt.Sprintf("%s:%d", host, usePort.InternalPort)
+			}
+
 			domains = append(domains, domain)
 		}
 		return domains, nil

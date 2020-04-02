@@ -6,7 +6,6 @@ import (
 	"github.com/ihaiker/aginx/plugins"
 	. "github.com/ihaiker/aginx/util"
 	"github.com/sirupsen/logrus"
-	"os"
 	"testing"
 )
 
@@ -14,10 +13,12 @@ func init() {
 	logs.SetLevel(logrus.DebugLevel)
 }
 
-func TestEnv(t *testing.T) {
-	for _, s := range os.Environ() {
-		t.Log(s)
-	}
+func TestLabel(t *testing.T) {
+	lables := FindLabels(map[string]string{
+		"aginx.domain":      "a.com;b.com",
+		"aginx.domain.8080": "www.b.com,networks=10.24.0",
+	}, true)
+	t.Log(lables.String())
 }
 
 func TestDocker(t *testing.T) {

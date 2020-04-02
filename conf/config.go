@@ -72,7 +72,9 @@ func simpleServer(directive *config.Directive) ([]string, error) {
 func convert(cmd *cobra.Command, previousLayer string, directives []*config.Directive) (map[string]interface{}, error) {
 	parameters := make(map[string]interface{})
 	for _, directive := range directives {
-		if directive.Name == "server" {
+		if directive.Name == "#" {
+			//忽略注释
+		} else if directive.Name == "server" {
 			if servers, err := simpleServer(directive); err != nil {
 				return nil, err
 			} else {

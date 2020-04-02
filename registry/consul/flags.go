@@ -73,10 +73,3 @@ func LoadRegistry(cmd *cobra.Command) (plugins.Register, error) {
 		return consulLabels.NewLabelRegister(client), nil
 	}
 }
-
-var Plugin = &plugins.RegistryPlugin{
-	Name:             "consul",
-	LoadRegistry:     LoadRegistry,
-	AddRegistryFlags: AddRegistryFlags,
-	Support:          plugins.RegistrySupportAll,
-}

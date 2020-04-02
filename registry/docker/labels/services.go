@@ -1,18 +1,14 @@
 package dockerLabels
 
 import (
-	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/swarm"
-	dockerClient "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
-	"os"
 	"strings"
-	"time"
 )
 
 func (self *DockerLabelsRegister) firstPort(portSet nat.PortSet) int {
@@ -22,77 +18,49 @@ func (self *DockerLabelsRegister) firstPort(portSet nat.PortSet) int {
 	return 0 //ignore
 }
 
-func (self *DockerLabelsRegister) nodeContainerImageInspect(nodeId, containerId string) (nat.PortSet, error) {
-	node, _, err := self.docker.NodeInspectWithRaw(context.TODO(), nodeId)
-	if err != nil {
-		return nil, err
-	}
-
-	host := os.Getenv("DOCKER_HOST")
-	port := host[strings.LastIndex(host, ":")+1:]
-	dockerNode := fmt.Sprintf("tcp://%s:%s", node.Status.Addr, port)
-	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithHost(dockerNode))
-	containerInspect, err := docker.ContainerInspect(context.TODO(), containerId)
-	if err != nil {
-		return nil, err
-	}
-	imageId := containerInspect.Image
-	imageInspect, _, err := docker.ImageInspectWithRaw(context.TODO(), imageId)
-	if err != nil {
-		return nil, err
-	}
-	return imageInspect.Config.ExposedPorts, nil
-}
-
 func (self *DockerLabelsRegister) imagePort(service swarm.Service) nat.PortSet {
-	tasks, err := self.docker.TaskList(context.TODO(), types.TaskListOptions{Filters: filters.NewArgs(filters.Arg("service", service.Spec.Name))})
+	tasks, err := self.docker.TaskList(types.TaskListOptions{Filters: filters.NewArgs(filters.Arg("service", service.Spec.Name))})
 	if err != nil {
 		return nat.PortSet{}
 	}
 	for _, task := range tasks {
-		if task.Status.State == swarm.TaskStateRunning || task.Status.State == swarm.TaskStateShutdown {
-			if inspect, err := self.nodeContainerImageInspect(task.NodeID, task.Status.ContainerStatus.ContainerID); err == nil {
-				return inspect
+		if task.Status.State == swarm.TaskStateRunning {
+			if container, _, err := self.docker.ContainerInspect(task.Status.ContainerStatus.ContainerID); err == nil {
+				if image, _, err := self.docker.ImageInspectWithRaw(container.Image); err == nil {
+					return image.Config.ExposedPorts
+				}
 			}
 		}
 	}
 	return nat.PortSet{}
 }
 
-func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32) (address string) {
+func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32, preferredNetworks string) (address string) {
 	defer util.Catch(func(err error) {
 		logger.Warn("get virtual address error: ", err)
-		address = self.ip
 	})
 
-	host := ""
-	//此处，可能获取不到端口因为可能服务还未起来，端口并未打开
+	hosts := make([]string, 0)
 	for _, vip := range service.Endpoint.VirtualIPs {
 		ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
-		if util.SockTo(ip, port, time.Second) {
-			host = ip
-			break
-		}
+		hosts = append(hosts, ip)
 	}
-	//所以ping在其后，同网段查找
-	if host == "" {
-		localIp := util.GetRecommendIp()
-		for _, vip := range service.Endpoint.VirtualIPs {
-			ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
-			if util.IsSegment(ip, localIp) {
-				host = ip
-				break
+	if preferredNetworks != "" {
+		for _, host := range hosts {
+			if strings.HasPrefix(host, preferredNetworks) {
+				address = fmt.Sprintf("%s:%d", host, port)
+				return
 			}
 		}
 	}
 
-	address = fmt.Sprintf("%s:%d", host, port)
+	address = fmt.Sprintf("%s:%d", hosts[0], port)
 	return
 }
 
 func (self *DockerLabelsRegister) getServiceTaskAddress(service swarm.Service, port uint32) map[int]string {
 	serviceName := service.Spec.Name
-	tasks, _ := self.docker.TaskList(context.TODO(), types.TaskListOptions{
+	tasks, _ := self.docker.TaskList(types.TaskListOptions{
 		Filters: filters.NewArgs(filters.Arg("desired-state", "running"), filters.Arg("service", serviceName))})
 
 	addresses := map[int]string{}
@@ -124,7 +92,7 @@ func (self *DockerLabelsRegister) makeDomain(service swarm.Service, lab Label, a
 }
 
 func (self *DockerLabelsRegister) findFromServiceById(serverId string) (plugins.Domains, error) {
-	if service, _, err := self.docker.ServiceInspectWithRaw(context.TODO(), serverId, types.ServiceInspectOptions{}); err != nil {
+	if service, _, err := self.docker.ServiceInspectWithRaw(serverId, types.ServiceInspectOptions{}); err != nil {
 		return nil, err
 	} else {
 		return self.findFromService(service)
@@ -137,7 +105,8 @@ func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugin
 	labs := FindLabels(service.Spec.TaskTemplate.ContainerSpec.Labels, false)
 
 	if labs.Has() {
-		for port, label := range labs {
+		for _, label := range labs {
+			port := label.Port
 			usePort := swarm.PortConfig{TargetPort: uint32(port)}
 
 			if port == 0 { //未指定端口
@@ -164,7 +133,7 @@ func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugin
 			}
 
 			if label.Virtual {
-				address := self.getVirtualAddress(service, usePort.TargetPort)
+				address := self.getVirtualAddress(service, usePort.TargetPort, label.Networks)
 				domains = append(domains, self.makeDomain(service, label, address))
 			} else if label.Internal {
 				addresses := self.getServiceTaskAddress(service, usePort.TargetPort)
@@ -173,24 +142,16 @@ func (self *DockerLabelsRegister) findFromService(service swarm.Service) (plugin
 					domain.ID = fmt.Sprintf("%s:%d", serviceName, slot)
 					domains = append(domains, domain)
 				}
-			} else if usePort.PublishedPort != uint32(0) {
-				if label.Nodes {
-					_, nodes, _ := self.getNodes(Normal(Or(isWorker, Not(isMulti))))
-					for i, node := range nodes {
-						address := fmt.Sprintf("%s:%d", node, usePort.PublishedPort)
-						domain := self.makeDomain(service, label, address)
-						domain.ID = fmt.Sprintf("%s:%d", serviceName, i)
-						domains = append(domains, domain)
-					}
-				} else if self.ip != "" {
-					address := fmt.Sprintf("%s:%d", self.ip, usePort.PublishedPort)
-					domains = append(domains, self.makeDomain(service, label, address))
-				} else {
-					address := self.getVirtualAddress(service, usePort.TargetPort)
-					domains = append(domains, self.makeDomain(service, label, address))
+			} else if usePort.PublishedPort != uint32(0) && label.Nodes {
+				nodes := self.docker.Nodes()
+				for i, node := range nodes {
+					address := fmt.Sprintf("%s:%d", node, usePort.PublishedPort)
+					domain := self.makeDomain(service, label, address)
+					domain.ID = fmt.Sprintf("%s:%d", serviceName, i)
+					domains = append(domains, domain)
 				}
 			} else {
-				address := self.getVirtualAddress(service, usePort.TargetPort)
+				address := self.getVirtualAddress(service, usePort.TargetPort, label.Networks)
 				domains = append(domains, self.makeDomain(service, label, address))
 			}
 		}

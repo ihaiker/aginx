@@ -53,8 +53,11 @@ Temporary Items
 .apdisk
 /bin
 
-/lego/lego
 /_test/nginx
 /TODOLISTS.MD
 /.env
 /aginx.conf
+/bin
+.env
+aginx.conf
+swarm.conf
