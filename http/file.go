@@ -30,7 +30,15 @@ func (as *fileController) Search(queries []string) map[string]string {
 	return files
 }
 
-func (as *fileController) readFile(ctx iris.Context) []byte {
+//解析上传文件，
+//  1、格式化文件，
+//  2、检查执行Test方法（Test方法会全部复制文件配置目录）
+func (as *fileController) readFile(ctx iris.Context) *ngx.Configuration {
+	filePath := ctx.FormValue("path")
+	if filePath == "" || strings.HasPrefix(filePath, "/") {
+		panic("path must be relative")
+	}
+
 	file, _, err := ctx.FormFile("file")
 	util.PanicIfError(err)
 	defer func() { _ = file.Close() }()
@@ -38,37 +46,44 @@ func (as *fileController) readFile(ctx iris.Context) []byte {
 	out := bytes.NewBuffer(make([]byte, 0))
 	_, err = io.Copy(out, file)
 	util.PanicIfError(err)
-	return out.Bytes()
+	cfg, err := ngx.ParseWith(filePath, out.Bytes())
+	util.PanicMessage(err, "parse error")
+	return cfg
+}
+
+//是否配置文件已经在include的范围内
+func (as *fileController) needAddInclude(client *nginx.Client, filePath string) bool {
+	if includes, err := client.Select("http", "include"); err == nil {
+		for _, include := range includes {
+			if matched, _ := filepath.Match(include.Args[0], filePath); matched {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (as *fileController) New(ctx iris.Context, client *nginx.Client) int {
-	filePath := ctx.FormValue("path")
-	if strings.HasPrefix(filePath, "/") {
-		panic("path must be relative")
-	}
-	bodys := as.readFile(ctx)
+	cfg := as.readFile(ctx)
+	filePath := cfg.Name
+	contentBytes := cfg.BodyBytes()
+
 	//如果是配置文件需要测试是否可用
 	if filepath.Ext(filePath) == ".conf" {
-		need := true
-		if includes, err := client.Select("http", "include"); err == nil {
-			for _, include := range includes {
-				if matched, _ := filepath.Match(include.Args[0], filePath); matched {
-					need = false
-				}
-			}
-		}
-		if need {
+		needAddInclude := as.needAddInclude(client, filePath)
+
+		if needAddInclude {
 			_ = client.Add(nginx.Queries("http"), ngx.NewDirective("include", filePath))
 		}
 		util.PanicIfError(as.process.Test(client.Configuration(), func(testDir string) error {
 			path := filepath.Join(testDir, filePath)
-			return util.WriteFile(path, bodys)
+			return util.WriteFile(path, contentBytes)
 		}))
-		if need {
+		if needAddInclude {
 			_ = client.Delete("http", fmt.Sprintf("include('%s')", filePath))
 		}
 	}
-	util.PanicIfError(as.engine.Put(filePath, bodys))
+	util.PanicIfError(as.engine.Put(filePath, contentBytes))
 	util.PanicIfError(as.process.Reload())
 	return iris.StatusNoContent
 }

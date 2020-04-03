@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 	Long:    fmt.Sprintf(`api for nginx. Build: %s, Go: %s, Commit: %s`, BUILD_TIME, runtime.Version(), GITLOG_VERSION),
 	Version: "" + VERSION + "",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
-		defer util.CatchError(err)
+		defer util.Catch(func(re error) { err = re })
 		debug := viper.GetBool("debug")
 		level := viper.GetString("level")
 		util.PanicIfError(logs.SetLogger(debug, level))

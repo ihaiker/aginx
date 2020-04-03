@@ -54,7 +54,8 @@ func (sp *Process) Reload() error {
 }
 
 func (sp *Process) Test(cfg *config.Configuration, beforeHocks ...func(testDir string) error) (err error) {
-	defer util.CatchError(err)
+	defer util.Catch(func(re error) { err = re })
+
 	configDir := MustConfigDir()
 	testDir := filepath.Dir(os.TempDir()) + "/aginx"
 	util.PanicIfError(os.RemoveAll(testDir))

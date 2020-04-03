@@ -37,12 +37,6 @@ func TryFinally(fun func(), handler func(error), finallyFn func()) {
 	Try(fun, handler)
 }
 
-func CatchError(err error) {
-	Catch(func(e error) {
-		err = e
-	})
-}
-
 type WrapError struct {
 	Err     error
 	Message string
