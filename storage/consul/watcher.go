@@ -52,6 +52,9 @@ func (cs *watcher) watchChange() {
 			Paths: []plugins.ConfigurationFile{},
 		}
 		for _, kv := range kvs {
+			if kv.Value == nil { //isDir
+				continue
+			}
 			if cs.index == 0 || kv.ModifyIndex >= query.LastIndex {
 				clusterPath, _ := filepath.Rel(cs.folder, kv.Key)
 				events.Paths = append(events.Paths, plugins.ConfigurationFile{
