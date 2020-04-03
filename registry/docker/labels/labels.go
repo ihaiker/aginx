@@ -8,7 +8,7 @@ import (
 )
 
 var keyRegexp = regexp.MustCompile("aginx.domain(\\.(\\d+))?")
-var valueRegexp = regexp.MustCompile("([a-zA-Z0-9-_\\.]*)(,(weight=(\\d+)))?(,(internal))?(,(ssl))?(,(virtual))?(,(nodes))?(,(networks=([\\d\\.]+)))?")
+var valueRegexp = regexp.MustCompile("([a-zA-Z0-9-_\\.]*)(,(weight=(\\d+)))?(,(internal))?(,(ssl))?(,(virtual))?(,(nodes))?(,(networks=([\\S]+)))?")
 
 type Label struct {
 	Domain   string

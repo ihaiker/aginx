@@ -35,27 +35,33 @@ func (self *DockerLabelsRegister) imagePort(service swarm.Service) nat.PortSet {
 	return nat.PortSet{}
 }
 
-func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32, preferredNetworks string) (address string) {
+func (self *DockerLabelsRegister) getVirtualAddress(service swarm.Service, port uint32, preferredNetworks string) string {
 	defer util.Catch(func(err error) {
 		logger.Warn("get virtual address error: ", err)
 	})
 
-	hosts := make([]string, 0)
-	for _, vip := range service.Endpoint.VirtualIPs {
-		ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
-		hosts = append(hosts, ip)
-	}
 	if preferredNetworks != "" {
-		for _, host := range hosts {
-			if strings.HasPrefix(host, preferredNetworks) {
-				address = fmt.Sprintf("%s:%d", host, port)
-				return
+		//ip prefix
+		for _, vip := range service.Endpoint.VirtualIPs {
+			ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
+			if strings.HasPrefix(ip, preferredNetworks) {
+				return fmt.Sprintf("%s:%d", ip, port)
+			}
+		}
+		//name equal
+		for _, vip := range service.Endpoint.VirtualIPs {
+			if nw, err := self.docker.NetworkInspect(vip.NetworkID, types.NetworkInspectOptions{}); err == nil {
+				if nw.Name == preferredNetworks {
+					ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
+					return fmt.Sprintf("%s:%d", ip, port)
+				}
 			}
 		}
 	}
 
-	address = fmt.Sprintf("%s:%d", hosts[0], port)
-	return
+	vip := service.Endpoint.VirtualIPs[0]
+	ip := vip.Addr[0:strings.Index(vip.Addr, "/")]
+	return fmt.Sprintf("%s:%d", ip, port)
 }
 
 func (self *DockerLabelsRegister) getServiceTaskAddress(service swarm.Service, port uint32) map[int]string {

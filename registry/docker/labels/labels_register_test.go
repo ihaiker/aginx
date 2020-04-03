@@ -16,13 +16,13 @@ func init() {
 func TestLabel(t *testing.T) {
 	lables := FindLabels(map[string]string{
 		"aginx.domain":      "a.com;b.com",
-		"aginx.domain.8080": "www.b.com,networks=10.24.0",
+		"aginx.domain.8080": "www.b.com,networks=ext-portainer-network",
 	}, true)
 	t.Log(lables.String())
 }
 
 func TestDocker(t *testing.T) {
-	docker, err := LabelsRegister("10.24.0.1")
+	docker, err := LabelsRegister("10.24.0.1", false)
 	PanicIfError(err)
 
 	servers := docker.allDomains()

@@ -235,3 +235,14 @@ func (self *dockerWrapper) TaskList(options types.TaskListOptions) ([]swarm.Task
 	}
 	return nil, nil
 }
+
+func (self *dockerWrapper) NetworkInspect(networkId string, options types.NetworkInspectOptions) (types.NetworkResource, error) {
+	for _, info := range self.nodes {
+		if info.manager {
+			if nw, err := info.NetworkInspect(todo, networkId, options); err == nil {
+				return nw, err
+			}
+		}
+	}
+	return types.NetworkResource{}, os.ErrNotExist
+}

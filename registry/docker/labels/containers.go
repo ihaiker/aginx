@@ -86,6 +86,8 @@ func (self *DockerLabelsRegister) findContainerPort(container types.ContainerJSO
 func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins.Domains, error) {
 	if container, info, err := self.docker.ContainerInspect(containerId); err != nil {
 		return nil, err
+	} else if container.Config.NetworkDisabled || container.HostConfig.NetworkMode.IsNone() {
+		return nil, nil
 	} else if labs := FindLabels(container.Config.Labels, true); labs.Has() {
 		domains := plugins.Domains{}
 
@@ -101,8 +103,8 @@ func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins
 
 			if label.Internal && !container.HostConfig.NetworkMode.IsHost() {
 				if label.Networks != "" {
-					for _, network := range container.NetworkSettings.Networks {
-						if strings.HasPrefix(network.IPAddress, label.Networks) {
+					for name, network := range container.NetworkSettings.Networks {
+						if name == label.Networks || strings.HasPrefix(network.IPAddress, label.Networks) {
 							domain.Address = fmt.Sprintf("%s:%d", network.IPAddress, usePort.InternalPort)
 							break
 						}
