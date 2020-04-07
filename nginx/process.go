@@ -22,9 +22,10 @@ func (sp *Process) start() error {
 	err := util.Async(time.Second*5, func() (err error) {
 		sp.startCmd, err = util.CmdStart("nginx", "-g", "daemon off;")
 		if err == nil {
-			sp.startCmd.Stdout = os.Stdout
-			sp.startCmd.Stderr = os.Stderr
 			err = util.CmdAfterWait(sp.startCmd)
+		}
+		if err != nil {
+			sp.startCmd = nil
 		}
 		return
 	})

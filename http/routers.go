@@ -63,7 +63,7 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 			api.Post("", h.Handler(directive.modifyDirective))
 		}
 
-		simple := app.Party("/simple", handlers...)
+		simple := api.Party("/simple", handlers...)
 		{
 			for _, directiveNameTop := range []string{"http", "stream"} {
 				for _, directiveNameSub := range []string{"server", "upstream"} {

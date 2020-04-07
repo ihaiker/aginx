@@ -4,13 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
 
 var (
-	ErrNotFound            = errors.New("NotFound")
+	ErrNotFound            = os.ErrNotExist
 	ErrRootCannotBeDeleted = errors.New("root cannot be deleted")
 )
 

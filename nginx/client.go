@@ -152,7 +152,7 @@ func (client *Client) hostsd(include string) {
 //设置domain对应的负载
 func (client *Client) SimpleServer(domain string, ssl bool, address ...string) (err error) {
 	defer util.Catch(func(e error) {
-		logger.WithError(err).Debug("new simple server ", domain, strings.Join(address, ","))
+		logger.WithError(err).Debug("new simple server ", domain, " ", strings.Join(address, ","))
 	})
 	client.hostsd("hosts.d/*.conf")
 

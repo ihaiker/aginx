@@ -2,7 +2,6 @@ package file
 
 import (
 	"github.com/ihaiker/aginx/logs"
-	"github.com/ihaiker/aginx/nginx"
 	"github.com/ihaiker/aginx/plugins"
 	"github.com/ihaiker/aginx/util"
 	"io/ioutil"
@@ -24,20 +23,6 @@ func (fs *fileStorage) Abs(file string) string {
 	} else {
 		return filepath.Join(filepath.Dir(fs.conf), file)
 	}
-}
-
-func System() (*fileStorage, error) {
-	_, conf, err := nginx.GetInfo()
-	if err != nil {
-		return nil, err
-	}
-	return New(conf), nil
-}
-
-func MustSystem() *fileStorage {
-	engine, err := System()
-	util.PanicIfError(err)
-	return engine
 }
 
 func New(conf string) *fileStorage {

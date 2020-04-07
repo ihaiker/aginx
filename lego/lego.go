@@ -10,8 +10,7 @@ type Manager struct {
 	AccountStorage     *AccountStorage
 	CertificateStorage *CertificateStorage
 	ticker             *time.Ticker
-
-	expireFunc func(domain string)
+	expireFunc         func(domain string)
 }
 
 func NewManager(engine plugins.StorageEngine) (manager *Manager, err error) {

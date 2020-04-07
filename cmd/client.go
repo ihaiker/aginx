@@ -192,11 +192,10 @@ aginx client update /user/path/test.conf hosts.d/test.conf`,
 }
 
 var ClientCmd = &cobra.Command{
-	Use: "client", Short: "the AGINX console",
+	Use: "client", Aliases: []string{"cli"}, Short: "the AGINX console",
 }
 
 func init() {
-	ClientCmd.PersistentFlags().StringP("conf", "c", "", "AGINX configuration file location")
 	ClientCmd.PersistentFlags().StringP("api", "i", "127.0.0.1:8011", "restful api address.")
 	ClientCmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
 

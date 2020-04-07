@@ -3,7 +3,6 @@ package lego
 import (
 	"github.com/go-acme/lego/v3/certcrypto"
 	fileStorage "github.com/ihaiker/aginx/storage/file"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"testing"
@@ -14,7 +13,6 @@ var accountStorage *AccountStorage
 
 func init() {
 	rand.Seed(time.Now().Unix())
-	logrus.SetLevel(logrus.DebugLevel)
 
 	pwd, _ := os.Getwd()
 	engine := fileStorage.New(pwd + "/nginx.conf")

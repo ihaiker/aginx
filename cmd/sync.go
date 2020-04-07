@@ -23,7 +23,7 @@ var SyncCmd = &cobra.Command{
 		if cluster == nil || !cluster.IsCluster() {
 			return errors.New("the flag cluster not found")
 		}
-		engine := fileStorage.MustSystem()
+		engine := fileStorage.New(nginx.MustConf())
 
 		//format
 		client := nginx.MustClient("", engine, nil, nil)
