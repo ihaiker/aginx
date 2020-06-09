@@ -84,11 +84,11 @@ func convert(cmd *cobra.Command, previousLayer string, directives []*config.Dire
 			key := key(previousLayer, directive.Name)
 			flag := cmd.PersistentFlags().Lookup(key)
 			if flag == nil {
-				return nil, fmt.Errorf("not flag found : %s.%s ", previousLayer, directive.Name)
+				return nil, fmt.Errorf("not flag found : %s ", key)
 			}
 
 			if len(directive.Args) > 0 && len(directive.Body) > 0 {
-				return nil, fmt.Errorf("error at : %s.%s ", previousLayer, directive.Name)
+				return nil, fmt.Errorf("error at : %s ", key)
 			} else if len(directive.Args) == 0 && len(directive.Body) == 0 {
 				parameters[key] = "true"
 			} else if len(directive.Args) > 0 {

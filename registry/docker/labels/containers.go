@@ -45,7 +45,7 @@ func (up *UsePort) IsSet(portmap nat.PortMap, port int) bool {
 
 func (self *DockerLabelsRegister) findContainerPort(container types.ContainerJSON, port int) (*UsePort, error) {
 	usePort := &UsePort{}
-	//单价欧
+
 	if port == 0 {
 		//公开断就查询，第一个
 		for p, binding := range container.HostConfig.PortBindings {
@@ -116,6 +116,9 @@ func (self *DockerLabelsRegister) findFromContainer(containerId string) (plugins
 						break
 					}
 				}
+			}
+			if domain.Address == "" && container.HostConfig.NetworkMode.IsHost() {
+				domain.Address = fmt.Sprintf("%s:%d", info.ip, usePort.InternalPort)
 			}
 
 			if domain.Address == "" && usePort.PublishedPort != 0 && info.ip != "" {
