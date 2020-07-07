@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ihaiker/aginx/util"
+	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris/v12"
 	"time"
 )
@@ -40,14 +41,16 @@ func (this *Http) Start() error {
 		}()
 		ctx.Next()
 	})
+	this.app.UseGlobal(cors.New(cors.Options{
+		AllowedOrigins: []string{"*"}, AllowCredentials: true,
+		AllowedHeaders: []string{"*"}, AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
+	}))
 	this.app.OnErrorCode(iris.StatusNotFound, func(ctx iris.Context) {
 		_, _ = ctx.JSON(map[string]string{
-			"error":   "notfound",
-			"message": "the page not found!",
-			"url":     ctx.Request().RequestURI,
+			"error": "notfound", "message": "the page not found!",
+			"url": ctx.Request().RequestURI,
 		})
 	})
-
 	this.app.Get("/health", func(ctx iris.Context) {
 		_, _ = ctx.JSON(map[string]string{"status": "UP"})
 	})

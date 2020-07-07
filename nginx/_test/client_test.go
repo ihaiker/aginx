@@ -15,7 +15,7 @@ func init() {
 	logs.SetLevel(logrus.DebugLevel)
 }
 
-var api = nginx.MustClient("", file.MustSystem(), nil, nil)
+var api = nginx.MustClient("", file.New(nginx.MustConf()), nil, nil)
 
 func show(t *testing.T, query ...string) {
 

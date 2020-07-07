@@ -20,10 +20,8 @@ func TestNginxFull(t *testing.T) {
 }
 
 func TestSystem(t *testing.T) {
-	fileStore, err := file.System()
-	if err != nil {
-		t.Fatal(err)
-	}
+	fileStore := file.New(nginx.MustConf())
+
 	conf, err := nginx.Readable(fileStore)
 	if err != nil {
 		t.Fatal(err)

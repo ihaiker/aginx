@@ -123,18 +123,6 @@ var sslCmd = &cobra.Command{
 	},
 }
 
-var simpleCmd = &cobra.Command{
-	Use: "simple", Short: "new simple server",
-	PreRun: preRun, Args: cobra.MinimumNArgs(2),
-	Example: "aginx client simple api.aginx.io 127.0.0.1:8011 127.0.0.1:8012",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		https := viper.GetBool("https")
-		domain := args[0]
-		servers := args[1:]
-		return aginx.Simple().SimpleServer(domain, https, servers)
-	},
-}
-
 var getCmd = &cobra.Command{
 	Use: "get", Short: "get file", PreRun: preRun, Args: cobra.ExactArgs(1),
 	Example: "aginx client get conf.d/default.conf",
@@ -202,9 +190,8 @@ func init() {
 	ClientCmd.AddCommand(reloadCmd)
 	ClientCmd.AddCommand(selectCmd, addCmd, modifyCmd, deleteCmd)
 	ClientCmd.AddCommand(getCmd, removeCmd, searchCmd, uploadCmd)
-	simpleCmd.PersistentFlags().BoolP("https", "", false, "Whether to use https")
 	sslCmd.PersistentFlags().StringP("email", "u", "", "Register the current account to the ACME server.")
-	ClientCmd.AddCommand(sslCmd, simpleCmd)
+	ClientCmd.AddCommand(sslCmd)
 
 	_ = viper.BindPFlags(ClientCmd.PersistentFlags())
 }

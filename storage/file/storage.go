@@ -13,7 +13,7 @@ import (
 var logger = logs.New("storage", "engine", "file")
 
 type fileStorage struct {
-	conf        string
+	nginxConfig string
 	fileWatcher *FileWatcher
 }
 
@@ -21,12 +21,12 @@ func (fs *fileStorage) Abs(file string) string {
 	if strings.HasPrefix(file, "/") {
 		return file
 	} else {
-		return filepath.Join(filepath.Dir(fs.conf), file)
+		return filepath.Join(filepath.Dir(fs.nginxConfig), file)
 	}
 }
 
-func New(conf string) *fileStorage {
-	return &fileStorage{conf: conf}
+func New(nginxConf string) *fileStorage {
+	return &fileStorage{nginxConfig: nginxConf}
 }
 
 func (fs *fileStorage) IsCluster() bool {
@@ -61,7 +61,7 @@ func (fs *fileStorage) Search(args ...string) ([]*plugins.ConfigurationFile, err
 }
 
 func (cs *fileStorage) Remove(file string) error {
-	fp := filepath.Join(filepath.Dir(cs.conf), file)
+	fp := filepath.Join(filepath.Dir(cs.nginxConfig), file)
 	if fileInfo, err := os.Stat(fp); err != nil {
 		return err
 	} else if fileInfo.IsDir() {
@@ -83,7 +83,7 @@ func (fs *fileStorage) Get(file string) (reader *plugins.ConfigurationFile, err 
 	if err != nil {
 		return nil, err
 	}
-	rel, _ := filepath.Rel(filepath.Dir(fs.conf), path)
+	rel, _ := filepath.Rel(filepath.Dir(fs.nginxConfig), path)
 	return plugins.NewFile(rel, rd), nil
 }
 
@@ -104,12 +104,12 @@ func (fs *fileStorage) Put(file string, content []byte) error {
 }
 
 func (fs *fileStorage) List() ([]*plugins.ConfigurationFile, error) {
-	dir := filepath.Dir(fs.conf)
+	dir := filepath.Dir(fs.nginxConfig)
 	return walkFile(dir, "")
 }
 
 func (fs *fileStorage) StartListener() <-chan plugins.FileEvent {
-	dir := filepath.Dir(fs.conf)
+	dir := filepath.Dir(fs.nginxConfig)
 	fs.fileWatcher = NewFileWatcher(dir)
 	_ = fs.fileWatcher.Start()
 	return fs.fileWatcher.Listener

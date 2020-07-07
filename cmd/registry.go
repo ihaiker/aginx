@@ -12,7 +12,7 @@ import (
 func AddRegistryFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("conf", "f", "", "AGINX configuration file location")
 	cmd.PersistentFlags().StringP("api", "i", "127.0.0.1:8011", "restful api address.")
-	cmd.PersistentFlags().StringP("security", "s", "", "base auth for restful api, example: user:passwd")
+	cmd.PersistentFlags().StringP("security", "s", "aginx:aginx", "base auth for restful api, example: user:passwd")
 	registry.RegisterFlags(cmd)
 }
 

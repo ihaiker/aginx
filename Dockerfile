@@ -25,8 +25,10 @@ ENV AGINX_EXPOSE=""
 
 ENV AGINX_DOCKER="" AGINX_DOCKER_API_VERSION="" AGINX_DOCKER_HOST="" AGINX_DOCKER_TLS_VERIFY="" AGINX_DOCKER_CERT_PATH=""
 ENV AGINX_CONSUL="" AGINX_CONSUL_HTTP_ADDR="" AGINX_CONSUL_HTTO_TOKEN=""
-
-EXPOSE 8011
+RUN rm -rf /var/log/nginx/error.log /var/log/nginx/access.log && \
+    ln -s /dev/stderr /var/log/nginx/error.log && \
+    ln -s /dev/stdout /var/log/nginx/access.log
+EXPOSE 8011 80 443
 
 CMD ["server"]
 ENTRYPOINT ["/usr/sbin/aginx"]

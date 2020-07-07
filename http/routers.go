@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/ihaiker/aginx/lego"
 	"github.com/ihaiker/aginx/logs"
@@ -20,13 +21,11 @@ var logger = logs.New("http")
 
 func Routers(email, auth string, process *nginx.Process, engine plugins.StorageEngine, manager *lego.Manager) func(*iris.Application) {
 	handlers := make([]context.Handler, 0)
-	if auth != "" {
-		authConfig := strings.SplitN(auth, ":", 2)
-		handlers = append(handlers, basicauth.New(basicauth.Config{
-			Users: map[string]string{authConfig[0]: authConfig[1]},
-			Realm: "Authorization Required", Expires: time.Duration(30) * time.Minute,
-		}))
-	}
+	authConfig := strings.SplitN(auth, ":", 2)
+	handlers = append(handlers, basicauth.New(basicauth.Config{
+		Users: map[string]string{authConfig[0]: authConfig[1]},
+		Realm: "Authorization Required", Expires: time.Duration(30) * time.Minute,
+	}))
 
 	h := hero.New()
 	h.Register(
@@ -48,13 +47,21 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 	fileCtrl := &fileController{engine: engine, process: process}
 	directive := &directiveController{process: process}
 	ssl := &sslController{email: email}
-	simpleCtl := &simpleController{}
 
 	manager.Expire(func(domain string) {
 		ssl.Renew(nginx.MustClient(email, engine, manager, process), domain)
 	})
 
 	return func(app *iris.Application) {
+		app.Post("/login", h.Handler(func(ctx context.Context) map[string]string {
+			data := map[string]string{}
+			util.PanicIfError(ctx.ReadJSON(&data))
+			userAuth := fmt.Sprintf("%s:%s", data["user"], data["passwd"])
+			util.AssertTrue(userAuth == auth, "wrong user name or password!")
+			token := "Basic " + base64.StdEncoding.EncodeToString([]byte(userAuth))
+			return map[string]string{"token": token}
+		}))
+
 		api := app.Party("/api", handlers...)
 		{
 			api.Get("", h.Handler(directive.queryDirective))
@@ -63,25 +70,13 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 			api.Post("", h.Handler(directive.modifyDirective))
 		}
 
-		simple := api.Party("/simple", handlers...)
-		{
-			for _, directiveNameTop := range []string{"http", "stream"} {
-				for _, directiveNameSub := range []string{"server", "upstream"} {
-					simple.Get(fmt.Sprintf("/%s/%s", directiveNameTop, directiveNameSub),
-						h.Handler(simpleCtl.selectDirective(
-							[]string{directiveNameTop, directiveNameSub},
-							[]string{directiveNameTop, "include", "*", directiveNameSub},
-						)),
-					)
-				}
-			}
-			simple.Put("/server", h.Handler(simpleCtl.newSimpleServer))
-		}
-
 		limit := iris.LimitRequestBodySize(1024 * 1024 * 10)
-		app.Post("/file", limit, h.Handler(fileCtrl.New))
-		app.Delete("/file", h.Handler(fileCtrl.Remove))
-		app.Get("/file", h.Handler(fileCtrl.Search))
+		file := app.Party("/file", handlers...)
+		{
+			file.Post("", limit, h.Handler(fileCtrl.New))
+			file.Delete("", h.Handler(fileCtrl.Remove))
+			file.Get("", h.Handler(fileCtrl.Search))
+		}
 
 		sslRouter := app.Party("/ssl", handlers...)
 		{
