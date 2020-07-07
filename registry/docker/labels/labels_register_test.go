@@ -22,17 +22,9 @@ func TestLabel(t *testing.T) {
 }
 
 func TestDocker(t *testing.T) {
-	docker, err := LabelsRegister("10.24.0.1", false)
+	docker, err := LabelsRegister("172.16.100.10", false)
 	PanicIfError(err)
 
-	servers := docker.allDomains()
-
-	for s, d := range servers.Group() {
-		fmt.Println("Domain ", s)
-		for _, server := range d {
-			fmt.Println("\t", server.Domain, server.Address, ", Weight:", server.Weight, ", ssl:", server.AutoSSL)
-		}
-	}
 	if err := docker.Start(); err != nil {
 		fmt.Println(err)
 	}

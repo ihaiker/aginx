@@ -38,9 +38,12 @@ func FindLabels(labs map[string]string, ignoreSwarmService bool) Labels {
 		return labels
 	}
 	for key, labelValue := range labs {
+		if !keyRegexp.MatchString(key) {
+			continue
+		}
 		values := strings.Split(labelValue, ";")
 		for _, value := range values {
-			if keyRegexp.MatchString(key) && valueRegexp.MatchString(value) {
+			if valueRegexp.MatchString(value) {
 				domain := valueRegexp.FindStringSubmatch(value)
 				port := keyRegexp.FindStringSubmatch(key)
 				label := Label{Domain: domain[1]}

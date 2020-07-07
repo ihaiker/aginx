@@ -106,10 +106,12 @@ func NewDockerWrapper(ip string, swarm bool) (*dockerWrapper, error) {
 		}
 		err = w.swarmNodes(client)
 	} else {
-		w.nodes[info.ID] = &nodeInfo{
+		ni := &nodeInfo{
 			id: info.ID, name: info.Name, ip: ip,
 			Client: client, closeC: make(chan struct{}),
 		}
+		w.nodes[info.ID] = ni
+		go w.event(ni)
 	}
 	return w, err
 }

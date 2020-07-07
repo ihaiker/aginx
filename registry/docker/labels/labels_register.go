@@ -74,10 +74,11 @@ func (self *DockerLabelsRegister) allDomains() plugins.Domains {
 				logger.Info("found container ", strings.Join(container.Names, ","), " domains: ", strings.Join(ds.GetDomains(), ","))
 				self.appendDomains(ds)
 				domains = append(domains, ds...)
+			} else if err != nil {
+				logger.WithError(err).Error("find port error")
 			}
 		}
 	}
-
 	return domains
 }
 
