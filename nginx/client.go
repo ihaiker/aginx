@@ -11,6 +11,7 @@ import (
 	"github.com/ihaiker/aginx/util"
 	"os"
 	"strings"
+	"time"
 )
 
 func Queries(query ...string) []string {
@@ -250,7 +251,8 @@ func (self *Client) NewCertificate(email, domain string) *lego.StoreFile {
 	if email == "" {
 		email = self.Email
 	}
-	if cert, has := self.Lego.CertificateStorage.Get(domain); has {
+
+	if cert, has := self.Lego.CertificateStorage.Get(domain); has && !cert.IsExpire(time.Hour) {
 		return cert.GetStoreFile()
 	}
 

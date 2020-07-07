@@ -50,7 +50,4 @@ var (
 			return !cf(current, previous)
 		}
 	}
-
-	IncludeLastChar   bool = true
-	UnIncludeLastChar bool = false
 )

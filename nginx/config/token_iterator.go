@@ -3,28 +3,18 @@ package config
 import "fmt"
 
 type tokenIterator struct {
-	it    charIterator
-	token string
-	line  int
+	it *charIterator
 }
 
-func newTokenIterator(filename string) tokenIterator {
-	return tokenIterator{it: newCharIterator(filename)}
+func newTokenIterator(filename string) *tokenIterator {
+	return &tokenIterator{it: newCharIterator(filename)}
 }
 
-func newTokenIteratorWithBytes(bs []byte) tokenIterator {
-	return tokenIterator{it: newCharIteratorWithBytes(bs)}
+func newTokenIteratorWithBytes(bs []byte) *tokenIterator {
+	return &tokenIterator{it: newCharIteratorWithBytes(bs)}
 }
 
 func (self *tokenIterator) next() (token string, tokenLine int, tokenHas bool) {
-	if self.token != "" {
-		token = self.token
-		tokenLine = self.line
-		tokenHas = true
-
-		self.token = ""
-		return
-	}
 	for {
 		char, line, has := self.it.nextFilter(ValidChars)
 		if !has {
@@ -40,15 +30,15 @@ func (self *tokenIterator) next() (token string, tokenLine int, tokenHas bool) {
 			}
 		case "#":
 			{
-				word, _, _ := self.it.nextTo(In("\n"), UnIncludeLastChar)
+				word, _, _ := self.it.nextTo(In("\n"), false)
 				token = char + word
 				tokenLine = line
 				tokenHas = true
 				return
 			}
-		case "'", `"`:
+		case "'", `"`, "`":
 			{
-				word, _, wordHas := self.it.nextTo(In(char), IncludeLastChar)
+				word, _, wordHas := self.it.nextTo(In(char), true)
 				if !wordHas {
 					panic(fmt.Errorf("error at line : %d", line))
 				}
@@ -58,7 +48,7 @@ func (self *tokenIterator) next() (token string, tokenLine int, tokenHas bool) {
 				return
 			}
 		default:
-			word, _, wordHas := self.it.nextTo(Not(ValidChars).Or(In(";", "{")), UnIncludeLastChar)
+			word, _, wordHas := self.it.nextTo(Not(ValidChars).Or(In(";", "{")), false)
 			if !wordHas {
 				panic(fmt.Errorf("error at line : %d", line))
 			}

@@ -13,29 +13,29 @@ type charIterator struct {
 	lastCatchChar string
 }
 
-func newCharIterator(filename string) charIterator {
+func newCharIterator(filename string) *charIterator {
 	f, err := os.Open(filename)
-	util.PanicIfError(err)
+	util.PanicMessage(err, "open file "+filename)
 	s := bufio.NewScanner(f)
 	s.Split(bufio.ScanRunes)
-	return charIterator{scanner: s, currentLine: 1}
+	return &charIterator{scanner: s, currentLine: 1}
 }
 
-func newCharIteratorWithBytes(bs []byte) charIterator {
+func newCharIteratorWithBytes(bs []byte) *charIterator {
 	s := bufio.NewScanner(bytes.NewBuffer(bs))
 	s.Split(bufio.ScanRunes)
-	return charIterator{scanner: s, currentLine: 1}
+	return &charIterator{scanner: s, currentLine: 1}
 }
 
-func (self *charIterator) nextFilter(filter CharFilter) (char string, line int, has bool) {
+func (self *charIterator) nextFilter(filter CharFilter) (word string, line int, has bool) {
 	previous := ""
 	for {
-		if char, line, has = self.next(); !has {
+		if word, line, has = self.next(); !has {
 			return
-		} else if filter(char, previous) {
+		} else if filter(word, previous) {
 			return
 		} else {
-			previous = char
+			previous = word
 		}
 	}
 }

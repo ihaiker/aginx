@@ -3,9 +3,10 @@ package config
 import (
 	"fmt"
 	"github.com/ihaiker/aginx/util"
+	"os"
 )
 
-func expectNextToken(it tokenIterator, filter CharFilter) ([]string, string, error) {
+func expectNextToken(it *tokenIterator, filter CharFilter) ([]string, string, error) {
 	tokens := make([]string, 0)
 	for {
 		if token, _, has := it.next(); has {
@@ -14,12 +15,12 @@ func expectNextToken(it tokenIterator, filter CharFilter) ([]string, string, err
 			}
 			tokens = append(tokens, token)
 		} else {
-			return nil, "", util.ErrNotFound
+			return nil, "", os.ErrNotExist
 		}
 	}
 }
 
-func subDirectives(it tokenIterator) ([]*Directive, error) {
+func subDirectives(it *tokenIterator) ([]*Directive, error) {
 	directives := make([]*Directive, 0)
 	for {
 		token, line, has := it.next()
@@ -53,6 +54,12 @@ func subDirectives(it tokenIterator) ([]*Directive, error) {
 		}
 	}
 	return directives, nil
+}
+
+func MustParse(filename string) *Configuration {
+	cfg, err := Parse(filename)
+	util.PanicMessage(err, "parse "+filename)
+	return cfg
 }
 
 func Parse(filename string) (cfg *Configuration, err error) {

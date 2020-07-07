@@ -25,7 +25,7 @@ var SyncCmd = &cobra.Command{
 		}
 		engine := fileStorage.New(nginx.MustConf())
 
-		//format
+		//format，格式化文件，这样才能保证新生成的文件和之前的文件一致
 		client := nginx.MustClient("", engine, nil, nil)
 		PanicIfError(client.Store())
 

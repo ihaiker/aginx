@@ -1,6 +1,8 @@
 package lego
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"github.com/go-acme/lego/v3/certificate"
 	"github.com/ihaiker/aginx/plugins"
 	"time"
@@ -51,6 +53,12 @@ func (cfs *Certificate) StoreFile(engine plugins.StorageEngine) (file *StoreFile
 		return
 	}
 	return
+}
+
+func (cfg *Certificate) IsExpire(d time.Duration) bool {
+	block, _ := pem.Decode([]byte(cfg.Certificate))
+	cert, _ := x509.ParseCertificate(block.Bytes)
+	return time.Now().Add(d).After(cert.NotAfter)
 }
 
 func (cfs *Certificate) LoadCertificate() error {

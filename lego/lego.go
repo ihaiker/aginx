@@ -11,17 +11,13 @@ type Manager struct {
 	CertificateStorage *CertificateStorage
 	ticker             *time.Ticker
 	expireFunc         func(domain string)
+	engine             plugins.StorageEngine
 }
 
 func NewManager(engine plugins.StorageEngine) (manager *Manager, err error) {
 	manager = new(Manager)
-	if manager.AccountStorage, err = LoadAccounts(engine); err != nil {
-		return
-	}
-	if manager.CertificateStorage, err = LoadCertificates(engine); err != nil {
-		return
-	}
-	manager.ticker = time.NewTicker(time.Hour)
+	manager.ticker = time.NewTicker(time.Minute)
+	manager.engine = engine
 	return
 }
 
@@ -37,20 +33,29 @@ func (manager *Manager) applyForACertificate(domain string) {
 		manager.expireFunc(domain)
 	}
 }
-func (manager *Manager) Start() error {
+func (manager *Manager) Start() (err error) {
+	if manager.AccountStorage, err = LoadAccounts(manager.engine); err != nil {
+		return
+	}
+	if manager.CertificateStorage, err = LoadCertificates(manager.engine); err != nil {
+		return
+	}
 	go func() {
+		logrus.Debug("start check certificate expire")
 		for {
 			select {
 			case <-manager.ticker.C:
+				logrus.Debug("check certificate expire")
 				for domain, certificate := range manager.CertificateStorage.data {
-					if certificate.ExpireTime.Before(time.Now().Add(time.Hour)) {
+					if certificate.IsExpire(time.Minute) {
+						logrus.Infof("%s expire，re apply\n", domain)
 						manager.applyForACertificate(domain)
 					}
 				}
 			}
 		}
 	}()
-	return nil
+	return
 }
 
 func (manager *Manager) Stop() error {
