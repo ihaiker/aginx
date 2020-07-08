@@ -74,6 +74,7 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 		file := app.Party("/file", handlers...)
 		{
 			file.Post("", limit, h.Handler(fileCtrl.New))
+			file.Post("/ctx", limit, h.Handler(fileCtrl.NewFileContent))
 			file.Delete("", h.Handler(fileCtrl.Remove))
 			file.Get("", h.Handler(fileCtrl.Search))
 		}

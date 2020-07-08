@@ -1,7 +1,7 @@
 <template>
     <transition :name="transition" appear>
         <div v-if="show" class="modal fade show" :style="getStyle" @mousedown="mouseDown" ref="modal">
-            <div class="modal-dialog" role="document" :class="getClass">
+            <div class="modal-dialog modal-lg" role="document" :class="getClass">
                 <div class="modal-content">
                     <slot name="modal-header">
                         <div class="modal-header" v-if="title">
@@ -11,7 +11,7 @@
                             </a>
                         </div>
                     </slot>
-                    <div class="modal-body">
+                    <div class="modal-body p-0">
                         <slot></slot>
                     </div>
                     <slot name="modal-footer">

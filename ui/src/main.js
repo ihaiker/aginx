@@ -16,6 +16,7 @@ Vue.use(plugins);
 Vue.mixin(mixins);
 
 Vue.config.productionTip = false;
+Vue.config.devtools = true;
 
 Vue.prototype.$axios = http.axios;
 Vue.prototype.$form = http.form;

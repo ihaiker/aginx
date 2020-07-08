@@ -2,7 +2,6 @@ package http
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/ihaiker/aginx/nginx"
 	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
@@ -63,29 +62,39 @@ func (as *fileController) needAddInclude(client *nginx.Client, filePath string) 
 	return true
 }
 
-func (as *fileController) New(ctx iris.Context, client *nginx.Client) int {
-	cfg := as.readFile(ctx)
-	filePath := cfg.Name
-	contentBytes := cfg.BodyBytes()
-
+func (as *fileController) newFile(filePath string, contentBytes []byte, client *nginx.Client) int {
 	//如果是配置文件需要测试是否可用
 	if filepath.Ext(filePath) == ".conf" {
-		needAddInclude := as.needAddInclude(client, filePath)
-
-		if needAddInclude {
-			_ = client.Add(nginx.Queries("http"), ngx.NewDirective("include", filePath))
-		}
+		/*
+			needAddInclude := as.needAddInclude(client, filePath)
+			if needAddInclude {
+				_ = client.Add(nginx.Queries("http"), ngx.NewDirective("include", filePath))
+			}
+		*/
 		util.PanicIfError(as.process.Test(client.Configuration(), func(testDir string) error {
 			path := filepath.Join(testDir, filePath)
 			return util.WriteFile(path, contentBytes)
 		}))
-		if needAddInclude {
+		/*if needAddInclude {
 			_ = client.Delete("http", fmt.Sprintf("include('%s')", filePath))
-		}
+		}*/
 	}
 	util.PanicIfError(as.engine.Put(filePath, contentBytes))
 	util.PanicIfError(as.process.Reload())
 	return iris.StatusNoContent
+}
+
+func (as *fileController) New(ctx iris.Context, client *nginx.Client) int {
+	cfg := as.readFile(ctx)
+	filePath := cfg.Name
+	contentBytes := cfg.BodyBytes()
+	return as.newFile(filePath, contentBytes, client)
+}
+
+func (as *fileController) NewFileContent(ctx iris.Context, client *nginx.Client) int {
+	data := map[string]string{}
+	util.PanicMessage(ctx.ReadJSON(&data), "upload")
+	return as.newFile(data["file"], []byte(data["body"]), client)
 }
 
 func (as *fileController) Remove(ctx iris.Context, client *nginx.Client) int {

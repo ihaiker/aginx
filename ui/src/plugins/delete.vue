@@ -1,7 +1,7 @@
 <template>
-    <div @click="confirm">
+    <span @click="confirm">
         <slot></slot>
-    </div>
+    </span>
 </template>
 <script>
     export default {

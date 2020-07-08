@@ -4,7 +4,7 @@
 const AppContainer = () => import('@/containers/AppContainer');
 const Login = () => import('@/views/Login');
 
-const Config = () => import('@/views/config/Config');
+const Servers= () => import('@/views/config/Server');
 const Files = () => import('@/views/files/Files');
 
 Vue.use(VueRouter);
@@ -18,10 +18,10 @@ export default new VueRouter({
         {
             path: "/admin", component: AppContainer,
             children: [
-                {path: "", redirect: "config"},
+                {path: "", redirect: "files"},
                 {path: "files", component: Files},
-                {path: "config", component: Config},
-                {path: '*', redirect: 'config'}
+                {path: "server", component: Servers},
+                {path: '*', redirect: 'files'}
             ]
         },
         {path: '*', redirect: '/admin'}
