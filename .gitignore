@@ -54,6 +54,7 @@ Temporary Items
 /bin
 
 /_test/nginx
+/_test/testnginx
 /TODOLISTS.MD
 /.env
 /aginx.conf

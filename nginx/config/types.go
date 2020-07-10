@@ -10,12 +10,13 @@ type (
 	Virtual string
 
 	Directive struct {
-		Line    int          `json:"line"`
-		Virtual Virtual      `json:"virtual,omitempty"`
-		Name    string       `json:"name"`
-		Args    []string     `json:"args,omitempty"`
-		Body    []*Directive `json:"body,omitempty"`
+		Line    int        `json:"line"`
+		Virtual Virtual    `json:"virtual,omitempty"`
+		Name    string     `json:"name"`
+		Args    []string   `json:"args,omitempty"`
+		Body    Directives `json:"body,omitempty"`
 	}
+	Directives    []*Directive
 	Configuration = Directive
 )
 
@@ -90,4 +91,13 @@ func (d *Directive) Pretty(prefix int) string {
 		}
 		return out.String()
 	}
+}
+
+func (ds *Directives) Get(name string) *Directive {
+	for _, d := range *ds {
+		if d.Name == name {
+			return d
+		}
+	}
+	return nil
 }

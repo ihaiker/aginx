@@ -58,7 +58,7 @@ func (sp *Process) Test(cfg *config.Configuration, beforeHocks ...func(testDir s
 	defer util.Catch(func(re error) { err = re })
 
 	configDir := MustConfigDir()
-	testDir := filepath.Dir(os.TempDir()) + "/aginx"
+	testDir := "/tmp/nginx"
 	util.PanicIfError(os.RemoveAll(testDir))
 	util.PanicIfError(util.CopyDir(configDir, testDir))
 	util.PanicIfError(WriteTo(testDir, cfg))

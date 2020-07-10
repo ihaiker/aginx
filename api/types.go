@@ -64,3 +64,61 @@ type Aginx interface {
 
 	SSL() AginxSSL
 }
+
+type (
+	UpstreamItem struct {
+		Server string   `json:"server"`
+		Attrs  []string `json:"attrs,omitempty"`
+	}
+	Upstream struct {
+		From  string          `json:"from"`
+		Name  string          `json:"name"`
+		Attrs []*Attr         `json:"attrs"`
+		Items []*UpstreamItem `json:"items"`
+	}
+	Upstreams []*Upstream
+
+	ServerLocationLoadBalance struct {
+		ProxyType    string    `json:"proxyType"`
+		Upstream     *Upstream `json:"upstream,omitempty"`
+		ProxyAddress string    `json:"proxyAddress,omitempty"`
+	}
+
+	ServerLocation struct {
+		Type string   `json:"type"`
+		Path []string `json:"paths"`
+
+		Attrs []*Attr `json:"attrs,omitempty"`
+
+		Root  string   `json:"root,omitempty"`
+		Index []string `json:"index,omitempty"`
+
+		LoadBalance *ServerLocationLoadBalance `json:"loadBalance,omitempty"`
+	}
+
+	Attr struct {
+		Name  string   `json:"name"`
+		Attrs []string `json:"attrs,omitempty"`
+	}
+
+	Server struct {
+		From       string     `json:"from"`
+		Listen     [][]string `json:"listen"`
+		ServerName []string   `json:"name"`
+
+		Root  string   `json:"root,omitempty"`
+		Index []string `json:"index,omitempty"`
+
+		Attrs     []*Attr           `json:"attrs,omitempty"`
+		Locations []*ServerLocation `json:"locations,omitempty"`
+	}
+)
+
+func (u *Upstreams) Get(name string) *Upstream {
+	for _, upstream := range *u {
+		if upstream.Name == name {
+			return upstream
+		}
+	}
+	return nil
+}

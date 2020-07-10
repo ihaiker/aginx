@@ -8,6 +8,7 @@ import (
 	"github.com/ihaiker/aginx/nginx"
 	ngx "github.com/ihaiker/aginx/nginx/config"
 	"github.com/ihaiker/aginx/plugins"
+	"github.com/ihaiker/aginx/ui"
 	"github.com/ihaiker/aginx/util"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
@@ -35,6 +36,9 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 		func(ctx iris.Context) *nginx.Client {
 			return nginx.MustClient(email, engine, manager, process)
 		},
+		func(ctx iris.Context) *nginx.Service {
+			return nginx.NewService(nginx.MustClient(email, engine, manager, process))
+		},
 		func(ctx iris.Context) []*ngx.Directive {
 			body, err := ctx.GetBody()
 			util.PanicIfError(err)
@@ -46,6 +50,7 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 
 	fileCtrl := &fileController{engine: engine, process: process}
 	directive := &directiveController{process: process}
+	serverCtrl := &serverController{process: process}
 	ssl := &sslController{email: email}
 
 	manager.Expire(func(domain string) {
@@ -62,12 +67,21 @@ func Routers(email, auth string, process *nginx.Process, engine plugins.StorageE
 			return map[string]string{"token": token}
 		}))
 
+		ui.Static(app)
+
 		api := app.Party("/api", handlers...)
 		{
 			api.Get("", h.Handler(directive.queryDirective))
 			api.Put("", h.Handler(directive.addDirective))
 			api.Delete("", h.Handler(directive.deleteDirective))
 			api.Post("", h.Handler(directive.modifyDirective))
+		}
+
+		server := app.Party("/server", handlers...)
+		{
+			server.Get("", h.Handler(serverCtrl.listServer))
+			server.Delete("", h.Handler(serverCtrl.deleteServer))
+			server.Post("", h.Handler(serverCtrl.postServer))
 		}
 
 		limit := iris.LimitRequestBodySize(1024 * 1024 * 10)

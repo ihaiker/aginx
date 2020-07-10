@@ -24,15 +24,18 @@ sync-etcd: build
 sync-zk: build
 	./bin/aginx -d sync zk://127.0.0.1:2181/aginx
 
-release:
-	go generate
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "${debug} ${param}" -o bin/aginx-linux-amd64-${Version} aginx.go
+gen:
+	make -C ui
+	go generate ui/generator.go
+
+release: gen
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags bindata -ldflags "${debug} ${param}" -o bin/aginx-linux-amd64-${Version} aginx.go
 	tar -czvf bin/aginx-linux-amd64-${Version}.tar.gz bin/aginx-linux-amd64-${Version}
 
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "${debug} ${param}" -o bin/aginx-darwin-amd64-${Version} aginx.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags bindata -ldflags "${debug} ${param}" -o bin/aginx-darwin-amd64-${Version} aginx.go
 	tar -czvf bin/aginx-darwin-amd64-${Version}.tar.gz bin/aginx-darwin-amd64-${Version}
 
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "${debug} ${param}" -o bin/aginx-windows-amd64-${Version}.exe aginx.go
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags bindata -ldflags "${debug} ${param}" -o bin/aginx-windows-amd64-${Version}.exe aginx.go
 	zip bin/aginx-windows-amd64-${Version}.zip bin/aginx-windows-amd64-${Version}.exe
 
 clean:

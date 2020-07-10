@@ -1,11 +1,19 @@
 <template>
     <div>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <i class="fa fa-user"/>&nbsp;文件管理：
+            <li class="breadcrumb-fixed">
+                <a href="javascript:void(0)" class="text-dark" @click="upFolder(-1)"><i class="fa fa-home"/>根目录</a>：
             </li>
-            <li class="breadcrumb-fixed text-primary" v-for="(p,idx) in prefix">
-                <b>/{{p}}</b>
+            <li v-for="(p,idx) in prefix" class="breadcrumb-fixed text-primary font-weight-bold">
+                <a href="javascript:void(0)" @click="upFolder(idx)">/{{p}}</a>
+            </li>
+            <li v-if="checkName === null" class="breadcrumb-fixed text-danger pl-3">
+                <button class="btn btn-xs btn-outline-danger" @click="setCheck('','')">
+                    <i class="fa fa-plus-circle"/> 添加文件
+                </button>
+                <button class="btn btn-xs btn-outline-dark" @click="upFolder()" :disabled="prefix.length === 0">
+                    <i class="fa fa-chevron-circle-up"/> 上层文件夹
+                </button>
             </li>
         </ol>
 
@@ -24,7 +32,7 @@
                     </div>
                     <div class="col-auto">
                         <button class="btn btn-linkedin" @click="setCheck(null,'')">&nbsp;取&nbsp;消&nbsp;</button>
-                        <button class="btn btn-default ml-2" :disabled="checkName === ''" @click="modifyFiles">&nbsp;更&nbsp;新&nbsp;</button>
+                        <button class="btn btn-primary ml-2" :disabled="checkName === ''" @click="modifyFiles">&nbsp;更&nbsp;新&nbsp;</button>
                         <Delete v-if="checkName !== ''" :message="'您确定要删除文件：' + checkName" @ok="removeFiles(checkName)">
                             <button class="btn btn-danger ml-2">&nbsp;删&nbsp;除&nbsp;</button>
                         </Delete>
@@ -50,22 +58,20 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-auto" @click="setCheck('','')">
-                    <div class="brand-card-body">
-                        <div class="p-1">
-                            <i class="fa fa-2x fa-plus-circle text-danger"></i>
-                            <div class="text-nowrap text-danger">添加</div>
-                        </div>
+                <!-- div class="col-auto" @click="setCheck('','')">
+                    <div class="border p-3 pl-4 pr-4 rounded">
+                        <i class="fa fa-2x fa-plus-circle text-danger"></i>
+                        <div class="text-nowrap text-danger">添加</div>
                     </div>
                 </div>
                 <div v-if="prefix.length !== 0" class="col-auto cursor-move" @click="upFolder">
-                    <div class="brand-card-body">
-                        <div class="p-1">
+                    <div class="border pl-4 pr-4 rounded">
+                        <div class="">
                             <i class="fa fa-chevron-circle-up fa-2x text-danger"></i>
-                            <div class="text-nowrap text-danger">...</div>
+                            <div class="text-nowrap text-danger">..</div>
                         </div>
                     </div>
-                </div>
+                </div -->
             </div>
         </div>
     </div>
@@ -156,8 +162,12 @@
             setFolder(path) {
                 this.prefix = path.split("/")
             },
-            upFolder() {
-                this.prefix.pop();
+            upFolder(i) {
+                if (i === undefined) {
+                    this.prefix.pop();
+                } else {
+                    this.prefix = this.prefix.slice(0, i + 1);
+                }
             },
             queryFiles() {
                 let self = this;

@@ -15,7 +15,8 @@
             </b-navbar-nav>
 
             <b-navbar-nav class="ml-auto d-md-down-none">
-                <b-nav-item class="px-3" href="https://github.com/ihaiker/aginx/issues/new" target="_blank">/提交BUG/</b-nav-item>
+                <b-nav-item class="px-3" href="https://github.com/ihaiker/aginx/issues/new" target="_blank">/提交BUG/
+                </b-nav-item>
                 <b-nav-item class="px-3" href="https://github.com/ihaiker/aginx" target="_blank">/源码下载/</b-nav-item>
 
                 <AppHeaderDropdown right no-caret class="mr-3">
@@ -69,7 +70,19 @@
         </AppFooter>
     </div>
 </template>
-
+<style>
+    .app-footer, .sidebar .sidebar-minimizer {
+        flex: 0 0 30px;
+    }
+    .sidebar .sidebar-minimizer::before{
+        width: 30px;
+        height: 30px;
+    }
+    .sidebar-minimized .sidebar .sidebar-minimizer {
+        width: 50px;
+        height: 30px;
+    }
+</style>
 <script>
     import {Header as AppHeader, Footer as AppFooter} from '@coreui/vue'
     import {
@@ -118,7 +131,7 @@
                     }
                 },
                 {
-                    name: '服务方式管理',
+                    name: '服务管理',
                     url: '/admin/server',
                     icon: "icons cui-puzzle",
                 }
