@@ -168,6 +168,7 @@
                 } else {
                     this.prefix = this.prefix.slice(0, i + 1);
                 }
+                this.setCheck(null,'')
             },
             queryFiles() {
                 let self = this;

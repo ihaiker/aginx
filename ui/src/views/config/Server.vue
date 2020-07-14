@@ -1,7 +1,7 @@
 <template>
     <div>
         <v-title title="代理列表" title-class="icons cui-puzzle">
-            <li class="breadcrumb-menu d-md-down-none" v-if="edit === null">
+            <li class="breadcrumb-menu" v-if="edit === null">
                 <div class="btn-group" role="group" aria-label="Button group">
                     <a class="btn text-danger font-weight-bold" href="javascript:void(0)" @click="addServer">
                         <i class="icon-plus"></i>&nbsp;添加代理</a>
@@ -239,11 +239,17 @@
                         {{simple?'&nbsp;简&nbsp;易&nbsp;模&nbsp;式&nbsp;':'&nbsp;全&nbsp;属&nbsp;性&nbsp;模&nbsp;式&nbsp;'}}
                     </button -->
 
-                    <button class="btn btn-sm btn-outline-primary mr-3" @click="modifyServer">&nbsp;确&nbsp;认&nbsp;</button>
-                    <button class="btn btn-sm btn-outline-success mr-3" @click="cancelEdit">&nbsp;取&nbsp;消&nbsp;</button>
+                    <button class="btn btn-sm btn-outline-primary mr-3" @click="modifyServer">&nbsp;确&nbsp;认&nbsp;
+                    </button>
+                    <button class="btn btn-sm btn-outline-success mr-3" @click="cancelEdit">&nbsp;取&nbsp;消&nbsp;
+                    </button>
                     <Delete v-if="edit.from !== ''" title="" message="确定删除服务" @ok="deleteServer">
                         <button class="btn btn-sm btn-outline-danger mr-3">&nbsp;删&nbsp;除&nbsp;</button>
                     </Delete>
+                </div>
+
+                <div class="card-body p-2">
+                    <pre>{{edit}}</pre>
                 </div>
             </div>
         </div>
@@ -370,6 +376,12 @@
             },
             onClickEdit(edit) {
                 this.edit = edit;
+                if (this.edit.attrs === undefined || this.edit.attrs === null) {
+                    this.edit["attrs"] = [];
+                }
+                if (this.edit.locations === undefined || this.edit.locations === null){
+                    this.edit["locations"] = [];
+                }
                 this.editNames = [];
                 for (let i = 0; i < this.edit.name.length; i++) {
                     this.editNames.push(this.edit.name[i]);
