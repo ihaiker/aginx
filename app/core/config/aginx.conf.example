@@ -1,0 +1,8 @@
+log-level: debug;
+
+registry docker://172.16.100.10:2375;
+
+certificate tcloud://ssl.tencentcloudapi.com {
+    secretId: "AKID73lH7jVIMBBXDdMrcATWJq7bplUyrAqG";
+    secretKey: "rhFZeDXhATXKAlaXDfrmX6RWN1RbEnBO";
+}

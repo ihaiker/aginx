@@ -1,0 +1,66 @@
+// Here you can add other styles
+
+body {
+    background-color: white;
+}
+
+.breadcrumb {
+    margin-bottom: 0;
+}
+
+$btn-padding-x-xs: .20rem !default;
+$btn-padding-y-xs: .12rem !default;
+$input-btn-line-height-xs: 1.1 !default;
+
+.btn.btn-xs {
+    // line-height: ensure proper height of button next to small input
+    @include button-size($btn-padding-y-xs, $btn-padding-x-xs, $font-size-sm, $input-btn-line-height-xs, $btn-border-radius-sm);
+}
+
+.sidebar .nav-link.active {
+    color: #fff;
+    background: #226190;
+}
+
+.btn-default {
+    color: #333;
+    background-color: #fff;
+    border-color: #ccc;
+}
+.btn-default:hover,
+.btn-default:focus,
+.btn-default:active,
+.btn-default.active,
+.open .dropdown-toggle.btn-default {
+    color: #333;
+    background-color: #ebebeb;
+    border-color: #adadad;
+}
+.btn-default:active,
+.btn-default.active,
+.open .dropdown-toggle.btn-default {
+    background-image: none;
+}
+.btn-default.disabled,
+.btn-default[disabled], fieldset[disabled] .btn-default,
+.btn-default.disabled:hover,
+.btn-default[disabled]:hover, fieldset[disabled] .btn-default:hover,
+.btn-default.disabled:focus,
+.btn-default[disabled]:focus, fieldset[disabled] .btn-default:focus,
+.btn-default.disabled:active,
+.btn-default[disabled]:active, fieldset[disabled] .btn-default:active,
+.btn-default.disabled.active,
+.btn-default[disabled].active, fieldset[disabled] .btn-default.active {
+    background-color: #fff;
+    border-color: #ccc;
+}
+.btn-default .badge {
+    color: #fff;
+    background-color: #333;
+}
+
+.bg-default {
+    color: #333;
+    background-color: #ebebeb !important;
+    border-color: #adadad;
+}

@@ -1,4 +1,0 @@
-## FOR TEST
-FROM busybox
-
-EXPOSE 8001 8002 8003

@@ -52,13 +52,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 /bin
-
-/_test/nginx
-/_test/testnginx
-/TODOLISTS.MD
 /.env
 /aginx.conf
-/bin
-.env
-aginx.conf
-swarm.conf
+/nginx.conf
+_test
+*_test.go
