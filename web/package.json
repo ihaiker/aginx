@@ -1,9 +1,9 @@
 {
-  "name": "@sudis/admin",
+  "name": "@aginx/admin",
   "version": "2.0.0",
-  "description": "Sudis admin",
+  "description": "aginx admin",
   "author": "haiker",
-  "homepage": "http://shui.renzhen.la",
+  "homepage": "http://aginx.renzhen.la",
   "copyright": "Copyright 2018 haiker",
   "scripts": {
     "serve": "vue-cli-service serve",
@@ -24,6 +24,7 @@
     "echarts": "^4.5.0",
     "font-awesome": "^4.7.0",
     "perfect-scrollbar": "^1.4.0",
+    "resize-observer-polyfill": "^1.5.1",
     "simple-line-icons": "^2.4.1",
     "vue": "^2.6.10",
     "vue-bajiantoast": "^1.0.12",
@@ -35,7 +36,8 @@
     "vue-multiselect": "^2.1.6",
     "vue-particles": "^1.0.9",
     "vue-perfect-scrollbar": "^0.1.0",
-    "vue-router": "^3.0.2"
+    "vue-router": "^3.0.2",
+    "vuex": "^3.5.1"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.5.5",

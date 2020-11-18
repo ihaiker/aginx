@@ -6,6 +6,7 @@ import (
 	"github.com/ihaiker/aginx/v2/core/storage/consul"
 	"github.com/ihaiker/aginx/v2/core/storage/etcd"
 	"github.com/ihaiker/aginx/v2/core/storage/file"
+	"github.com/ihaiker/aginx/v2/core/storage/zookeeper"
 	"github.com/ihaiker/aginx/v2/plugins/storage"
 	"net/url"
 )
@@ -14,6 +15,7 @@ var Plugins = map[string]storage.Plugin{
 	"file":   file.LoadStorage(),
 	"consul": consul.LoadStorage(),
 	"etcd":   etcd.LoadStorage(),
+	"zk":     zookeeper.LoadStorage(),
 }
 
 func Get(urlConfig string) (storage.Plugin, error) {

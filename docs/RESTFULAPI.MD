@@ -1,8 +1,8 @@
 # restful api
 
-## NGINX 配置文件
+>   为了跟好的解释restful api 的使用方式，我们提供了一个简单的nginx 配置这样可以更好的说明API
 
-为了跟好的解释restful api 的使用方式，我们提供了一个简单的nginx 配置这样可以更好的说明API
+## NGINX 配置文件
 
 ###  **/etc/nginx/nginx.conf**
 
@@ -95,14 +95,14 @@ server  {
 
 #### 查询
 
-**地址 :** `GET /api`
+**地址 :** `GET /api/directive`
 
 **参数：** 本API只包含一个参数`q`，此参数为字符数组。q参数详细用法查看 **定位参数语法**
 
 实例：
 
 ```shell
-curl 'http://127.0.0.1:8011/api?q=http&q=server.server_name('portainer.aginx.io')
+curl 'http://127.0.0.1:8011/api/directive?q=http&q=server.server_name('portainer.aginx.io')
 ```
 
 查询正确 **http status = 200** 返回：
@@ -184,7 +184,7 @@ curl 'http://127.0.0.1:8011/api?q=http&q=server.server_name('portainer.aginx.io'
 实例：添加一个配置
 
 ```shell
-curl -X PUT 'http://127.0.0.1:8011/api?q=http' \
+curl -X PUT 'http://127.0.0.1:8011/api/directive?q=http' \
 --data-raw 'server  {
         listen 80;
         server_name ts.renzhen.la;
@@ -253,7 +253,7 @@ http  {
 
 #### 删除
 
-**地址** : `DELETE /api`
+**地址** : `DELETE /api/directive`
 
 **参数：** 此API包含一个定位参数`q`。
 
@@ -267,7 +267,7 @@ curl -X DELETE 'http://127.0.0.1:8011/api?q=http&q=server.server_name('ts.renzhe
 
 #### 更新
 
-**地址** : `POST /api`
+**地址** : `POST /api/directive`
 
 **参数：** 此方法的参数和**添加API**相同。运行结果也是一样的。
 
@@ -386,27 +386,11 @@ q=server
 
 
 
-###  SSL API
-
-#### 申请一个域名的ssl证书
-
-地址: `PUT /ssl/{domain}?email=email@email.com`
-
-domain: 申请证书的域名
-
-email: 申请证书使用的账户
-
-#### 重新申请一个ssl证书
-
- 地址: `POST /ssl/{domain}`
-
-
-
 ###  文件API
 
 #### 上传一个文件
 
- 地址: `POST /file`
+ 地址: `POST /api/file`
 
 | 参数 | 说明                          |
 | ---- | ----------------------------- |
@@ -415,13 +399,13 @@ email: 申请证书使用的账户
 
 #### 删除一个文件
 
-地址：`DELETE /file?path=fileapth`
+地址：`DELETE /api/file?path=fileapth`
 
 删除成功 **http status = 204**
 
 #### 获取文件
 
-地址：`GET /file?q=fileapth1&q=filepath2`
+地址：`GET /api/file/search?q=fileapth1&q=filepath2`
 
 返回内容：
 
@@ -432,10 +416,6 @@ email: 申请证书使用的账户
 }
 ```
 
-### 重启nginx
-
-重启nginx命令，地址 : `GET /reload`
 
 
-
-注：本章节所有api，君已经发布至postman你可以直接使用postman导入测试 https://www.getpostman.com/collections/685642fce22b2b5fb9a9
+更多restapi使用帮助，您可以查看postman公开的文件定义。

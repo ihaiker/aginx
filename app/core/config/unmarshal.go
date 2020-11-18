@@ -23,6 +23,8 @@ func Unmarshal(data []byte, v interface{}) error {
 			c.LogFile = d.Args[0]
 		case "bind":
 			c.Bind = d.Args[0]
+		case "api":
+			c.Api = d.Args[0]
 		case "allowIp", "allow_ip", "allow-ip":
 			c.AllowIp = d.Args
 		case "auth":
@@ -52,6 +54,8 @@ func Unmarshal(data []byte, v interface{}) error {
 			c.Storage = toConfigUrl(d)
 		case "cert", "certificate":
 			c.Cert = append(c.Cert, toConfigUrl(d))
+		case "node":
+			//ignore
 		default:
 			return fmt.Errorf("未知配置: %s", d.Name)
 		}

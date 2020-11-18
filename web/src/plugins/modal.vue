@@ -1,7 +1,7 @@
 <template>
     <transition :name="transition" appear>
         <div v-if="show" class="modal fade show" :style="getStyle" @mousedown="mouseDown" ref="modal">
-            <div class="modal-dialog modal-lg" role="document" :class="getClass">
+            <div class="modal-dialog" role="document" :class="getClass">
                 <div class="modal-content">
                     <slot name="modal-header">
                         <div class="modal-header" v-if="title">
@@ -257,5 +257,14 @@
 
     .modal-visible-aside {
         display: none;
+    }
+
+    .modal-dialog {
+        height: 80% !important;
+        padding-top:10%;
+    }
+    .modal-body {
+        height: 80%;
+        overflow: auto;
     }
 </style>

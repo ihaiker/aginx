@@ -5,122 +5,120 @@
 当容器或者服务发生变化后程序将使用模板发布配置到nginx上。
 
 docker支持两种模式：
-- 第一种： 标签模式.
-- 第二重： 全局模板模式.
+- 第一种： 标签嵌入模式.
+- 第二重： 零耦合模式（推荐使用）.
 
-## 标签模式（默认方式）
+## 标签嵌入模式
 
 程序将会搜索服务包含相应label的服务使用模板发布到nginx，
 
-**label的正则**
+**搜索的标签**
+
 ```goregexp
-aginx.domain(\.(\d+))?
+aginx.domain.0
+aginx.domain.1
+...
+aginx.domain.N
 ```
 
-`\d`为需要发布到nginx上作为代理的端口，此端口可以不写。
-但是需要符合以下条件中的一个：
-- 容器仅仅只公开一个端口
-- 容器`EXPOSE`只定义了一个端口
+**标签值：**使用url 方式。
 
-**value的正则**
-```goregexp
-([a-zA-Z0-9-_\.]*)(,(weight=(\d+)))?(,(internal))?(,(ssl))?(,(virtual))?(,(nodes))?(,(networks=(\\d))
-```
+使用https将自动申请TLS证书
 
-**内容说明：**
 
+
+**参数说明：**
+
+- port 绑定的端口。如果在多开放端口或者没有开放端口的情况下必须指定
 - weight 定义服务的权重，
-- ssl 此服务是否自动申请免费证书并且部署。（如果设置了使用免费证书http监听将会被自动转向https）。
+- 如果设置使用https协议，将自动申请免费证书。
 - internal 获取容器的内部地址发布到nginx上。
-- virtual 使用vip地址发布到nginx上。（仅在swarm service起效）
-- nodes 使用swarm所有节点地址发布到nginx上。（仅在swarm service起效）
-- networks 多网络绑定情况下，优先选择网络。例如：10.24.0
+- networks 多网络绑定情况下，优先选择网络。例如：10.24.0,或者网络名称
+- provider 申请免费TLS证书的提供商名称。 
+- template  指定使用模板生成配置。
 
 **实例：**
 
-- 1、aginx.domain=api.aginx.io
-- 2、aginx.domain.8500=api.aginx.io,weight=2
-- 3、aginx.domain=api.aginx.io,ssl
-- 3、aginx.domain=api.aginx.io,weight=1,ssl
-- 4、aginx.domain=api.aginx.io,internal
-- 5、aginx.domain=api.aginx.io,virtual
-- 6、aginx.domain=api.aginx.io,virtual;api2.aginx.io,internal (1.1.3后版本支持，多域名绑定)
+- 1、http://api.aginx.io
+- 2、http://api.aginx.io?weight=2&port=8500
+- 3、https://api.aginx.io?provider=lego&internal=true
 
-**模板使用：**
+**模板使用优先级：**
 
-程序会查找`--docker-labels-template-dir`（默认 templates/docker）文件夹下定义的模板。并且查找模板存在优先级
-- 1、${domain}.ngx.tpl 和域名相同名称的
-- 2、default.tpl
-- 3、label模式下默认模板。
+程序会查找（默认 ）文件夹下定义的模板。
 
-掺入模板数据
-```go
-type TemplateDate struct {
-    Aginx api.Aginx
-    Data  map[string]interface{}{
-        "Domain":  "demo.aginx.io",
-        "AutoSSL": false,
-        "Servers": []*struct {
-            ID      string
-            Domain  string
-            Address string
-            Weight  int
-            AutoSSL bool
-            Attrs   map[string]string
-        },
-    }
-}
-```
+- 0、template 参数指定的模板 。(路径：templates/${template}.tpl)
+- 1、templates/${domain}.tpl 和域名相同名称的
+- 2、templates/default.tpl
 
+**系统默认模板 （templates/default.tpl）**
 
-系统默认模板
 ```gotemplate
-upstream {{ upstreamName .Data.Domain }} { {{range .Data.Servers}}
-	server {{.Address}} {{if ne .Weight 0}} weight={{.Weight}}{{end}};{{end}}
+upstream {{ .UpstreamName }} { {{range .Servers}}
+	server {{.Host}}:{{.Port}} {{if ne .Weight 0}} weight={{.Weight}}{{end}};{{end}}
 }
-{{if .Data.AutoSSL}}server {
-	listen       80;
-	server_name {{.Data.Domain}};	
-	return 301 https://$host$request_uri;
-}{{end}}
-server { {{if .Data.AutoSSL}}
+
+server { 
+	server_name {{.Domain}};
+	listen 80;
+
+{{if .AutoSSL}}
 	listen 443 ssl;
-	ssl_certificate     {{.Data.SSL.Certificate}};        
-	ssl_certificate_key {{.Data.SSL.PrivateKey}};
+	ssl_certificate     {{.Cert.Certificate}};        
+	ssl_certificate_key {{.Cert.PrivateKey}};
 	ssl_session_timeout 5m;
 	ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
 	ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-	ssl_prefer_server_ciphers on; {{else}}
-	listen 80; {{end}}
+	ssl_prefer_server_ciphers on;
 
-    server_name {{.Data.Domain}};
-    try_files $uri @tornado;
+	if ( $scheme = 'http' ) {
+       return 301 https://$host$request_uri;
+    }
+{{end}}
 
-    location @tornado {
+    location / {
         proxy_set_header        X-Scheme        $scheme;
         proxy_set_header        Host            $host;
         proxy_set_header        X-Real-IP       $remote_addr;
         proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_pass http://{{ upstreamName .Data.Domain }};
+        proxy_pass http://{{ .UpstreamName }};
     }
 }
 ```
 
-## 模板模式
 
-当使用模板模式后程序会在service改变后直接使用定义模板生成配置文件到nginx。
 
-传入模板数据内容
-```go
+## 零耦合模式（推荐使用）
 
-type TemplateDate struct {
-    Aginx api.Aginx
-    Data struct {
-        Containers []types.ContainerJSON
-        Services   []swarm.Service
-        PublishIP  string
-        Nodes      []swarm.Node
-        Docker     *dockerClient.Client
-    }
+零耦合方式是使用外部文件定义每个服务的labels，此文件存储位置为：`<storage>`/registry/docker-labels.conf  。其中 <storage> 为存储方式。
+
+此文件搜索container并给特定的container打labels。并且含有两种搜索模式：
+
+1、容器名称匹配搜索：
+
+```nginx
+containerName {
+  aginx.domain.0: http://test.aginx.io;
+  aginx.domain.1: http://t2.aginx.io;
 }
 ```
+
+**containerName**:  容器名称
+
+
+
+2、标签匹配搜索：
+
+```nginx
+aginx.labels labelName=labelValue {
+   		标签: 标签值;
+      aginx.domain.0: http://consul.aginx.io;
+}
+```
+
+**labelName**: 容器现有标签名称，**labelValue: ** 容器现有标签匹配值。
+
+
+
+此种方式可以不对任何container容器做任何处理就可以直接发布服务到nginx （零耦合），并且标签和标签值的写法和label匹配模式完全一致，服务也容易迁移。
+

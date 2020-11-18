@@ -17,6 +17,9 @@ func FindPlugins(path string) (map[string]*plugin.Plugin, error) {
 		return nil, err
 	}
 	for _, file := range fileInfos {
+		if file.IsDir() {
+			continue
+		}
 		pug, err := plugin.Open(filepath.Join(path, file.Name()))
 		if err != nil {
 			return nil, err

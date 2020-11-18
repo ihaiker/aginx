@@ -6,7 +6,7 @@
 
 ```shell script
 git clone https://github.com/ihaiker/aginx
-cd aginx 
+cd aginx/app
 go mod download
 go build -o aginx aginx.go
 ```
@@ -19,8 +19,7 @@ go build -o aginx aginx.go
 ## Docker 安装
 
 ```shell script
-docker pull ihaiker/aginx:atest
+docker pull ihaiker/aginx:latest
 ```
 
-# 使用文档
-[使用文档](./USAGE.MD)
+# [使用文档](./USAGE.MD)

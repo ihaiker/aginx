@@ -14,6 +14,7 @@ import (
 	"github.com/ihaiker/aginx/v2/core/registry/functions"
 	"github.com/ihaiker/aginx/v2/core/storage"
 	"github.com/ihaiker/aginx/v2/core/util"
+	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"github.com/ihaiker/aginx/v2/core/util/files"
 	"github.com/ihaiker/aginx/v2/core/util/services"
 	"github.com/ihaiker/aginx/v2/plugins/certificate"
@@ -25,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"runtime"
+	"strings"
 )
 
 func getNginx() (bin, prefix, conf string, err error) {
@@ -204,13 +206,21 @@ var root = &cobra.Command{
 			}
 		}
 
-		if aginx == nil {
+		if aginx == nil && !config.Config.OnlyAdmin() { //并不是只有web节点
+			if config.Config.Api == "" {
+				err = errors.New("未发现API节点，请指定 --api")
+				return
+			}
+			if !strings.HasPrefix(config.Config.Api, "http://") ||
+				!strings.HasPrefix(config.Config.Api, "https://") {
+				config.Config.Api = "http://" + config.Config.Api
+			}
 			user, password := "", ""
 			for authUserName, authPassword := range config.Config.Auth {
 				user, password = authUserName, authPassword
 				break
 			}
-			aginx = api.New("http://"+config.Config.Bind, user, password)
+			aginx = api.New(config.Config.Api, user, password)
 			if _, err = aginx.Info(); err != nil {
 				return
 			}
@@ -221,7 +231,11 @@ var root = &cobra.Command{
 		//启用web控制台
 		if config.Config.HasAdmin() {
 			logs.Info("启用admin管理台")
-			routers = append(routers, admin.Routers())
+			configFiles, _ := cmd.PersistentFlags().GetStringSlice("conf")
+			if len(configFiles) == 0 {
+				configFiles = []string{"/etc/aginx/aginx.conf"}
+			}
+			routers = append(routers, admin.Routers(configFiles[0]))
 		}
 		//禁用api
 		if config.Config.HasApi() {

@@ -17,31 +17,12 @@ type Node struct {
 	Name     string `json:"name"`
 	Address  string `json:"address"`
 	User     string `json:"user"`
-	Password string `json:"-"`
+	Password string `json:"password"`
 }
 
-func getNode(nodeName string, nodes []*Node) *Node {
-	for _, node := range nodes {
-		if node.Code == nodeName {
-			return node
-		}
-	}
-	return nil
-}
+func Routers(adminConfig string) func(app *iris.Application) {
+	nodes := NewNodeController(adminConfig)
 
-func Routers() func(app *iris.Application) {
-	nodes := []*Node{
-		{
-			Code: "local", Name: "本地",
-			Address: "http://127.0.0.1:8011",
-			User:    "aginx", Password: "aginx",
-		},
-		{
-			Code: "local1", Name: "本地二",
-			Address: "http://127.0.0.1:8011",
-			User:    "aginx", Password: "aginx",
-		},
-	}
 	//跨域处理
 	return func(app *iris.Application) {
 		//静态文件引入
@@ -58,11 +39,14 @@ func Routers() func(app *iris.Application) {
 		admin := app.Party("/admin")
 		{
 			admin.Get("/nodes", h.Handler(func(ctx context.Context) []*Node {
-				return nodes
+				return nodes.list()
 			}))
+			admin.Post("/node", h.Handler(nodes.add))
+			admin.Delete("/node", h.Handler(nodes.delete))
+
 			admin.Any("**", func(ctx context.Context) {
 				nodeName := ctx.GetHeader("Aginxnode")
-				node := getNode(nodeName, nodes)
+				node := nodes.getNode(nodeName)
 				errors.Assert(node != nil, "未发现节点%s", nodeName)
 
 				reqUrl := node.Address + ctx.Request().RequestURI[6:]

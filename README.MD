@@ -2,26 +2,21 @@
 
 Add management API service for [nginx][NGINX]
 
+[![Try in PWD][PWDIMAGE]][PWD]
 
 ## Feature
 
-- [X] Support restful api for aginx to manager nginx.
-- [X] SDK for aginx
+- [X] Web console to manager nginx.
+- [X] restful api SDK for aginx
 - [X] Obtain a free SSL certificate and configure it.
-- [X] Configure nginx with consul k/v.
-- [X] Configure nginx with etcd k/v.
-- [X] Configure nginx with zookeeper.
+- [X] Configure nginx with consul k/v, etcd k/v , zookeeper.
 - [X] Publish `docker` service to NGINX configuration.
 - [X] Publish `consul` service to NGINX configuration.
 
 
-## Installation
+## [Installation](./docs/INSTALL.MD)
 
-[docs/INSTALL.MD](./docs/INSTALL.MD)
-
-## Usage
-
-You can consult the usage documentation。[usage](./docs/USAGE.MD)
+## [Usage](./docs/USAGE.MD)
 
 ## Contribution
 
@@ -36,3 +31,5 @@ You can consult the usage documentation。[usage](./docs/USAGE.MD)
 ![qq](./docs/qq1.png)
 
 [NGINX]: http://nginx.org
+[PWDIMAGE]: https://raw.githubusercontent.com/play-with-docker/stacks/master/assets/images/button.png "Play With Docker Image"
+[PWD]: https://labs.play-with-docker.com/?stack=https://raw.githubusercontent.com/ihaiker/aginx/master/demo/docker-compose.yml "Docker Stack YAML"

@@ -2,6 +2,8 @@ import 'core-js/es6/promise'
 import 'core-js/es6/string'
 import 'core-js/es7/array'
 
+
+
 // import Vue from 'vue'
 import BootstrapVue from 'bootstrap-vue'
 import App from './App'
@@ -10,6 +12,7 @@ import mixins from "./tools/mixins"
 //全局插件组件
 import plugins from './tools/plugins'
 import http from "./tools/http"
+import store from "./tools/store"
 
 Vue.use(BootstrapVue);
 Vue.use(plugins);
@@ -20,7 +23,7 @@ Vue.config.devtools = true;
 
 Vue.prototype.$axios = http.axios;
 Vue.prototype.$form = http.form;
-
+Vue.prototype.$store = store;
 
 import {Alert, Confirm} from 'vue-m-dialog';
 
@@ -51,6 +54,7 @@ Toast.config({
 });
 
 import VueParticles from 'vue-particles'
+
 Vue.use(VueParticles);
 
 let vm = new Vue({

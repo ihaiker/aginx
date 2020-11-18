@@ -1,9 +1,9 @@
 .PHONY: build release clean docker gen
 
-#Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)
-Version="v2.0"
-#GitCommit=$(shell git rev-parse HEAD)
-GitCommit="0000"
+#Version="v2.0"
+Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)
+#GitCommit="0000"
+GitCommit=$(shell git rev-parse HEAD)
 BuildDate=$(shell date +"%F %T")
 
 debug=-w -s

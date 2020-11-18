@@ -7,6 +7,7 @@ type (
 
 		//管理端
 		Bind string `help:"api服务开放地址" def:"127.0.0.1:8011"`
+		Api  string `help:"连接API节点地址"`
 
 		//安全控制，允许调用的IP
 		AllowIp []string `help:"api服务允许调用的IP地址" def:"*"`

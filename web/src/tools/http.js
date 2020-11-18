@@ -1,4 +1,3 @@
-import Vue from "vue"
 import axios from 'axios'
 import main from '../main'
 
@@ -9,10 +8,7 @@ axios.defaults.headers.post['Content-Type'] = 'application/json;charset=UTF-8';
 
 // 添加请求拦截器
 axios.interceptors.request.use(function (config) {
-    let token = localStorage.getItem('token');
-    if (token) {
-        config.headers['Authorization'] = token;
-    }
+    config.headers['Aginxnode'] = main.$store.getters.node.code;
     return config
 });
 
@@ -23,17 +19,13 @@ axios.interceptors.response.use((response) => {
     }
     return response
 }, function (err) {
-    if (err.response) {
-        if (err.response.status === 401) {
-            localStorage.removeItem("token");
-            if (err.response.data && err.response.data.redirect) {
-                window.location.href = err.response.data.redirect;
-            } else {
-                main.$router.push({path: '/signin', replace: true});
-            }
-        } else {
-            return Promise.reject(err.response.data)
+    if (err.response && err.response.data) {
+        if (err.response.data.message.indexOf("未发现节点") != -1) {
+            main.$toast.error("节点未发现：请先选择节点");
+            main.$router.push({path: '/signin', replace: true});
+            return
         }
+        return Promise.reject(err.response.data)
     } else {
         return Promise.reject({e: err, message: err.message})
     }

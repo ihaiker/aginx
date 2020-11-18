@@ -9,7 +9,6 @@
 </script>
 
 <style lang="scss">
-
     // CoreUI Icons Set https://coreui.io/icons/
     @import '~@coreui/icons/css/coreui-icons.min.css';
 

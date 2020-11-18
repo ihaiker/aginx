@@ -1,8 +1,61 @@
 log-level: debug;
+log-file: /var/log/aginx/aginx.log;
 
+# api绑定地址
+bind: 127.0.0.1:8011;
+
+# api 允许代用IP
+allowIp: *;
+
+# api/web控制控制台的管理账户
+auth: aginx=aginx admin=demo;
+
+# api 使用域名暴露服务
+expose: api.aginx.io;
+
+# 是否禁用 web管理控制台
+disable-admin: false;
+
+# 是否禁用 api
+disable-api: false;
+
+# 是否禁用托管nginx
+disable-daemon: false;
+
+# nginx 可执行程序位置
+nginx: /usr/local/bin/nginx;
+
+# 连接 api 服务暴露地址
+api: http://api.aginx.io;
+
+# 统一数据存储配置
+storage: consul://172.16.100.10:8500/aginx;
+#storage: etcd://172.16.100.10:2379/aginx;
+#storage: zk://172.16.100.10:2181/aginx;
+
+# 启用服务发现
 registry docker://172.16.100.10:2375;
+registry docker://var/run/docker.sock;
+registry consul://172.16.100.10:8500;
 
-certificate tcloud://ssl.tencentcloudapi.com {
-    secretId: "AKID73lH7jVIMBBXDdMrcATWJq7bplUyrAqG";
-    secretKey: "rhFZeDXhATXKAlaXDfrmX6RWN1RbEnBO";
+# 启用SSL证书提供商
+cert custom://certs/custom;
+cert lego://aginx@renzhen.la/certs/lego;
+cert tcloud://ssl.tencentcloudapi.com {
+    secretId: "secretId";
+    secretKey: "secretKey";
+}
+
+node local {
+    name: "本地API";
+    address: http://127.0.0.1:8011;
+    user: aginx;
+    passoword: aginx;
+}
+
+node remote {
+    name: "管理远程API";
+    address: http://api.aginx.io;
+    user: aginx;
+    passoword: aginx;
 }

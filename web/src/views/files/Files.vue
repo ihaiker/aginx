@@ -2,212 +2,177 @@
     <div>
         <ol class="breadcrumb">
             <li class="breadcrumb-fixed">
-                <a href="javascript:void(0)" class="text-dark" @click="upFolder(-1)"><i class="fa fa-home"/>根目录</a>：
+                <router-link class="text-primary font-weight-bold" to="/admin/files"><i class="fa fa-home"/>文件目录：
+                </router-link>
             </li>
-            <li v-for="(p,idx) in prefix" class="breadcrumb-fixed text-primary font-weight-bold">
-                <a href="javascript:void(0)" @click="upFolder(idx)">/{{p}}</a>
-            </li>
-            <li v-if="checkName === null" class="breadcrumb-fixed text-danger pl-3">
-                <button class="btn btn-xs btn-outline-danger" @click="setCheck('','')">
-                    <i class="fa fa-plus-circle"/> 添加文件
-                </button>
-                <button class="btn btn-xs btn-outline-dark" @click="upFolder()" :disabled="prefix.length === 0">
-                    <i class="fa fa-chevron-circle-up"/> 上层文件夹
-                </button>
+            <li v-for="(p,idx) in paths" class="breadcrumb-fixed text-primary font-weight-bold">
+                <router-link :to="{path:'/admin/files',query:{path:getPath(idx)}}">{{ p }}/</router-link>
             </li>
         </ol>
 
-        <div v-if="show" class="p-3">
-            <div class="form-group">
-                <div class="row">
-                    <div class="col-9">
-                        <div class="input-group">
-                            <div class="input-group-prepend"><span class="input-group-text">文件名称</span></div>
-                            <div v-if="prefix.join('/') !== ''" class="input-group-prepend">
-                                <span class="input-group-text">{{prefix.join("/")}}</span>
-                            </div>
-                            <input class="form-control" v-model="checkName" type="text" name="program"
-                                   placeholder="文件名称"/>
-                        </div>
+        <div class="animated fadeIn pl-3 pr-3 pt-3 row">
+            <div class="form-group col-12">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-css3 text-white">文件查找</span>
                     </div>
-                    <div class="col-auto">
-                        <button class="btn btn-linkedin" @click="setCheck(null,'')">&nbsp;取&nbsp;消&nbsp;</button>
-                        <button class="btn btn-primary ml-2" :disabled="checkName === ''" @click="modifyFiles">&nbsp;更&nbsp;新&nbsp;</button>
-                        <Delete v-if="checkName !== ''" :message="'您确定要删除文件：' + checkName" @ok="removeFiles(checkName)">
-                            <button class="btn btn-danger ml-2">&nbsp;删&nbsp;除&nbsp;</button>
-                        </Delete>
+                    <input type="text" name="program" v-model="search" placeholder="匹配内容：*、*.conf、hosts.d/*.conf"
+                           class="form-control"/>
+                    <div class="input-group-append">
+                        <button class="btn btn-sm btn-css3" @click="queryFiles">
+                            <i class="fa fa-search"></i>&nbsp;&nbsp;搜&nbsp;&nbsp;索&nbsp;&nbsp;
+                        </button>
+                        <button class="btn btn-sm btn-primary text-white font-weight-bold"
+                                @click="$router.push({path:'/admin/file/edit',query:{path:folder}})">
+                            <i class="fa fa-file-text"></i>&nbsp;新建文件&nbsp;
+                        </button>
                     </div>
                 </div>
             </div>
-            <codemirror v-model="checkVal" :options="cmOptions"></codemirror>
         </div>
+        <div class="pl-4 pr-4">
+            <div v-if="search === ''">
+                <!--<div class="row">
+                    <div v-if="paths.length > 0" class="col-auto">
+                        <div class="brand-card-body">
+                            <router-link class="text-dark" to="/admin/files">
+                                <i class="fa fa-2x text-dark fa-home"/>
+                                <div class="text-wrap">根目录</div>
+                            </router-link>
+                        </div>
+                    </div>
 
-        <div v-else class="pl-5 pt-3">
-            <div class="row">
-                <div class="col-auto" v-for="item in showFiles">
-                    <div v-if="item.folder" class="brand-card-body" @click="setFolder(item.path)">
-                        <div class="p-1">
-                            <i class="fa fa-2x text-warning fa-folder"/>
-                            <div style="max-width: 120px;" class="text-wrap">{{item.name}}</div>
+                    <div v-if="paths.length > 1" class="col-auto">
+                        <div class="brand-card-body">
+                            <router-link class="text-dark"
+                                         :to="{path:'/admin/files',query:{path:getPath(paths.length-2)}}">
+                                <i class="fa fa-2x text-dark fa-folder-open"/>
+                                <div class="text-wrap">上一级</div>
+                            </router-link>
                         </div>
                     </div>
-                    <div v-else class="brand-card-body" @click="setCheck(item.name,item.value)">
-                        <div class="p-1">
-                            <i class="fa fa-2x text-info fa-file"/>
-                            <div style="max-width: 120px;" class="text-wrap">{{item.name}}</div>
+                </div>-->
+                <div class="row">
+                    <div class="col-auto" v-for="item in showFiles">
+                        <div v-if="item.folder" class="brand-card-body">
+                            <router-link :to="{path:'/admin/files', query:{path:item.path} }" class="p-1">
+                                <i class="fa fa-2x text-warning fa-folder"/>
+                                <div class="text-wrap">{{ item.name }}</div>
+                            </router-link>
+                        </div>
+                        <div v-else class="brand-card-body">
+                            <router-link :to="{path:'/admin/file/edit',query:{name:item.path}}"
+                                         class="p-1">
+                                <i class="fa fa-2x text-info fa-file"/>
+                                <div class="text-wrap">{{ item.name }}</div>
+                            </router-link>
                         </div>
                     </div>
                 </div>
-                <!-- div class="col-auto" @click="setCheck('','')">
-                    <div class="border p-3 pl-4 pr-4 rounded">
-                        <i class="fa fa-2x fa-plus-circle text-danger"></i>
-                        <div class="text-nowrap text-danger">添加</div>
-                    </div>
+            </div>
+            <div v-else class=" pt-1">
+                <div class="list-group">
+                    <a v-for="(f,idx) in files" class="list-group-item list-group-item-action">
+                        <i class="fa text-warning text-info fa-file"/> {{ f.name }}
+                    </a>
                 </div>
-                <div v-if="prefix.length !== 0" class="col-auto cursor-move" @click="upFolder">
-                    <div class="border pl-4 pr-4 rounded">
-                        <div class="">
-                            <i class="fa fa-chevron-circle-up fa-2x text-danger"></i>
-                            <div class="text-nowrap text-danger">..</div>
-                        </div>
-                    </div>
-                </div -->
             </div>
         </div>
     </div>
 </template>
 
-<style>
-    .CodeMirror {
-        height: 50%;
-        min-height: 400px;
-        font-size: 14px;
-    }
-</style>
-
 <script>
-    import VTitle from "../../plugins/vTitle";
-    import Delete from "../../plugins/delete";
-    import Modal from "../../plugins/modal";
-    import {codemirror} from 'vue-codemirror'
-    import 'codemirror/mode/nginx/nginx.js'
-    import 'codemirror/lib/codemirror.css'
-    import 'codemirror/theme/lesser-dark.css'
+import VTitle from "../../plugins/vTitle";
+import Delete from "../../plugins/delete";
+import Modal from "../../plugins/modal";
+import {codemirror} from 'vue-codemirror'
+import 'codemirror/mode/nginx/nginx.js'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/theme/lesser-dark.css'
 
-    export default {
-        name: "Files",
-        components: {Modal, Delete, VTitle, codemirror},
-        data: () => ({
-            prefix: [],
-            files: [], checkName: null, checkVal: "",
-            cmOptions: {
-                tabSize: 4,
-                theme: 'lesser-dark', mode: 'nginx',
-                line: true, lineWrapping: true, lineNumbers: true,
-                collapseIdentical: false, highlightDifferences: true
+export default {
+    name: "Files",
+    components: {Modal, Delete, VTitle, codemirror},
+    data: () => ({
+        files: [], search: ""
+    }),
+    mounted() {
+        this.queryFiles();
+    },
+    computed: {
+        folder() {
+            let folder = this.$route.query["path"]
+            if (folder === undefined) {
+                folder = ""
             }
-        }),
-        mounted() {
-            this.queryFiles();
+            return folder;
         },
-        computed: {
-            show() {
-                return this.checkName !== null;
-            },
-            showFiles() {
-                let pathPrefix = this.prefix.join("/")
-                let folders = {};
-                let folderFiles = [];
-
-                for (let name in this.files) {
-                    let paths = name.split("/")
-                    let f = {
-                        name: paths.pop(), path: name,
-                        folder: false, value: this.files[name],
-                    }
-                    if (pathPrefix === paths.join("/")) {
-                        folderFiles.push(f)
-                    }
-                    if (paths.length > 0) {
-                        for (let i = 0; i < 100; i++) {
-                            let folderName = paths[paths.length - 1]
-                            let folderPath = paths.join("/")
-                            if (paths.pop() === undefined) {
-                                break
-                            }
-                            if (paths.join("/") === pathPrefix) {
-                                folders[folderPath] = {
-                                    name: folderName, path: folderPath, folder: true, value: "",
-                                }
-                            }
-                        }
-                    }
-                }
-
-                let shows = [];
-                for (let i in folders) {
-                    shows.push(folders[i])
-                }
-                for (let i in folderFiles) {
-                    shows.push(folderFiles[i])
-                }
-                return shows
+        paths() {
+            let folder = this.folder;
+            if (folder !== "") {
+                return folder.split("/")
+            } else {
+                return [];
             }
         },
-        methods: {
-            setCheck(name, val) {
-                this.checkName = name;
-                this.checkVal = val;
-            },
-            setFolder(path) {
-                this.prefix = path.split("/")
-            },
-            upFolder(i) {
-                if (i === undefined) {
-                    this.prefix.pop();
-                } else {
-                    this.prefix = this.prefix.slice(0, i + 1);
+        showFiles() {
+            let folder = this.folder;
+
+            let folders = {};
+            let shows = [];
+            for (let idx in this.files) {
+                let f = this.getFile(this.files[idx])
+                if (f.dir === folder) {
+                    shows.push(f)
                 }
-                this.setCheck(null,'')
-            },
-            queryFiles() {
-                let self = this;
-                self.$axios.get("/file").then(res => {
-                    self.files = res;
-                }).catch(e => {
-                    self.$alert(e.message);
-                });
-            },
-            modifyFiles() {
-                let self = this;
-                self.$axios.post("/file/ctx", {
-                    file: self.getFilePath(this.checkName),
-                    body: this.checkVal
-                }).then(res => {
-                    self.$toast.success("更新成功！");
-                    self.setCheck(null, '');
-                    self.queryFiles();
-                }).catch(e => {
-                    self.$alert(e.message);
-                });
-            },
-            removeFiles(name) {
-                let self = this;
-                self.$axios.delete("/file?file=" + self.getFilePath(name)).then(res => {
-                    self.setCheck(null, '');
-                    self.queryFiles();
-                }).catch(e => {
-                    self.$alert(e.message);
-                });
-            },
-            getFilePath(name) {
-                let filePath = this.prefix.join("/")
-                if (filePath !== "") {
-                    filePath += "/"
+                if (f.dir !== "") {
+                    let fd = this.getFolder(f.dir, folder)
+                    if (fd !== undefined && folders[fd.name] === undefined) {
+                        shows.unshift(fd)
+                        folders[fd.name] = fd
+                    }
                 }
-                filePath += name
-                return filePath
             }
+            return shows
         }
+    },
+    methods: {
+        queryFiles() {
+            let self = this;
+            let url = "/admin/api/file/search"
+            if (this.search !== "") {
+                url += "?q=" + encodeURI(this.search);
+            }
+            self.$axios.get(url).then(res => {
+                self.files = res;
+            }).catch(e => {
+                self.$toast.error(e.message);
+            });
+        },
+        getFile(file) {
+            let filePaths = file.name.split("/")
+            return {
+                name: filePaths.pop(), dir: filePaths.join("/"),
+                path: file.name, folder: false
+            }
+        },
+        getFolder(file, folder) {
+            if (folder === "") {
+                let name = file.split("/").shift()
+                return {
+                    name: name, path: name, folder: true,
+                }
+            } else if (file.indexOf(folder + "/") === 0 && file !== folder) {
+                let name = file.replace(folder + "/", "").split("/").shift();
+                return {
+                    name: name, path: folder + "/" + name, folder: true,
+                }
+            }
+            return undefined
+        },
+        getPath(idx) {
+            return this.paths.slice(0, idx + 1).join("/")
+        },
     }
+}
 </script>
