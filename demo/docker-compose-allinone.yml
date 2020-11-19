@@ -4,7 +4,7 @@ services:
   aginx-allinone:
     image: xhaiker/aginx:v2.0.0
     container_name: allinone
-    network_mode:
+    network_mode: host
     environment:
       AGINX_LOG_LEVEL: debug
       AGINX_AUTH: aginx=aginx
