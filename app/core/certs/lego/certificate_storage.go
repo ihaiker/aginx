@@ -62,13 +62,13 @@ func (cfs *certificateStorage) NewWithProvider(account *Account, domain string, 
 			return nil, err
 		}
 
-		certFile := filepath.Join(cfs.certDir, domain, "server.crt")
-		priKeyFile := filepath.Join(cfs.certDir, domain, "server.key")
+		cert.CertificatePath = filepath.Join(cfs.certDir, domain, "server.crt")
+		cert.PrivateKeyPath = filepath.Join(cfs.certDir, domain, "server.key")
 
-		if err = cfs.aginx.Files().NewWithContent(certFile, res.Certificate); err != nil {
+		if err = cfs.aginx.Files().NewWithContent(cert.CertificatePath, res.Certificate); err != nil {
 			return nil, err
 		}
-		if err = cfs.aginx.Files().NewWithContent(priKeyFile, res.PrivateKey); err != nil {
+		if err = cfs.aginx.Files().NewWithContent(cert.PrivateKeyPath, res.PrivateKey); err != nil {
 			return nil, err
 		}
 		cfs.data[domain] = cert
