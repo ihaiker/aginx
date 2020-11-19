@@ -1,0 +1,16 @@
+version: "3.7"
+
+services:
+  aginx-allinone:
+    image: xhaiker/aginx:v2.0.0
+    container_name: allinone
+    network_mode:
+    environment:
+      AGINX_LOG_LEVEL: debug
+      AGINX_AUTH: aginx=aginx
+      AGINX_EXPOSE: api.aginx.io
+      AGINX_REGISTRY: docker://var/run/docker.sock?ip=node1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      aginx.domain.0: http://web.aginx.io

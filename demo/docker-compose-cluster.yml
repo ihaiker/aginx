@@ -1,54 +1,46 @@
 version: "3.7"
 
 services:
-  aginx-allinone:
-    image: xhaiker/aginx:v2.0.0
-    ports:
-      - 80:80
-      - 443:443
-      - 8011:8011
-    environment:
-      AGINX_LEVEL: debug
-      AGINX_AUTH: aginx=aginx
-      AGINX_EXPOSE: apione.aginx.io
-
   consul:
     image: consul:1.6.2
     ports:
       - 8500:8500
+    volumes:
+      - /data/consul:/consul/data
 
   aginx-sync:
     image: xhaiker/aginx:v2.0.0
     command: sync consul://consul:8500/aginx
-    restart: no
+    restart: "no"
     depends_on:
       - consul
 
   aginx-api:
     image: xhaiker/aginx:v2.0.0
+    ports:
+      - 8011:8011
     environment:
-      AGINX_LEVEL: debug
+      AGINX_LOG_LEVEL: debug
+      AGINX_BIND: 0.0.0.0:8011
       AGINX_AUTH: aginx=aginx
       AGINX_EXPOSE: api.aginx.io
       AGINX_STORAGE: consul://consul:8500/aginx
-      AGINX_DISABLE_ADMIN: true
-      AGINX_DISABLE_DAEMON: true
-    ports:
-      - 8012:8011
+      AGINX_DISABLE_ADMIN: "true"
+      AGINX_DISABLE_DAEMON: "true"
     depends_on:
       - consul
+      - aginx-sync
 
   aginx-web:
     image: xhaiker/aginx:v2.0.0
     ports:
-      - 8013:8011
+      - 8012:8012
     environment:
-      AGINX_LEVEL: true
+      AGINX_LOG_LEVEL: "debug"
+      AGINX_BIND: 0.0.0.0:8012
       AGINX_AUTH: aginx=aginx
-      AGINX_EXPOSE: api.aginx.io
-      AGINX_API: aginx-api:8011
-      AGINX_DISABLE_API: true
-      AGINX_DISABLE_DAEMON: true
+      AGINX_DISABLE_API: "true"
+      AGINX_DISABLE_DAEMON: "true"
     depends_on:
       - consul
       - aginx-api
@@ -58,25 +50,27 @@ services:
   aginx-daemon:
     image: xhaiker/aginx:v2.0.0
     ports:
-      - 8013:8011
+      - 80:80
+      - 443:443
     environment:
-      AGINX_LEVEL: true
-      AGINX_DISABLE_ADMIN: true
-      AGINX_DISABLE_API: true
+      AGINX_LOG_LEVEL: debug
+      AGINX_DISABLE_ADMIN: "true"
+      AGINX_DISABLE_API: "true"
       AGINX_STORAGE: consul://consul:8500/aginx
     depends_on:
       - consul
+      - aginx-sync
 
   aginx-registry:
     image: xhaiker/aginx:v2.0.0
     environment:
-      AGINX_LEVEL: true
+      AGINX_LOG_LEVEL: "debug"
       AGINX_AUTH: aginx=aginx
       AGINX_API: aginx-api:8011
-      AGINX_REGISTRY: docker://var/run/docker.sock
-      AGINX_DISABLE_ADMIN: true
-      AGINX_DISABLE_API: true
-      AGINX_DISABLE_DAEMON: true
+      AGINX_REGISTRY: docker://var/run/docker.sock?ip=node1
+      AGINX_DISABLE_ADMIN: "true"
+      AGINX_DISABLE_API: "true"
+      AGINX_DISABLE_DAEMON: "true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:

@@ -76,6 +76,6 @@ func (a *httpAginx) Certs() Certs {
 
 func (a *httpAginx) Info() (map[string]map[string]string, error) {
 	plugins := map[string]map[string]string{}
-	err := a.http().request(http.MethodGet, "/api/info", nil, plugins)
+	err := a.http().request(http.MethodGet, "/api/info", nil, &plugins)
 	return plugins, err
 }

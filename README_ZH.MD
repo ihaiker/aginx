@@ -1,7 +1,10 @@
 # Aginx 
 
-为 [NGINX][NGINX] 添加WEB管理和API管理的服务，
-[![Try in PWD][PWDIMAGE]][PWD] 并打开8011端口查看
+为 [NGINX][NGINX] 添加WEB管理和API管理的服务。
+
+[![Try][PWDIMAGE]单实例部署方式][ALLINONE]
+
+[![Try][PWDIMAGE]分布式部署方式][CLUSTER] 
 
 ## 支持特征 
 
@@ -29,4 +32,5 @@
 
 [NGINX]: http://nginx.org
 [PWDIMAGE]: https://raw.githubusercontent.com/play-with-docker/stacks/master/assets/images/button.png "Play With Docker Image"
-[PWD]: https://labs.play-with-docker.com/?stack=https://raw.githubusercontent.com/ihaiker/aginx/master/demo/docker-compose.yml "Docker Stack YAML"
+[ALLINONE]: https://labs.play-with-docker.com/?stack=https://raw.githubusercontent.com/ihaiker/aginx/master/demo/docker-compose-allinone.yml "Docker Stack YAML"
+[CLUSTER]: https://labs.play-with-docker.com/?stack=https://raw.githubusercontent.com/ihaiker/aginx/master/demo/docker-compose-cluster.yml "Docker Stack YAML"

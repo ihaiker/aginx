@@ -241,6 +241,9 @@ func (d *dockerWatcher) findInContainer(containerId, containerName string) (regi
 			} else { //开放多个端口不可确定
 				return nil, fmt.Errorf("端口不可确定：%s %s", container.Name, label.Source)
 			}
+		} else if container.HostConfig.NetworkMode == "host" {
+			//端口一致
+			targetPort, publishPort = label.Port, label.Port
 		} else {
 			//从指定的端口中获取当前端口和公开端口
 			for port, portBinds := range container.HostConfig.PortBindings {

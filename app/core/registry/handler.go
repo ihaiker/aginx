@@ -54,6 +54,7 @@ func (b *EventHandler) Add(path string) (reg registry.Plugin, err error) {
 			reg = p
 			logger.Infof("启用registry %s", name)
 			err = reg.Watch(*c, b.aginx)
+			b.plugins = append(b.plugins, p)
 			return
 		}
 	}
