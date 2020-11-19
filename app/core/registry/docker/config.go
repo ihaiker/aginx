@@ -12,13 +12,12 @@ func fromClient(config url.URL) (*client.Client, string, error) {
 	opts := []client.Opt{client.WithAPIVersionNegotiation()}
 
 	ip := ""
-	//host
 	if config.Path == "" { //tcp connect
 		host := fmt.Sprintf("tcp://%s", config.Host)
 		ip, _, _ = net.SplitHostPort(config.Host)
 		opts = append(opts, client.WithHost(host))
 	} else {
-		host := fmt.Sprintf("unix://%s%s", config.Host, config.Path)
+		host := fmt.Sprintf("unix:///%s%s", config.Host, config.Path)
 		opts = append(opts, client.WithHost(host))
 	}
 	//用户指定了IP

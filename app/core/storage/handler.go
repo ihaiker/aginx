@@ -31,11 +31,11 @@ func (f *fileChangeHandler) watch(local storage.Plugin) {
 					logger.Debugf("文件 %s %s", path.Name, event.Type)
 					if event.Type == storage.FileEventTypeRemove {
 						if err := local.Remove(path.Name); err != nil {
-							logger.WithError(err).Warnf("删除%s", path.Name)
+							logger.WithError(err).Warnf("删除 %s", path.Name)
 						}
 					} else {
 						if err := local.Put(path.Name, path.Content); err != nil {
-							logger.WithError(err).Warnf("更新%s", path.Name)
+							logger.WithError(err).Warnf("更新 %s", path.Name)
 						}
 					}
 				}

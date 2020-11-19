@@ -92,9 +92,9 @@ func loadAccounts(baseDir string, aginx api.Aginx) (as *accountStorage, err erro
 		err = json.Unmarshal(keyBytes, account)
 		if err == nil {
 			as.store[account.Email] = account
-			logger.Debug("load account file ", path)
+			logger.Debug("加载账户文件 ", path)
 		} else {
-			logger.WithError(err).Warn("load account file ", path)
+			logger.WithError(err).Warn("加载账户文件 ", path)
 		}
 	}
 	return

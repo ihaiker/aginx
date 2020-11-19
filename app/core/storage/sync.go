@@ -33,25 +33,25 @@ func Sync(from storage.Plugin, to storage.Plugin) error {
 	for _, formFile := range fromFiles {
 		if toFile, has := contains(toFiles, formFile); has {
 			if bytes.Equal(toFile.Content, formFile.Content) {
-				logger.Debug("ignore update ", formFile.Name)
+				logger.Debug("忽略未更新 ", formFile.Name)
 				continue
 			}
 		}
 		if err := to.Put(formFile.Name, formFile.Content); err != nil {
-			logger.Warn("sync file ", formFile.Name, " error ", err)
+			logger.WithError(err).Warn("同步文件 ", formFile.Name)
 			return err
 		} else {
-			logger.Info("sync file ", formFile.Name)
+			logger.Info("同步文件 ", formFile.Name)
 		}
 	}
 
 	for _, toFile := range toFiles {
 		if _, has := contains(fromFiles, toFile); !has {
 			if err := to.Remove(toFile.Name); err != nil {
-				logger.Warn("remove file ", toFile.Name, " error ", err)
+				logger.WithError(err).Warn("删除文件 ", toFile.Name)
 				return err
 			} else {
-				logger.Info("remove file ", toFile.Name)
+				logger.Info("删除文件 ", toFile.Name)
 			}
 		}
 	}

@@ -158,10 +158,11 @@ func (b *EventHandler) handleEvent(plugin registry.Plugin, event registry.Domain
 	}
 
 	if _, err := b.aginx.Directive().Select(
-		"http", fmt.Sprintf("include('%d.d/*.conf')", plugin.Scheme()),
+		"http", fmt.Sprintf("include('%s.d/*.conf')", plugin.Scheme()),
 	); errors.IsNotFound(err) {
-		if err = b.aginx.Directive().Add(
-			[]string{"http"}, config.New("include", plugin.Scheme()+".d/*.conf")); err != nil {
+		if err = b.aginx.Directive().Add([]string{"http"},
+			config.New("include", fmt.Sprintf("%s.d/*.conf", plugin.Scheme())),
+		); err != nil {
 			logger.WithError(err).Warnf("添加include错误 %s", plugin.Scheme())
 		}
 	}

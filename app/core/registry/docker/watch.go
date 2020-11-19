@@ -209,7 +209,7 @@ func (d *dockerWatcher) findInContainer(containerId, containerName string) (regi
 
 	labels, err := d.findLabel(d.labelFinder(), container.Config.Labels, containerName)
 	if err != nil {
-		logger.WithError(err).Warn("search container(%s) labels", containerName)
+		logger.WithError(err).Warnf("search container(%s) labels", containerName)
 		return nil, err
 	}
 	labelsEvent := registry.LabelsEvent{}
@@ -321,7 +321,7 @@ func (d *dockerWatcher) containerEvent(message events.Message) {
 		{
 			logger.Debugf("container start: name=%s, id=%s ", containerName, message.ID)
 			if labelEvent, err := d.findInContainer(message.ID, containerName); err != nil {
-				logger.WithError(err).Warn("find in container %s", containerName)
+				logger.WithError(err).Warnf("find in container %s", containerName)
 			} else {
 				d.cacheEvent(labelEvent)
 				event = append(event, labelEvent...)
@@ -347,7 +347,7 @@ func (d *dockerWatcher) serviceEvent(message events.Message) {
 	case "update":
 		{
 			if labelEvent, err := d.findInService(message.ID, serviceName); err != nil {
-				logger.WithError(err).Warn("find in service %s", serviceName)
+				logger.WithError(err).Warnf("find in service %s", serviceName)
 			} else {
 				d.cacheEvent(labelEvent)
 				event = append(event, labelEvent...)

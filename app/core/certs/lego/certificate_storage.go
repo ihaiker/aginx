@@ -109,9 +109,9 @@ func loadCertificates(dir string, aginx api.Aginx) (cs *certificateStorage, err 
 		err = json.Unmarshal(keyBytes, cert)
 		if err == nil {
 			cs.data[cert.Domain] = cert
-			logger.Debug("load certificate ", path)
+			logger.Debug("加载证书 ", path)
 		} else {
-			logger.WithError(err).Warn("load certificate ", path)
+			logger.WithError(err).Warn("加载证书 ", path)
 		}
 	}
 	return
