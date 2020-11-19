@@ -48,6 +48,8 @@ func (cfs *certificateStorage) NewWithProvider(account *Account, domain string, 
 			CertURL:       res.CertURL,
 			CertStableURL: res.CertStableURL,
 		}
+		cert.CertificatePath = filepath.Join(cfs.certDir, domain, "server.crt")
+		cert.PrivateKeyPath = filepath.Join(cfs.certDir, domain, "server.key")
 
 		{
 			block, _ := pem.Decode([]byte(res.Certificate))
@@ -61,9 +63,6 @@ func (cfs *certificateStorage) NewWithProvider(account *Account, domain string, 
 		if err := cfs.aginx.Files().NewWithContent(domainFile, bs); err != nil {
 			return nil, err
 		}
-
-		cert.CertificatePath = filepath.Join(cfs.certDir, domain, "server.crt")
-		cert.PrivateKeyPath = filepath.Join(cfs.certDir, domain, "server.key")
 
 		if err = cfs.aginx.Files().NewWithContent(cert.CertificatePath, res.Certificate); err != nil {
 			return nil, err
