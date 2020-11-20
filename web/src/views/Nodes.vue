@@ -1,9 +1,9 @@
 <template>
-    <div>
+    <div v-if="!include">
         <v-title title="管理节点" title-class="icons cui-puzzle">
-            <button class="btn btn-sm btn-outline-danger" @click="onAddNode">
-                添加节点
-            </button>
+            <a href="#" class="text-danger font-weight-bold" @click="onAddNode">
+                <i class="fa fa-plus-circle"></i>&nbsp;添加节点
+            </a>
         </v-title>
 
         <div class="row p-5">
@@ -72,6 +72,16 @@
         </modal>
 
     </div>
+    <div v-else class="vh-100">
+        <v-title title="节点快速选择" title-class="icons cui-puzzle"/>
+        <ul class="list-group list-group-flush vh-100" style="overflow-y: auto">
+            <li v-for="(node,idx) in nodes"
+                :class="{'active':activeNode(node)}" @click="chooseNode(node)"
+                class="list-group-item list-group-item-action">
+                {{ node.name }}&nbsp;&nbsp;(&nbsp;{{ node.code }}&nbsp;)
+            </li>
+        </ul>
+    </div>
 </template>
 
 <script>
@@ -86,6 +96,12 @@ export default {
         colors: ["text-white bg-success", "bg-info", "bg-warning", "bg-danger"]
     }),
     inject: ["reload"],
+    props: {
+        include: {
+            type: Boolean,
+            default: false
+        }
+    },
     mounted() {
         this.queryNodes();
     },

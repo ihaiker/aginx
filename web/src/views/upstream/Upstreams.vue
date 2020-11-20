@@ -6,6 +6,21 @@
             </router-link>
         </v-title>
         <div class="p-3">
+            <div class="form-group form-inline">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">名字：</span>
+                    </div>
+                    <input class="form-control" v-model="searchName" type="text" placeholder="名字"
+                           @keyup.enter="queryUpstreams">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" @click="queryUpstreams">
+                            <i class="fa fa-search-plus"></i> 搜索
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <table class="table table-bordered table-hover">
                 <thead>
                 <tr>
@@ -17,8 +32,8 @@
                 </tr>
                 </thead>
                 <tbody>
-                <template v-for="up in upstreams">
-                    <tr>
+                <template v-for="(up,idx) in upstreams">
+                    <tr v-if="showPage(idx)">
                         <td>
                             {{ up.name }}
                             <span v-if="up.commit !== ''" class="text-black-50"><br/>{{ up.commit }}</span>
@@ -47,6 +62,13 @@
                     </tr>
                 </template>
                 </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="5">
+                        <XPage :items="page" @change="page.page = $event"/>
+                    </td>
+                </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -55,23 +77,42 @@
 <script>
 import VTitle from "@/plugins/vTitle";
 import Delete from "@/plugins/delete";
+import XPage from "@/plugins/XPage";
 
 export default {
     name: "Upstreams",
-    components: {Delete, VTitle},
+    components: {XPage, Delete, VTitle},
     data: () => ({
-        upstreams: [],
+        upstreams: [], searchName: "",
+        page: {
+            page: 1, total: 0, limit: 12,
+        }
     }),
     mounted() {
         this.queryUpstreams();
     },
     methods: {
+        refresh() {
+            this.queryUpstreams();
+        },
+        showPage(idx) {
+            return idx >= (this.page.page - 1) * this.page.limit
+                && idx < (this.page.page * this.page.limit)
+        },
         queryUpstreams() {
+            this.startLoading();
             let self = this;
-            self.$axios.get("/admin/api/upstream").then(res => {
+            let url = "/admin/api/upstream";
+            if (this.searchName !== "") {
+                url += "?name=" + encodeURI(this.searchName);
+            }
+            self.$axios.get(url).then(res => {
                 self.upstreams = res;
+                self.page.total = self.upstreams.length;
             }).catch(e => {
                 self.$alert("错误" + e.message);
+            }).finally(() => {
+                self.finishLoading()
             })
         },
         editUpstream(upstream) {
@@ -97,6 +138,6 @@ export default {
                 self.$toast.error(e.message);
             })
         }
-    }
+    },
 }
 </script>

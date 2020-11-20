@@ -6,6 +6,21 @@
             </router-link>
         </v-title>
         <div class="p-3">
+            <div class="form-group form-inline">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">域名</span>
+                    </div>
+                    <input class="form-control" v-model="searchName" type="text" placeholder="域名"
+                           @keyup.enter="queryServices">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" @click="queryServices">
+                            <i class="fa fa-search-plus"></i> 搜索
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <table class="table table-bordered table-hover">
                 <thead>
                 <tr>
@@ -16,8 +31,8 @@
                 </tr>
                 </thead>
                 <tbody>
-                <template v-for="server in services">
-                    <tr>
+                <template v-for="(server,idx) in services">
+                    <tr v-if="showPage(idx)">
                         <td>
                             <span class="badge badge-dark">{{ server.protocol }}</span>
                             <span v-for="d in server.domains" class="text-success font-weight-bold ml-2">
@@ -84,11 +99,15 @@
                             </div>
                         </td>
                     </tr>
-                    <!--<tr>
-                        <td colspan="5">{{server.queries}}</td>
-                    </tr>-->
                 </template>
                 </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="4">
+                        <x-page :items="page" @change="page.page = $event"/>
+                    </td>
+                </tr>
+                </tfoot>
             </table>
         </div>
     </div>
@@ -102,23 +121,44 @@
 import VTitle from "../../plugins/vTitle";
 import VueInputAutowidth from 'vue-input-autowidth'
 import Delete from "../../plugins/delete";
+import XPage from "@/plugins/XPage";
 
 export default {
     name: "Files",
-    components: {Delete, VTitle, VueInputAutowidth},
+    components: {XPage, Delete, VTitle, VueInputAutowidth},
     data: () => ({
         services: [],
+        searchName: "",
+        page: {
+            page: 1, total: 0, limit: 12,
+        }
     }),
     mounted() {
         this.queryServices();
     },
     methods: {
+        showPage(idx) {
+            return idx >= (this.page.page - 1) * this.page.limit
+                && idx < (this.page.page * this.page.limit)
+        },
+        refresh() {
+            this.queryServices();
+        },
         queryServices() {
+            this.startLoading();
+            this.page.page = 1;
             let self = this;
-            this.$axios.get("/admin/api/server").then(res => {
+            let url = "/admin/api/server";
+            if (this.searchName !== "") {
+                url += "?name=" + encodeURI(this.searchName);
+            }
+            this.$axios.get(url).then(res => {
                 self.services = res;
+                self.page.total = self.services.length;
             }).catch(e => {
                 self.$toast.error(e.message);
+            }).finally(() => {
+                self.finishLoading()
             })
         },
         editServer(server) {

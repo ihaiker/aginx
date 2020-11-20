@@ -5,6 +5,20 @@ let mixins = {
         gid: ('m' + Math.floor(Math.random() * 10000000000)),
         timers: {}
     }),
+    computed: {
+        selectNode(){
+            return this.$store.getters.node.code
+        }
+    },
+    watch:{
+        selectNode(newNode,oldNode){
+            try {
+                this.refresh();
+            } catch (e) {
+            } finally {
+            }
+        }
+    },
     methods: {
         gvid(prefix, subfix) {
             if (undefined !== prefix && undefined !== subfix) {
@@ -50,4 +64,4 @@ let mixins = {
 
     }
 };
-export default  mixins;
+export default mixins;

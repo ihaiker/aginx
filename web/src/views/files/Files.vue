@@ -137,7 +137,11 @@ export default {
         }
     },
     methods: {
+        refresh() {
+            this.queryFiles();
+        },
         queryFiles() {
+            this.startLoading();
             let self = this;
             let url = "/admin/api/file/search"
             if (this.search !== "") {
@@ -147,6 +151,8 @@ export default {
                 self.files = res;
             }).catch(e => {
                 self.$toast.error(e.message);
+            }).finally(() => {
+                self.finishLoading();
             });
         },
         getFile(file) {

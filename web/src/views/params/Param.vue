@@ -67,11 +67,15 @@ export default {
         this.getConfig();
     },
     methods: {
+        refresh() {
+            this.setTab(this.tab);
+        },
         setTab(name) {
             this.tab = name;
             this.getConfig();
         },
         getConfig() {
+            this.startLoading();
             let self = this;
             let url = "/admin/api/directive"
             if (this.tab !== "") {
@@ -81,6 +85,8 @@ export default {
                 self.config = res;
             }).catch(e => {
                 self.$toast.error(e.message);
+            }).finally(() => {
+                self.finishLoading();
             });
         },
     }

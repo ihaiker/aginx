@@ -24,10 +24,8 @@
                 </b-nav-item>
                 -->
             </b-navbar-nav>
-            <!--
-                <AsideToggler class="d-none d-lg-block"/>
-                <AsideToggler class="d-lg-none" mobile/>
-            -->
+            <AsideToggler class="d-none d-lg-block"/>
+            <AsideToggler class="d-lg-none" mobile/>
         </AppHeader>
         <div class="app-body">
             <Sidebar fixed>

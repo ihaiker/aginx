@@ -90,7 +90,7 @@ export default {
     name: "BasicAuths",
     components: {Delete, Modal, VTitle},
     mounted() {
-        this.queryBasicAuthFile();
+        this.refresh();
     },
     data: () => ({
         editFile: null,
@@ -98,6 +98,9 @@ export default {
         authFiles: [],
     }),
     methods: {
+        refresh() {
+            this.queryBasicAuthFile();
+        },
         convertAuths(auths) {
             this.authFiles = [];
             for (let i = 0; i < auths.length; i++) {
@@ -117,10 +120,13 @@ export default {
         },
 
         queryBasicAuthFile() {
+            this.startLoading();
             let self = this;
             let url = "/admin/api/file/search?q=" + encodeURI("auths/*")
             self.$axios.get(url).then(this.convertAuths).catch(e => {
                 self.$alert("查询失败：" + e.message);
+            }).finally(() => {
+                self.finishLoading();
             })
         },
 

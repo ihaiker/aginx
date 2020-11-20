@@ -22,7 +22,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="(cert,idx) in certs">
+                <tr v-for="(cert,idx) in certs" v-if="showPage(idx)">
                     <td>{{ providers[cert.provider] }} ({{ cert.provider }})</td>
                     <td>{{ cert.domain }}</td>
                     <td>{{ cert.certificate }}</td>
@@ -40,6 +40,13 @@
                     </td>
                 </tr>
                 </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="6">
+                        <XPage :items="page" @change="page.page = $event"/>
+                    </td>
+                </tr>
+                </tfoot>
             </table>
         </div>
 
@@ -106,20 +113,31 @@
 <script>
 import VTitle from "@/plugins/vTitle";
 import Modal from "@/plugins/modal";
+import XPage from "@/plugins/XPage";
 
 export default {
     name: "Certs",
-    components: {Modal, VTitle},
+    components: {XPage, Modal, VTitle},
     data: () => ({
         certs: [], providers: {},
         obtainNewDomain: null,
         custom: null,
+        page: {
+            page: 1, total: 0, limit: 12,
+        }
     }),
     mounted() {
-        this.queryCerts();
-        this.queryInfo();
+        this.refresh();
     },
     methods: {
+        refresh() {
+            this.queryCerts();
+            this.queryInfo();
+        },
+        showPage(idx) {
+            return idx >= (this.page.page - 1) * this.page.limit
+                && idx < (this.page.page * this.page.limit)
+        },
         queryInfo() {
             let self = this;
             self.$axios.get("/admin/api/info").then(res => {
@@ -129,11 +147,15 @@ export default {
             });
         },
         queryCerts() {
+            this.startLoading();
             let self = this;
             self.$axios.get("/admin/api/cert/list").then(res => {
                 self.certs = res;
+                self.page.total = self.certs.length;
             }).catch(e => {
                 self.$alert("查询证书异常：" + e.message);
+            }).finally(() => {
+                self.finishLoading()
             });
         },
         expireTime(t) {
