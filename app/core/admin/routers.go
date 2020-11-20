@@ -39,7 +39,7 @@ func Routers(adminConfig string) func(app *iris.Application) {
 		admin := app.Party("/admin")
 		{
 			admin.Get("/nodes", h.Handler(func(ctx context.Context) []*Node {
-				return nodes.list()
+				return nodes.list(true)
 			}))
 			admin.Post("/node", h.Handler(nodes.add))
 			admin.Delete("/node", h.Handler(nodes.delete))
@@ -56,8 +56,11 @@ func Routers(adminConfig string) func(app *iris.Application) {
 				} else {
 					req, err = http.NewRequest(ctx.Method(), reqUrl, nil)
 				}
-				req.SetBasicAuth(node.User, node.Password)
+				for _, cookie := range ctx.Request().Cookies() {
+					req.AddCookie(cookie)
+				}
 				req.Header = ctx.Request().Header
+				req.SetBasicAuth(node.User, node.Password)
 
 				resp, err := http.DefaultClient.Do(req)
 				errors.PanicMessage(err, "代理异常")

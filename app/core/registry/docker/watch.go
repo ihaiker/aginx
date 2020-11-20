@@ -53,11 +53,11 @@ func (d *dockerWatcher) Start() error {
 	if err != nil {
 		return err
 	}
-
 	d.cacheEvent(event)
 	//第一次发送全部事件
-	d.eventsChan <- event
-
+	if len(event) > 0 {
+		d.eventsChan <- event
+	}
 	go d.watch()
 	return nil
 }
@@ -77,6 +77,7 @@ func (c *dockerWatcher) findLabel(finderLabel addition.LabelFinder,
 
 //获取有所有services
 func (d *dockerWatcher) services() (registry.LabelsEvent, error) {
+	logger.Debug("查询docker服务")
 	labelsEvent := registry.LabelsEvent{}
 
 	info, err := d.docker.Info(context.TODO())
@@ -104,6 +105,7 @@ func (d *dockerWatcher) services() (registry.LabelsEvent, error) {
 }
 
 func (d *dockerWatcher) containers() (registry.LabelsEvent, error) {
+	logger.Debug("查询所有容器")
 	labelsEvent := registry.LabelsEvent{}
 	containers, err := d.docker.ContainerList(context.TODO(), types.ContainerListOptions{
 		All: true, Filters: filters.NewArgs(filters.Arg("status", "running")),
@@ -259,8 +261,9 @@ func (d *dockerWatcher) findInContainer(containerId, containerName string) (regi
 					}
 				}
 			}
+			//指定的端口并未开放，指定的端口一定是内部端口
 			if targetPort == 0 {
-				return nil, fmt.Errorf("端口不可确定：%s %s", container.Name, label.Source)
+				targetPort = label.Port
 			}
 		}
 
@@ -302,12 +305,15 @@ func (d *dockerWatcher) findInContainer(containerId, containerName string) (regi
 func (d *dockerWatcher) fetchAll() (registry.LabelsEvent, error) {
 	labelsEvent, err := d.services()
 	if err != nil {
-		return labelsEvent, err
+		labelsEvent = registry.LabelsEvent{}
+		logger.WithError(err).Warn("查询服务错误")
 	}
+
 	containerEvents, err := d.containers()
 	if err != nil {
-		return nil, err
+		logger.WithError(err).Warn("查询容器错误")
 	}
+
 	labelsEvent = append(labelsEvent, containerEvents...)
 	return labelsEvent, err
 }

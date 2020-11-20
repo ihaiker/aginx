@@ -21,7 +21,7 @@ func NewNodeController(path string) *nodeController {
 	return nc
 }
 
-func (nc *nodeController) list() []*Node {
+func (nc *nodeController) list(removePassword bool) []*Node {
 	nodes := make([]*Node, 0)
 
 	if files.Exists(nc.path) {
@@ -37,7 +37,9 @@ func (nc *nodeController) list() []*Node {
 						Code: d.Args[0], Name: d.Body.Get("name").Args[0],
 						Address: d.Body.Get("address").Args[0],
 						User:    d.Body.Get("user").Args[0],
-						Password: "",
+					}
+					if !removePassword {
+						node.Password = d.Body.Get("password").Args[0]
 					}
 					nodes = append(nodes, node)
 				}
@@ -51,17 +53,21 @@ func (nc *nodeController) list() []*Node {
 			user, password = authUserName, authPassword
 			break
 		}
-		nodes = append(nodes, &Node{
+		node := &Node{
 			Code: "local", Name: "本地", User: user, Password: password,
 			Address: "http://" + config.Config.Bind,
-		})
+		}
+		if !removePassword {
+			node.Password = password
+		}
+		nodes = append(nodes, node)
 	}
 
 	return nodes
 }
 
 func (nc *nodeController) getNode(nodeName string) *Node {
-	for _, node := range nc.list() {
+	for _, node := range nc.list(false) {
 		if node.Code == nodeName {
 			return node
 		}
