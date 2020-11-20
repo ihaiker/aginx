@@ -16,7 +16,7 @@ require (
 	github.com/go-acme/lego/v3 v3.9.0
 	github.com/go-ping/ping v0.0.0-20201020221959-265e7c64b33b
 	github.com/hashicorp/consul/api v1.7.0
-	github.com/ihaiker/cobrax v1.2.2
+	github.com/ihaiker/cobrax v1.2.3
 	github.com/kataras/iris/v12 v12.1.8
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
