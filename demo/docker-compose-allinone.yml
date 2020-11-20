@@ -4,8 +4,12 @@ services:
   aginx-allinone:
     image: xhaiker/aginx:v2.0.0
     container_name: allinone
-    network_mode: host
+    ports:
+      - 80:80
+      - 443:443
+      - 8011:8011
     environment:
+      AGINX_BIND: 0.0.0.0:8011
       AGINX_LOG_LEVEL: debug
       AGINX_AUTH: aginx=aginx
       AGINX_EXPOSE: api.aginx.io
