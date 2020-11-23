@@ -33,6 +33,13 @@ storage: consul://172.16.100.10:8500/aginx;
 #storage: etcd://172.16.100.10:2379/aginx;
 #storage: zk://172.16.100.10:2181/aginx;
 
+backup {
+    dir: "/var/lib/aginx/backups";
+    crontab: "0 0 2 * * ?";
+    limit: 30;
+    day-limit: 7;
+}
+
 # 启用服务发现
 registry docker://172.16.100.10:2375;
 registry docker://var/run/docker.sock;

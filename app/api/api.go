@@ -74,6 +74,10 @@ func (a *httpAginx) Certs() Certs {
 	return &httpApiCerts{client: a.http()}
 }
 
+func (a *httpAginx) Backup() Backup {
+	return &httpAginxBackup{client: a.http()}
+}
+
 func (a *httpAginx) Info() (map[string]map[string]string, error) {
 	plugins := map[string]map[string]string{}
 	err := a.http().request(http.MethodGet, "/api/info", nil, &plugins)

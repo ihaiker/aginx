@@ -25,6 +25,7 @@ RUN touch /etc/aginx/aginx.conf && \
 
 ENV AGINX_CONF=/etc/aginx/aginx.conf
 ENV AGINX_PLUGINS=/usr/lib/aginx/modules
+ENV AGINX_BACKUP_DIR=/var/lib/aginx/backups
 
 VOLUME /etc/nginx
 VOLUME /etc/aginx

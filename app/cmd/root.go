@@ -22,6 +22,7 @@ import (
 	storagePlugin "github.com/ihaiker/aginx/v2/plugins/storage"
 	"github.com/ihaiker/cobrax"
 	"github.com/kataras/iris/v12"
+	"github.com/rfyiamcool/cronlib"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
@@ -258,12 +259,43 @@ var root = &cobra.Command{
 			manager.Add(regHandler)
 		}
 
-		if config.Config.HasApi() { //只有API节点可以重新申请证书
-			renewal := certs.Renewal(aginx, func(cert *api.CertFile) error {
-				_, err := aginx.Certs().New(cert.Provider, cert.Domain)
-				return err
-			})
-			manager.Add(renewal)
+		if config.Config.HasApi() { //只有API节点可以重新申请证书和执行备份
+			crontab := cronlib.New()
+
+			//每日凌晨4点执行续租功能
+			{
+				reObtain := certs.ReObtain(aginx, func(cert *api.CertFile) error {
+					_, err := aginx.Certs().New(cert.Provider, cert.Domain)
+					return err
+				})
+				job, _ := cronlib.NewJobModel("0 0 4 * * ?", reObtain.Check)
+				if err = crontab.Register("checkTLS", job); err != nil {
+					return
+				}
+				manager.AddStart(func() error { reObtain.Check(); return nil })
+			}
+			//定时备份功能
+			if config.Config.Backup.Crontab != "" {
+				logs.Debug("定时备份开启：", config.Config.Backup.Crontab)
+				var job *cronlib.JobModel
+				if job, err = cronlib.NewJobModel(config.Config.Backup.Crontab, func() {
+					logs.Debug("定时备份执行")
+					if name, err := aginx.Backup().Backup("定时任务"); err == nil {
+						logs.Info("定时备份完成：", name)
+					} else {
+						logs.Warn("定时备份失败：", err.Error())
+					}
+				}); err != nil {
+					return
+				}
+				if err = crontab.Register("backup", job); err != nil {
+					return
+				}
+			}
+			//添加启动和停止 @format:off
+			manager.AddStart(func() error { crontab.Start(); return nil })
+			manager.AddStop(func() error { crontab.Stop(); return nil })
+			//@format:on
 
 			//使用域名方式暴露API
 			if config.Config.Expose != "" {

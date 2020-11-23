@@ -23,6 +23,8 @@ type (
 
 		Certs() Certs
 
+		Backup() Backup
+
 		GetServers(filter *Filter) ([]*Server, error)
 		SetServer(server *Server) (queries []string, err error)
 
@@ -88,6 +90,22 @@ type (
 
 		//批量操作
 		Batch(batch []*DirectiveBatch) error
+	}
+
+	BackupFile struct {
+		Comment string `json:"comment"`
+		Name    string `json:"name"`
+	}
+
+	Backup interface {
+		//获取已经备份的列表，其实就是备份的时间列表.、每个备份都是一个zip
+		List() ([]*BackupFile, error)
+		//删除备份 date 备份日志
+		Delete(dateString string) error
+		//执行备份，
+		Backup(comment string) (*BackupFile, error)
+		//回滚
+		Rollback(dateString string) error
 	}
 )
 

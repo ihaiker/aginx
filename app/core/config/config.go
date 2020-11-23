@@ -1,6 +1,13 @@
 package config
 
 type (
+	backup struct {
+		Dir      string `help:"备份文件位置" def:"./backups"`
+		Crontab  string `help:"定时备份时间策略，配置方式可以参阅crontab。"`
+		Limit    int    `help:"备份最大个数" def:"30"`
+		DayLimit int    `help:"备份最大保存天数" def:"7"`
+	}
+
 	config struct {
 		LogFile  string `flag:"log-file" help:"日志输出到文件的位置，默认输出到控制台"`
 		LogLevel string `flag:"log-level" short:"L" help:"日志级别" def:"info"`
@@ -36,11 +43,13 @@ type (
 		CertDef string   `help:"默认cert使用名字" def:"lego"`
 
 		Plugins string `help:"插件文件夹" short:"P" def:"./plugins"`
+
+		Backup backup
 	}
 )
 
 var (
-	Config = &config{}
+	Config = &config{Backup: backup{}}
 )
 
 func (c *config) HasDaemon() bool {
@@ -72,13 +81,12 @@ func (c *config) HasRegistry() bool {
 
 func Help(_, _, value string) string {
 	if value == "{{storage.help}}" {
-		return `集中存储配置方式. 
-		例如:
-			consul://127.0.0.1:8500/aginx[?token=authtoken]   consul k/v配置.
-			zk://127.0.0.1:2182/aginx[?scheme=&auth=]         zookeeper 配置.
-			etcd://127.0.0.1:2379/aginx[?user=&password]      
-			file://etc/nginx/nginx.conf                       本机配置
-	`
+		return `集中存储配置方式.
+	consul://127.0.0.1:8500/aginx[?token=authtoken]   consul k/v配置.
+	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         zookeeper 配置.
+	etcd://127.0.0.1:2379/aginx[?user=&password]      
+	file://etc/nginx/nginx.conf                       本机配置
+`
 	} else if value == "{{registry.help}}" {
 		return `配置注册管理器`
 	}

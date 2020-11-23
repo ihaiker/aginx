@@ -6,6 +6,7 @@ import (
 	cfg "github.com/ihaiker/aginx/v2/core/nginx/config"
 	"github.com/ihaiker/aginx/v2/core/util"
 	"net/url"
+	"strconv"
 )
 
 func Unmarshal(data []byte, v interface{}) error {
@@ -54,6 +55,19 @@ func Unmarshal(data []byte, v interface{}) error {
 			c.Storage = toConfigUrl(d)
 		case "cert", "certificate":
 			c.Cert = append(c.Cert, toConfigUrl(d))
+		case "backup":
+			for _, ld := range d.Body {
+				switch ld.Name {
+				case "dir":
+					c.Backup.Dir = ld.Args[0]
+				case "limit":
+					c.Backup.Limit, _ = strconv.Atoi(ld.Args[0])
+				case "day-limit", "dayLimit", "day_limit":
+					c.Backup.DayLimit, _ = strconv.Atoi(ld.Args[0])
+				case "crontab":
+					c.Backup.Crontab = ld.Args[0]
+				}
+			}
 		case "node":
 			//ignore
 		default:

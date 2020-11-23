@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ihaiker/aginx/v2/api"
 	"github.com/ihaiker/aginx/v2/core/certs"
+	cfg "github.com/ihaiker/aginx/v2/core/config"
 	"github.com/ihaiker/aginx/v2/core/logs"
 	"github.com/ihaiker/aginx/v2/core/nginx"
 	"github.com/ihaiker/aginx/v2/core/nginx/config"
@@ -71,6 +72,15 @@ func (c *client) Certs() api.Certs {
 	return &clientCert{
 		engine: c.engine, daemon: c.daemon,
 		certs: c.certs, certDef: c.certDef,
+	}
+}
+
+func (c *client) Backup() api.Backup {
+	return &clientBackup{
+		engine: c.engine, daemon: c.daemon,
+		dir:      cfg.Config.Backup.Dir,
+		limit:    cfg.Config.Backup.Limit,
+		dayLimit: cfg.Config.Backup.DayLimit,
 	}
 }
 

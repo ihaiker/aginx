@@ -57,3 +57,4 @@ Temporary Items
 /nginx.conf
 _test
 *_test.go
+/backups

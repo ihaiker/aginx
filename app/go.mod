@@ -20,6 +20,7 @@ require (
 	github.com/kataras/iris/v12 v12.1.8
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/rfyiamcool/cronlib v1.0.0
 	github.com/rs/cors v1.7.0
 	github.com/samuel/go-zookeeper v0.0.0-20200724154423-2164a8ac840e
 	github.com/sirupsen/logrus v1.7.0

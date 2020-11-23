@@ -13,6 +13,7 @@ func Routers(aginx api.Aginx) func(*iris.Application) {
 	dirCtl := &directiveController{aginx: aginx}
 	sslCtl := &sslController{aginx: aginx}
 	ausCtl := &serverAndUpstreamController{aginx: aginx}
+	backupCtl := &backupController{aginx: aginx}
 
 	return func(app *iris.Application) {
 		api := app.Party("/api")
@@ -53,6 +54,14 @@ func Routers(aginx api.Aginx) func(*iris.Application) {
 			{
 				upstream.Get("", h.Handler(ausCtl.GetUpstream))
 				upstream.Post("", h.Handler(ausCtl.SetUpstream))
+			}
+
+			backup := api.Party("/backup")
+			{
+				backup.Get("", h.Handler(backupCtl.list))
+				backup.Delete("", h.Handler(backupCtl.delete))
+				backup.Post("", h.Handler(backupCtl.backup))
+				backup.Put("", h.Handler(backupCtl.rollback))
 			}
 		}
 	}
