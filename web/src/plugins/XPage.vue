@@ -53,7 +53,10 @@ export default {
         },
         pages() {
             let pages = [];
-            for (let i = 1; i <= Math.round(this.total / this.limit); i++) {
+            console.log("total:", this.total, ", limit:", this.limit,
+                " pages: ", Math.ceil(this.total / this.limit))
+
+            for (let i = 1; i <= Math.ceil(this.total / this.limit); i++) {
                 pages.push(i);
             }
             return pages;

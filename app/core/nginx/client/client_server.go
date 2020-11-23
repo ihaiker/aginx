@@ -120,9 +120,9 @@ func analysisServer(selects *config.Directive, upstreams []*api.Upstream) *api.S
 						}
 					}
 				case "allow":
-					location.Allows = append(location.Allows, d.Args...)
+					location.Allows = append(location.Allows, lbc.Args...)
 				case "deny":
-					location.Denys = append(location.Denys, d.Args...)
+					location.Denys = append(location.Denys, lbc.Args...)
 				case "proxy_set_header":
 					switch lbc.Args[0] {
 					case "Upgrade", "Connection":

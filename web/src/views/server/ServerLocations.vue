@@ -11,7 +11,7 @@
         </div>
         <table class="table table-hover mb-0">
             <tr>
-                <th style="width: 160px">路径</th>
+                <th style="width: 220px">路径</th>
                 <th style="width: 120px">类型</th>
                 <th>目标</th>
                 <th width="140px">操作</th>
@@ -133,12 +133,11 @@
                             </div>
                         </template>
                         <template v-else>
-                            <Partamters v-model="server.locations[idx].parameters" prompt="location"/>
+                            <!-- custom -->
                         </template>
                     </td>
                     <td class="d-flex justify-content-around">
-                        <button v-if="server.locations[idx].type !== 'custom'" class="btn btn-sm btn-css3" title="额外参数"
-                                @click="showParamIdx(idx)">
+                        <button class="btn btn-sm btn-css3" title="额外参数" @click="showParamIdx(idx)">
                             <i class="fa fa-align-justify"></i>
                         </button>
                         <button class="btn btn-sm btn-success" @click="moveUp(idx)" :disabled="idx === 0" title="上移动">
@@ -149,7 +148,7 @@
                         </button>
                     </td>
                 </tr>
-                <tr v-if="showParams === idx && server.locations[idx].type !== 'custom'">
+                <tr v-if="showParams === idx">
                     <td colspan="4" class="p-3">
                         <Partamters v-model="server.locations[idx].parameters" prompt="location"/>
                         <hr/>
