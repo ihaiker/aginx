@@ -35,7 +35,20 @@ func (c *consulRegistry) Version() string {
 }
 
 func (c *consulRegistry) Help() string {
-	return "consul registry"
+	return `consul registry
+配置格式为：consul://host:port?param=value
+可选参数说明：
+	参数              说明
+	token          连接consul所需要使用.
+	tokenFile      token file 文件
+	datacenter     参见 consul datacenter.
+	namespace      参见 consul namespace.
+	waitTime       连接consul超时时间，默认15秒。
+	tls            true/false 是否启用https连接consul服务。
+	ca             https ca证书路径
+	cert           https cert 证书路径
+	key            https key 证书路径
+`
 }
 
 func (c *consulRegistry) Watch(config url.URL, aginx api.Aginx) error {

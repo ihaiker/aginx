@@ -24,6 +24,7 @@ func Consul(cfg url.URL) (*api.Config, error) {
 	}
 
 	if enableTLS, _ := strconv.ParseBool(cfg.Query().Get("tls")); enableTLS {
+		config.Scheme = "https"
 		config.TLSConfig = api.TLSConfig{
 			CAFile:   cfg.Query().Get("ca"),
 			CertFile: cfg.Query().Get("cert"),

@@ -38,7 +38,19 @@ func (d *dockerRegistry) Version() string {
 }
 
 func (d *dockerRegistry) Help() string {
-	return "docker registry"
+	return `docker注册发现。
+配置方式：
+	docker://var/run/docker.sock?ip=172.10.10.23&param=value  使用sock方式
+	docker://172.10.10.23:2375?param=value 使用2375开放端口方式。
+参数：
+	参数                         说明
+	tls                         true/false 是否启用https连接consul服务。
+	ca                          https ca证书
+	cert                        https cert 证书
+	key                         https key 证书
+
+使用方式查阅：https://github.com/ihaiker/aginx/blob/master/docs/DOCKER.MD
+`
 }
 
 func (d *dockerRegistry) Watch(config url.URL, aginx api.Aginx) error {

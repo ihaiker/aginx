@@ -37,7 +37,21 @@ func (e *etcdV3Storage) Version() string {
 }
 
 func (e *etcdV3Storage) Help() string {
-	return `etcd存储nginx配置文件`
+	return `etcd存储nginx配置文件。
+配置格式：etcd://host:port?param=value
+参数说明：
+	参数                          值
+	username                        
+	password                    
+	autoSyncInterval            自动同步间隔
+	dialTimeout                 拨号超时
+	dialKeepAliveTime           拨打“保持活动时间”
+	dialKeepAliveTimeout        拨打“保持活动超时”
+	tls                         true/false 是否启用https连接consul服务。
+	ca                          https ca证书
+	cert                        https cert 证书
+	key                         https key 证书
+`
 }
 
 func (e *etcdV3Storage) Initialize(clusterConfig url.URL) (err error) {

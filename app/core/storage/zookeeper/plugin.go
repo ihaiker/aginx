@@ -36,7 +36,13 @@ func (zks *zkStorage) Version() string {
 }
 
 func (zks *zkStorage) Help() string {
-	return "Zookeeper 存储管理器"
+	return `Zookeeper 存储管理器。
+配置格式为：zk://host:port?param=value
+可选参数说明：
+	参数              说明
+	scheme          认证信息scheme
+	auth            认证信息值
+`
 }
 
 func (zks *zkStorage) Initialize(config url.URL) (err error) {

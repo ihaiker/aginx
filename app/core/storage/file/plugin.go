@@ -35,7 +35,10 @@ func (l *fileStorage) Version() string {
 }
 
 func (l *fileStorage) Help() string {
-	return `本地存储，也是默认的nginx配置。file://etc/nginx/nginx.conf`
+	return `本地存储，也是默认的nginx配置。
+默认情况下系统会根据nginx自动查找配置位置并使用。
+如果需要自定义。格式为：file://<nginx.conf路径> 例如：file://etc/nginx/nginx.conf.
+需要注意:如果未提供nginx可执行程序并不能查找配置位置。`
 }
 
 func (l *fileStorage) Initialize(config url.URL) error {

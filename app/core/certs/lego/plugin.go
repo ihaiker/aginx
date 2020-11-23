@@ -33,7 +33,13 @@ func (l *legoCert) Version() string {
 }
 
 func (l *legoCert) Help() string {
-	return `lego certificate help`
+	return `lego证书提供商
+lego 使用ACMEApi申请免费证书。
+配置方式： lego://<email>/<storage path>
+例如(默认启用)： lego://aginx@renzhen.la/certs/lego  
+email：          aginx@renzhen.la
+storage path:   certs/lego
+`
 }
 
 func (l *legoCert) dir(config url.URL) string {

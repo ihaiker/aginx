@@ -42,7 +42,14 @@ func (t *tencentPlugin) Version() string {
 }
 
 func (t *tencentPlugin) Help() string {
-	return `腾讯云申请免费证书`
+	return `腾讯云申请免费证书
+配置方式：tcloud://ssl.tencentcloudapi.com/<storage path>?secretId=&secretKey=;
+参数：             说明
+storage path    证书存储路径 默认： certs/tcloud
+secretId        腾讯云 secretId.
+secretKey       腾讯云 secretKey
+region          腾讯云 region
+`
 }
 
 func (t *tencentPlugin) dir(config url.URL) string {
