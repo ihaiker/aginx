@@ -1,7 +1,7 @@
 package consul
 
 import (
-	"fmt"
+	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"net/url"
 	"strings"
 )
@@ -25,8 +25,8 @@ func findLabel(tags map[string]string) ([]*label, error) {
 			continue
 		}
 		tag, err := url.Parse(value)
-		if err != nil {
-			return nil, fmt.Errorf("error tag: %s", value)
+		if err != nil || tag.Host == "" { //即使解析不出错，如果未提供Scheme前缀的也是同样host为空
+			return nil, errors.New("error tag: %s", value)
 		}
 
 		label := new(label)

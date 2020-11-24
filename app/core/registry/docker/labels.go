@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"net/url"
 	"strconv"
 	"strings"
@@ -31,8 +32,8 @@ func findLabels(labs map[string]string) ([]label, error) {
 			continue
 		}
 		tag, err := url.Parse(value)
-		if err != nil {
-			return nil, err
+		if err != nil || tag.Host == "" { //即使解析不出错，如果未提供Scheme前缀的也是同样host为空
+			return nil, errors.New("标签定义错误：%s", value)
 		}
 		label := label{}
 		label.Source = fmt.Sprintf("%s=%s", key, value)
