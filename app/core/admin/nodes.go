@@ -6,6 +6,7 @@ import (
 	"github.com/ihaiker/aginx/v2/core/logs"
 	nginxConfig "github.com/ihaiker/aginx/v2/core/nginx/config"
 	"github.com/ihaiker/aginx/v2/core/nginx/query"
+	"github.com/ihaiker/aginx/v2/core/util"
 	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"github.com/ihaiker/aginx/v2/core/util/files"
 	"github.com/kataras/iris/v12"
@@ -47,18 +48,14 @@ func (nc *nodeController) list(removePassword bool) []*Node {
 		}
 	}
 
-	if config.Config.HasApi() {
-		user, password := "", ""
-		for authUserName, authPassword := range config.Config.Auth {
-			user, password = authUserName, authPassword
-			break
-		}
+	if config.Config.HasApi() && config.Config.Auth.Mode == "basic" {
 		node := &Node{
-			Code: "local", Name: "本地", User: user, Password: password,
+			Code: "local", Name: "本地",
 			Address: "http://" + config.Config.Bind,
 		}
-		if !removePassword {
-			node.Password = password
+		node.User, node.Password = util.First(config.Config.Auth.Users)
+		if removePassword {
+			node.Password = ""
 		}
 		nodes = append(nodes, node)
 	}

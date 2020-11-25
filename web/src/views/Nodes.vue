@@ -13,9 +13,15 @@
                         {{ node.name }}&nbsp;&nbsp;(&nbsp;{{ node.code }}&nbsp;)
                         <div class="card-header-actions">
                             <a @click="onAddNode(node)"
-                               class="card-header-action btn-setting text-dark" href="#">
+                               class="card-header-action btn-setting text-white" href="#">
                                 <i class="icon-settings"></i>
                             </a>
+                            <Delete v-if="node.code !== 'local'"
+                                    :title="'删除管理节点【' + node.name + '】'" @ok="onDelNode(node)">
+                                <a class="card-header-action text-white" href="#">
+                                    <i class="icons icon-close"></i>
+                                </a>
+                            </Delete>
                         </div>
                     </div>
                     <div class="card-body">
@@ -88,9 +94,10 @@
 
 import VTitle from "@/plugins/vTitle";
 import Modal from "@/plugins/modal";
+import Delete from "@/plugins/delete";
 
 export default {
-    name: "Nodes", components: {Modal, VTitle},
+    name: "Nodes", components: {Delete, Modal, VTitle},
     data: () => ({
         nodes: [], node: null,
         colors: ["text-white bg-success", "bg-info", "bg-warning", "bg-danger"]
@@ -118,6 +125,15 @@ export default {
                     user: n.user, password: '', address: n.address,
                 }
             }
+        },
+        onDelNode(n) {
+            let self = this;
+            self.$axios.delete("/admin/node?code=" + n.code).then(res => {
+                self.$toast.success("删除成功！")
+                self.queryNodes();
+            }).catch(e => {
+                self.$alert('设置错误！');
+            })
         },
         queryNodes() {
             let self = this;

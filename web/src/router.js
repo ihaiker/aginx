@@ -14,6 +14,7 @@ const Plugins = () => import("@/views/Plugins")
 const Upstreams = () => import("@/views/upstream/Upstreams")
 const UpstreamEdit = () => import("@/views/upstream/UpstreamEdit")
 const Certs = () => import("@/views/Certs")
+const Login = () => import("@/views/Login")
 
 Vue.use(VueRouter);
 
@@ -22,6 +23,7 @@ export default new VueRouter({
     linkActiveClass: 'open active',
     scrollBehavior: () => ({y: 0}),
     routes: [
+        {path: "/login", component: Login},
         {
             path: "/admin", component: AppContainer,
             children: [

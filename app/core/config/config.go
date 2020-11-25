@@ -8,6 +8,28 @@ type (
 		DayLimit int    `help:"备份最大保存天数" def:"7"`
 	}
 
+	Auth struct {
+		Mode string `help:"认证方式, basic/ldap" def:"basic"`
+
+		//BasicAuth 认证方式
+		Users map[string]string `help:"BasicAuth认证用户" def:"aginx=aginx"`
+
+		//LDAP 认证方式
+		LDAP struct {
+			Server   string `help:"LDAP服务地址"`
+			BindDn   string `help:"LDAP bindDn" flag:"bindDn"`
+			Password string `help:"LDAP bindDn password"`
+
+			BaseDn            string `help:"用户搜索baseDn" flag:"baseDn"`
+			UsernameAttribute string `help:"搜索用户username属性值" def:"uid"`
+			Filter            string `help:"用户搜索" def:"(&(objectClass=person)({{.UsernameAttribute}}={{.Username}}))"`
+
+			TLSCa   string `help:"LDAP服务 tls ca 证书位置，如果不提供证书位置将不会采用TLS方式连接" flag:"tls-ca"`
+			TLSCert string `help:"LDAP服务 tls cert 证书位置" flag:"tls-cert"`
+			TLSKey  string `help:"LDAP服务 tls key 证书位置" flag:"tls-key" `
+		} `flag:"ldap"`
+	}
+
 	config struct {
 		LogFile  string `flag:"log-file" help:"日志输出到文件的位置，默认输出到控制台"`
 		LogLevel string `flag:"log-level" short:"L" help:"日志级别" def:"info"`
@@ -20,7 +42,7 @@ type (
 		AllowIp []string `help:"api服务允许调用的IP地址" def:"*"`
 
 		//管理用户
-		Auth map[string]string `help:"管理台认证用户" def:"aginx=aginx"`
+		Auth Auth
 
 		DisableDaemon bool `help:"禁用nginx托管，禁用后将不会托管启动nginx"`
 

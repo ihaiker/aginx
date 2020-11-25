@@ -21,3 +21,10 @@ func Split3(s, sep string) (a, b, c string) {
 	}
 	return
 }
+
+func First(m map[string]string) (string, string) {
+	for k, v := range m {
+		return k, v
+	}
+	return "", ""
+}

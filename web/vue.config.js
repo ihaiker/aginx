@@ -3,6 +3,7 @@ module.exports = {
     lintOnSave: false, runtimeCompiler: true,
     devServer: {
         disableHostCheck: true,
+        hot: true, open: true,
     },
     configureWebpack: {
         externals: {

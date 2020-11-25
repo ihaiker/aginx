@@ -216,11 +216,7 @@ var root = &cobra.Command{
 				!strings.HasPrefix(config.Config.Api, "https://") {
 				config.Config.Api = "http://" + config.Config.Api
 			}
-			user, password := "", ""
-			for authUserName, authPassword := range config.Config.Auth {
-				user, password = authUserName, authPassword
-				break
-			}
+			user, password := util.First(config.Config.Auth.Users)
 			aginx = api.New(config.Config.Api, user, password)
 			if _, err = aginx.Info(); err != nil {
 				return
@@ -315,6 +311,7 @@ func not(b bool) bool {
 func init() {
 	root.SilenceUsage = true
 	root.SilenceErrors = true
+	root.Flags().SortFlags = false
 }
 
 func Execute(version, buildTime, gitTag string) error {

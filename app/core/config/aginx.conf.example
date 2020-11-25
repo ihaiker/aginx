@@ -66,3 +66,26 @@ node remote {
     user: aginx;
     passoword: aginx;
 }
+
+auth {
+    mode: "basic";
+
+    users: "aginx=aginx";
+    users  {
+        aginx: aginx;
+    }
+
+    ldap {
+        server: "10.24.1.150:389";
+        bindDn: "dc=example,dc=org";
+        password: "admin";
+
+        baseDn: "cn=admin,dc=example,dc=org";
+        usernameAttribute: "uid";
+        filter: "(&(objectClass=person)({{UsernameAttribute}}={{Username}}))";
+
+        tlsCa: "";
+        tlsCert: "";
+        tlsKey: "";
+    }
+}

@@ -2,6 +2,8 @@ package admin
 
 import (
 	"bytes"
+	"github.com/ihaiker/aginx/v2/core/config"
+	"github.com/ihaiker/aginx/v2/core/http/auth"
 	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/context"
@@ -36,7 +38,8 @@ func Routers(adminConfig string) func(app *iris.Application) {
 		}).ServeHTTP)
 
 		h := hero.New()
-		admin := app.Party("/admin")
+		app.Post("/login", h.Handler(auth.Login(config.Config.Auth)))
+		admin := app.Party("/admin", auth.Handler(config.Config.Auth))
 		{
 			admin.Get("/nodes", h.Handler(func(ctx context.Context) []*Node {
 				return nodes.list(true)

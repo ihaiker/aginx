@@ -2,6 +2,8 @@ package http
 
 import (
 	"github.com/ihaiker/aginx/v2/api"
+	"github.com/ihaiker/aginx/v2/core/config"
+	"github.com/ihaiker/aginx/v2/core/http/auth"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/hero"
 )
@@ -16,7 +18,7 @@ func Routers(aginx api.Aginx) func(*iris.Application) {
 	backupCtl := &backupController{aginx: aginx}
 
 	return func(app *iris.Application) {
-		api := app.Party("/api")
+		api := app.Party("/api", auth.Handler(config.Config.Auth))
 		{
 			api.Get("/info", h.Handler(func() map[string]map[string]string {
 				info, _ := aginx.Info()

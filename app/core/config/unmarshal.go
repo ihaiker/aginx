@@ -7,6 +7,7 @@ import (
 	"github.com/ihaiker/aginx/v2/core/util"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 func Unmarshal(data []byte, v interface{}) error {
@@ -29,13 +30,45 @@ func Unmarshal(data []byte, v interface{}) error {
 		case "allowIp", "allow_ip", "allow-ip":
 			c.AllowIp = d.Args
 		case "auth":
-			c.Auth = make(map[string]string)
-			for _, auth := range d.Args {
-				name, passwd := util.Split2(auth, "=")
-				if passwd == "" {
-					return fmt.Errorf("error auth: %s", auth)
+			for _, body := range d.Body {
+				switch body.Name {
+				case "mode":
+					c.Auth.Mode = body.Args[0]
+				case "users":
+					for _, auth := range body.Args {
+						name, passwd := util.Split2(auth, "=")
+						if passwd != "" {
+							c.Auth.Users[name] = passwd
+						}
+					}
+					for _, uap := range body.Body {
+						c.Auth.Users[uap.Name] = strings.Join(uap.Args, "")
+					}
+				case "ldap":
+					for _, ldapItem := range body.Body {
+						switch ldapItem.Name {
+						case "server":
+							c.Auth.LDAP.Server = strings.Join(ldapItem.Args, "")
+						case "bindDn", "bind-dn", "bind_dn":
+							c.Auth.LDAP.BindDn = strings.Join(ldapItem.Args, "")
+						case "password":
+							c.Auth.LDAP.Password = strings.Join(ldapItem.Args, "")
+						case "baseDn", "base-dn", "base_dn":
+							c.Auth.LDAP.BaseDn = strings.Join(ldapItem.Args, "")
+						case "usernameAttribute", "username-attribute",
+							"username_attribute":
+							c.Auth.LDAP.UsernameAttribute = strings.Join(ldapItem.Args, "")
+						case "filter":
+							c.Auth.LDAP.Filter = strings.Join(ldapItem.Args, "")
+						case "tlsCa", "tls-ca", "tls_ca":
+							c.Auth.LDAP.TLSCa = strings.Join(ldapItem.Args, "")
+						case "tlsCert", "tls-cert", "tls_cert":
+							c.Auth.LDAP.TLSCert = strings.Join(ldapItem.Args, "")
+						case "tlsKey", "tls-key", "tls_key":
+							c.Auth.LDAP.TLSKey = strings.Join(ldapItem.Args, "")
+						}
+					}
 				}
-				c.Auth[name] = passwd
 			}
 		case "expose":
 			c.Expose = d.Args[0]

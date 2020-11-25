@@ -6,7 +6,6 @@ import (
 	"github.com/ihaiker/aginx/v2/core/logs"
 	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"github.com/kataras/iris/v12"
-	"github.com/kataras/iris/v12/middleware/basicauth"
 	"path/filepath"
 	"time"
 )
@@ -27,13 +26,6 @@ func New(address string, routers ...func(*iris.Application)) *httpServer {
 
 func (this *httpServer) Start() error {
 	this.app.Use(recoverHandler())
-
-	//简单认证
-	authConfig := basicauth.Config{
-		Users: config.Config.Auth, Expires: time.Duration(30) * time.Minute,
-		Realm: "Authorization Required", // defaults to "Authorization Required"
-	}
-	this.app.UseGlobal(basicauth.New(authConfig))
 
 	//错误消息
 	this.app.OnErrorCode(iris.StatusNotFound, func(ctx iris.Context) {
