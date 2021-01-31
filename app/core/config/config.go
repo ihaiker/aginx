@@ -61,8 +61,8 @@ type (
 		Registry []string `help:"{{registry.help}}" short:"R"`
 
 		//cert证书插件
-		Cert    []string `help:"使用 aginx help certs <provider> 查询更新帮助信息" short:"C" def:"lego://aginx@renzhen.la/certs/lego,custom://certs/custom"`
-		CertDef string   `help:"默认cert使用名字" def:"lego"`
+		Cert    []string `help:"使用 aginx help certs <provider> 查询更新帮助信息" short:"C" def:"custom://certs/custom"`
+		CertDef string   `help:"默认cert使用名字" def:"custom"`
 
 		Plugins string `help:"插件文件夹" short:"P" def:"./plugins"`
 
