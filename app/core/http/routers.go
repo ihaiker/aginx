@@ -4,11 +4,12 @@ import (
 	"github.com/ihaiker/aginx/v2/api"
 	"github.com/ihaiker/aginx/v2/core/config"
 	"github.com/ihaiker/aginx/v2/core/http/auth"
+	"github.com/ihaiker/aginx/v2/core/nginx"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/hero"
 )
 
-func Routers(aginx api.Aginx) func(*iris.Application) {
+func Routers(aginx api.Aginx, daemon nginx.Daemon) func(*iris.Application) {
 	h := hero.New()
 
 	fileCtl := &fileController{aginx: aginx}
@@ -16,7 +17,8 @@ func Routers(aginx api.Aginx) func(*iris.Application) {
 	sslCtl := &sslController{aginx: aginx}
 	ausCtl := &serverAndUpstreamController{aginx: aginx}
 	backupCtl := &backupController{aginx: aginx}
-
+	memInfoCtl := &memInfoController{daemon: daemon}
+	memInfoCtl.start()
 	return func(app *iris.Application) {
 		api := app.Party("/api", auth.Handler(config.Config.Auth))
 		{
@@ -65,6 +67,8 @@ func Routers(aginx api.Aginx) func(*iris.Application) {
 				backup.Post("", h.Handler(backupCtl.backup))
 				backup.Put("", h.Handler(backupCtl.rollback))
 			}
+
+			api.Get("/memstats", h.Handler(memInfoCtl.memstats))
 		}
 	}
 }

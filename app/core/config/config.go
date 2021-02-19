@@ -107,7 +107,7 @@ func Help(_, _, value string) string {
 	consul://127.0.0.1:8500/aginx[?token=authtoken]   consul k/v配置.
 	zk://127.0.0.1:2182/aginx[?scheme=&auth=]         zookeeper 配置.
 	etcd://127.0.0.1:2379/aginx[?user=&password]      
-	file://etc/nginx/nginx.conf                       本机配置
+	file:///etc/nginx/nginx.conf                       本机配置
 `
 	} else if value == "{{registry.help}}" {
 		return `配置注册管理器`

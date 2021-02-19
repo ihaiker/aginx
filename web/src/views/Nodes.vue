@@ -1,5 +1,7 @@
 <template>
     <div v-if="!include">
+        <NodeCharts/>
+
         <v-title title="管理节点" title-class="icons cui-puzzle">
             <a href="#" class="text-danger font-weight-bold" @click="onAddNode">
                 <i class="fa fa-plus-circle"></i>&nbsp;添加节点
@@ -8,7 +10,7 @@
 
         <div class="row p-5">
             <div class="col-auto" v-for="(node,idx) in nodes">
-                <div class="card" :class="{'bg-primary':activeNode(node)}" @click="chooseNode(node)">
+                <div class="card mb-0" :class="{'bg-primary':activeNode(node)}" @click="chooseNode(node)">
                     <div class="card-header">
                         {{ node.name }}&nbsp;&nbsp;(&nbsp;{{ node.code }}&nbsp;)
                         <div class="card-header-actions">
@@ -95,9 +97,10 @@
 import VTitle from "@/plugins/vTitle";
 import Modal from "@/plugins/modal";
 import Delete from "@/plugins/delete";
+import NodeCharts from "@/views/NodeCharts";
 
 export default {
-    name: "Nodes", components: {Delete, Modal, VTitle},
+    name: "Nodes", components: {NodeCharts, Delete, Modal, VTitle},
     data: () => ({
         nodes: [], node: null,
         colors: ["text-white bg-success", "bg-info", "bg-warning", "bg-danger"]
@@ -146,7 +149,7 @@ export default {
 
         chooseNode(node) {
             this.$store.commit("setNode", node);
-            //this.$toast.success("节点切换成功,当前节点：" + node.name);
+            this.$toast.success("节点切换成功,当前节点：" + node.name);
         },
         setNode() {
             if (this.node.name === "") {
@@ -180,7 +183,7 @@ export default {
         activeNode(node) {
             return this.$store.getters.node.code === node.code
         }
-    }
+    },
 }
 </script>
 <style scoped>

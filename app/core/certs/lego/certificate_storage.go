@@ -64,7 +64,7 @@ func (cfs *certificateStorage) NewWithProvider(account *Account, domain string, 
 			return nil, err
 		}
 
-		if err = cfs.aginx.Files().NewWithContent(cert.CertificatePath, res.Certificate); err != nil {
+		if err = cfs.aginx.Files().NewWithContent(cert.CertificatePath, res.IssuerCertificate); err != nil {
 			return nil, err
 		}
 		if err = cfs.aginx.Files().NewWithContent(cert.PrivateKeyPath, res.PrivateKey); err != nil {

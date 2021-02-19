@@ -124,7 +124,7 @@ func Stack() string {
 	frames := runtime.CallersFrames(stack)
 	for {
 		frame, more := frames.Next()
-		if strings.HasSuffix(frame.File, "/aginx/util/errors.go") ||
+		if strings.HasSuffix(frame.File, "errors/errors.go") ||
 			strings.HasSuffix(frame.File, "/src/runtime/panic.go") ||
 			strings.HasSuffix(frame.File, "/testing/testing.go") ||
 			frame.Function == "runtime.goexit" || frame.Function == "" {

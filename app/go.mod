@@ -23,6 +23,7 @@ require (
 	github.com/rfyiamcool/cronlib v1.0.0
 	github.com/rs/cors v1.7.0
 	github.com/samuel/go-zookeeper v0.0.0-20200724154423-2164a8ac840e
+	github.com/shirou/gopsutil/v3 v3.21.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1

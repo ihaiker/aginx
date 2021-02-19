@@ -14,6 +14,7 @@ import (
 	"github.com/ihaiker/aginx/v2/plugins/certificate"
 	"github.com/ihaiker/aginx/v2/plugins/storage"
 	"net/url"
+	"strings"
 )
 
 var logger = logs.New("client")
@@ -30,7 +31,7 @@ func (c *client) addProvider(certConfigs []string) error {
 		if certConfig, err := url.Parse(cert); err != nil {
 			return errors.Wrap(err, "错误配置："+cert)
 		} else if certPlugin, has := certs.Plugins[certConfig.Scheme]; !has {
-			return fmt.Errorf("not found: %s", cert)
+			return fmt.Errorf("未发现cert插件: %s", cert)
 		} else if err = certPlugin.Initialize(*certConfig, c); err != nil {
 			return fmt.Errorf("初始化 %s", certConfig.Scheme)
 		} else {
@@ -50,7 +51,7 @@ func New(engine storage.Plugin, daemon nginx.Daemon, certConfigs []string, certD
 	}
 	if certDef != "" {
 		if _, has := c.certs[certDef]; !has {
-			return nil, fmt.Errorf("not found: %s", certDef)
+			return nil, fmt.Errorf("未发现cert默认配置: %s in (%s)", certDef, strings.Join(certConfigs, ","))
 		}
 	}
 	return c, nil

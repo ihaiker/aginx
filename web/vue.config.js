@@ -12,4 +12,8 @@ module.exports = {
             'bootstrap-vue': "BootstrapVue",
         },
     },
+    transpileDependencies: [
+        'vue-echarts',
+        'resize-detector'
+    ]
 }

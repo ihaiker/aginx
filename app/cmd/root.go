@@ -57,11 +57,11 @@ func getNginxDaemon() (nginx.Daemon, error) {
 func getStorage() (storagePlugin.Plugin, error) {
 	if config.Config.Storage == "" { //如果未提供存储器系统nginx通常默认的
 		if files.Exists("/etc/nginx/nginx.conf") {
-			config.Config.Storage = "file://etc/nginx/nginx.conf"
+			config.Config.Storage = "file:///etc/nginx/nginx.conf"
 		} else if _, _, conf, err := getNginx(); err != nil { //获取NGINX系统的
 			return nil, err
 		} else {
-			config.Config.Storage = "file:/" + conf
+			config.Config.Storage = "file://" + conf
 		}
 	}
 	return storage.Get(config.Config.Storage)
@@ -69,6 +69,11 @@ func getStorage() (storagePlugin.Plugin, error) {
 
 func exposeApi(aginx api.Aginx) error {
 	logs.Infof("公开API访问域名：%s", config.Config.Expose)
+
+	enableHttps := strings.HasSuffix(config.Config.Expose, ",ssl")
+	if enableHttps {
+		config.Config.Expose = config.Config.Expose[:len(config.Config.Expose)-4]
+	}
 
 	var server *api.Server
 	servers, err := aginx.GetServers(&api.Filter{
@@ -237,7 +242,7 @@ var root = &cobra.Command{
 		//禁用api
 		if config.Config.HasApi() {
 			logs.Info("启用restful api")
-			routers = append(routers, http.Routers(aginx))
+			routers = append(routers, http.Routers(aginx, daemon))
 		}
 		//禁用api和web就没有必要开启http了
 		if len(routers) != 0 {

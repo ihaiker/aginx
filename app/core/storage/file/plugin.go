@@ -42,7 +42,7 @@ func (l *fileStorage) Help() string {
 }
 
 func (l *fileStorage) Initialize(config url.URL) error {
-	nginxConf := config.String()[6:]
+	nginxConf := filepath.Join(config.Host, config.Path) //fixbug: 文件路径错误问题
 	// 如果用户提供了 nginx.conf 全路径就检查文件是否存在，
 	if files.IsDir(nginxConf) {
 		nginxConf = filepath.Join(nginxConf, "nginx.conf")

@@ -8,6 +8,7 @@ import (
 	"github.com/ihaiker/aginx/v2/core/util/errors"
 	"github.com/ihaiker/aginx/v2/plugins/certificate"
 	"net/url"
+	"path/filepath"
 	"time"
 )
 
@@ -46,7 +47,7 @@ func (c *customPlugin) Help() string {
 }
 
 func (c *customPlugin) Initialize(config url.URL, aginx api.Aginx) error {
-	c.path = config.String()[len(c.Scheme()+"://"):]
+	c.path = filepath.Join(config.Host, config.Path)
 	c.aginx = aginx
 	_, err := c.List()
 	return err

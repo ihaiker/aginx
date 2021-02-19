@@ -19,6 +19,7 @@ var logger = logs.New("nginx")
 
 //控制nginx启动
 type Daemon interface {
+	PID() int32
 	Start() error
 	Reload() error
 	Stop() error
@@ -150,4 +151,7 @@ func (sp *localDaemon) Stop() error {
 	} else {
 		return cmds.CmdRun(sp.bin, sp.params("-s", "quit")...)
 	}
+}
+func (sp *localDaemon) PID() int32 {
+	return int32(sp.daemon.Process.Pid)
 }
