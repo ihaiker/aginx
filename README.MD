@@ -13,6 +13,13 @@ Add management API service for [nginx][NGINX]
 - [X] Publish `docker` service to NGINX configuration.
 - [X] Publish `consul` service to NGINX configuration.
 
+## Software screenshot
+
+![](./docs/main.png)
+
+![](./docs/file.png)
+
+![](./docs/server.png)
 
 ## [Installation](./docs/INSTALL.MD)
 

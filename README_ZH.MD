@@ -14,6 +14,14 @@
 - [X] 使用`consul k/v`、`etcd k/v`、`zookeeper`存储 NGINX 配置文件，多NGINX可以统一配置和管理。
 - [X] 发布 `docker`、`consul` 服务到 nginx 配置。
 
+## 软件截图
+
+![](./docs/main.png)
+
+![](./docs/file.png)
+
+![](./docs/server.png)
+
 ## [安装文档 点击查阅](./docs/INSTALL.MD)
 
 ## [使用文档 点击查阅](./docs/USAGE.MD)
