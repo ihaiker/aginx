@@ -117,7 +117,7 @@ func (cs *fileStorage) Remove(file string) error {
 func (fs *fileStorage) Get(file string) (reader *storage.File, err error) {
 	path := fs.abs(file)
 	if !files.Exists(path) || files.IsDir(path) {
-		return nil, errors.Wrap(errors.ErrNotFound, "文件未发现")
+		return nil, errors.ErrNotFound
 	}
 	rd, err := ioutil.ReadFile(path)
 	if err != nil {

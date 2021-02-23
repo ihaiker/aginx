@@ -11,10 +11,9 @@ import (
 var pluginCmd = &cobra.Command{
 	Use: "plugin", Short: "显示插件配置的帮助信息",
 	Example: `
-		aginx plugin registry/reg       显示所有registry插件
+		aginx plugin registry           显示所有registry插件
 		aginx plugin storage            显示所有storage插件
 		aginx plugin storage consul     显示所有consul storage插件的配置帮助信息
-		aginx plugin certificate        显示所有 certificate插件
 		aginx plugin certs              显示所有 certificate插件
 	`,
 	Args: cobra.RangeArgs(0, 2),

@@ -15,7 +15,7 @@ var logger = logs.New("renewal")
 
 var Plugins = map[string]certificate.Plugin{
 	"lego":   lego.LoadCertificates(),
-	"TCloud": tcloud.LoadCertificate(),
+	"tcloud": tcloud.LoadCertificate(),
 	"custom": custom.LoadCertificate(),
 }
 

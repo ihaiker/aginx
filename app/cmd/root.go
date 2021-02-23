@@ -239,7 +239,7 @@ var root = &cobra.Command{
 			}
 			routers = append(routers, admin.Routers(configFiles[0]))
 		}
-		//禁用api
+		//启用api
 		if config.Config.HasApi() {
 			logs.Info("启用restful api")
 			routers = append(routers, http.Routers(aginx, daemon))
