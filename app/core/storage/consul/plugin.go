@@ -22,6 +22,8 @@ type consulStorage struct {
 	events     chan storage.FileEvent
 
 	closeChan chan struct{}
+
+	config url.URL
 }
 
 func LoadStorage() storage.Plugin {
@@ -38,6 +40,10 @@ func (c *consulStorage) Name() string {
 
 func (c *consulStorage) Version() string {
 	return "v1.0"
+}
+
+func (c *consulStorage) GetConfig() url.URL {
+	return c.config
 }
 
 func (c *consulStorage) Help() string {

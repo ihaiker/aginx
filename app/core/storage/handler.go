@@ -57,7 +57,7 @@ func (f *fileChangeHandler) Start() error {
 	if _, conf, err := nginx.HelpInfo(config.Config.Nginx); err != nil {
 		return err
 	} else {
-		cfg, _ := url.Parse("file:/" + conf)
+		cfg, _ := url.Parse("file://" + conf)
 		if err = local.Initialize(*cfg); err != nil {
 			return err
 		}

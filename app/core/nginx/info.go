@@ -44,8 +44,16 @@ func HelpInfo(bin string) (prefix, config string, err error) {
 			config = line[idx+9 : len(line)-1]
 		}
 	}
-	if !strings.HasPrefix(config, "/") {
+	if prefix == "" || prefix == "." {
+		prefix = filepath.Dir(bin)
+	}
+	//bugfix: window路径问题
+	prefix = strings.ReplaceAll(prefix, "\\", "/")
+
+	if !strings.HasPrefix(config, "/") || !strings.HasPrefix(config, "\\") {
 		config = filepath.Join(prefix, config)
 	}
+	//bugfix: window路径问题
+	config = strings.ReplaceAll(config, "\\", "/")
 	return
 }

@@ -17,6 +17,7 @@ var logger = logs.New("storage", "engine", "file")
 
 type fileStorage struct {
 	nginxConfig string
+	config      url.URL
 }
 
 func LoadStorage() storage.Plugin {
@@ -34,6 +35,10 @@ func (l *fileStorage) Version() string {
 	return "v2.0.0"
 }
 
+func (l *fileStorage) GetConfig() url.URL {
+	return l.config
+}
+
 func (l *fileStorage) Help() string {
 	return `本地存储，也是默认的nginx配置。
 默认情况下系统会根据nginx自动查找配置位置并使用。
@@ -42,6 +47,7 @@ func (l *fileStorage) Help() string {
 }
 
 func (l *fileStorage) Initialize(config url.URL) error {
+	l.config = config
 	nginxConf := filepath.Join(config.Host, config.Path) //fixbug: 文件路径错误问题
 	// 如果用户提供了 nginx.conf 全路径就检查文件是否存在，
 	if files.IsDir(nginxConf) {
@@ -117,7 +123,7 @@ func (cs *fileStorage) Remove(file string) error {
 func (fs *fileStorage) Get(file string) (reader *storage.File, err error) {
 	path := fs.abs(file)
 	if !files.Exists(path) || files.IsDir(path) {
-		return nil, errors.ErrNotFound
+		return nil, errors.Wrap(errors.ErrNotFound, "文件未发现")
 	}
 	rd, err := ioutil.ReadFile(path)
 	if err != nil {

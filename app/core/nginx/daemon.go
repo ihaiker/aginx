@@ -153,5 +153,8 @@ func (sp *localDaemon) Stop() error {
 	}
 }
 func (sp *localDaemon) PID() int32 {
+	if sp.daemon == nil {
+		return 0
+	}
 	return int32(sp.daemon.Process.Pid)
 }

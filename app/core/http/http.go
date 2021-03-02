@@ -67,7 +67,7 @@ func (this *httpServer) Start() error {
 	}); err != nil && err != errors.ErrTimeout {
 		return err
 	}
-	logger.Info("start http at: ", this.address)
+	logger.Info("start at: http://", this.address)
 	return nil
 }
 

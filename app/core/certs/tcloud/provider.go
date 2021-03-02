@@ -42,11 +42,10 @@ func (self *verifiedProvider) present(domain, location, txt string) error {
 	server.Locations = append(server.Locations, api.ServerLocation{
 		Type: api.ProxyCustom, Path: location,
 		Parameters: []*config.Directive{
-			config.New("add_header", "Content-Type", `"application/octet-stream"`),
+			config.New("add_header", "Content-Type", `"text/plain"`),
 			config.New("return", "200", fmt.Sprintf("'%s'", txt)),
 		},
 	})
-
 	if self.queries, err = self.aginx.SetServer(server); err != nil {
 		return err
 	}

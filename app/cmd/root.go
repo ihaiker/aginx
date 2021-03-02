@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -46,10 +47,14 @@ func getNginx() (bin, prefix, conf string, err error) {
 	return
 }
 
-func getNginxDaemon() (nginx.Daemon, error) {
+func getNginxDaemon(engine storagePlugin.Plugin) (nginx.Daemon, error) {
 	if bin, prefix, conf, err := getNginx(); err != nil {
 		return nil, err
 	} else {
+		if engine.Scheme() == "file" {
+			conf = filepath.Join(engine.GetConfig().Host, engine.GetConfig().Path)
+			prefix = filepath.Dir(conf)
+		}
 		return nginx.NewDaemon(bin, prefix, conf)
 	}
 }
@@ -192,7 +197,7 @@ var root = &cobra.Command{
 				return
 			}
 			manager.Add(engine)
-			if daemon, err = getNginxDaemon(); err != nil {
+			if daemon, err = getNginxDaemon(engine); err != nil {
 				return
 			}
 			//不是daemon节点不需要文件变化重启
@@ -239,7 +244,7 @@ var root = &cobra.Command{
 			}
 			routers = append(routers, admin.Routers(configFiles[0]))
 		}
-		//启用api
+		//禁用api
 		if config.Config.HasApi() {
 			logs.Info("启用restful api")
 			routers = append(routers, http.Routers(aginx, daemon))

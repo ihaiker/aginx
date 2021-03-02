@@ -19,6 +19,7 @@ type (
 		Name() string    //存储插件名称，file,zk,consul
 		Version() string //当前版本号
 		Help() string    //配置方式帮助
+		GetConfig() url.URL
 
 		Initialize(config url.URL) error //一个存储器
 

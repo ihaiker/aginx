@@ -171,15 +171,18 @@ func (t *tencentPlugin) New(domain string) (certificate.Files, error) {
 		return nil, errors.Wrap(err, "设置验证信息")
 	}
 	//可以忽略清楚直接保存信息
-	defer nvp.cleanUp()
+	defer func() { _ = nvp.cleanUp() }()
 
 	//推送验证
 	if err = t.complete(domain, cert.certId); err != nil {
+		logger.Warn("推送验证信息错误：", err.Error())
 		return nil, errors.Wrap(err, "推送验证信息")
 	}
 
+	logger.Debug("获取证书详细信息：", domain)
 	//获取完整验证信息
 	if err = t.describe(cert.certId, cert); err != nil {
+		logger.Warn("申请后获取证书信息错误：", err)
 		return nil, errors.Wrap(err, "获取验证信息")
 	}
 

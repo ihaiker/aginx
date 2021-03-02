@@ -25,7 +25,7 @@ func Get(urlConfig string) (storage.Plugin, error) {
 	}
 	for _, p := range Plugins {
 		if p.Scheme() == config.Scheme {
-			logs.Infof("存储插件选择：%s (%s) ", p.Name(), p.Scheme())
+			logs.Infof("存储插件选择：%s (%s), %s", p.Name(), p.Scheme(), config.String())
 			err = p.Initialize(*config)
 			return p, err
 		}

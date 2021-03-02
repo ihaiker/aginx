@@ -18,6 +18,7 @@ type etcdV3Storage struct {
 	api    *v3.Client
 	folder string
 	closeC chan struct{}
+	config url.URL
 }
 
 func LoadStorage() storage.Plugin {
@@ -34,6 +35,10 @@ func (e *etcdV3Storage) Name() string {
 
 func (e *etcdV3Storage) Version() string {
 	return "v2.0.0"
+}
+
+func (e *etcdV3Storage) GetConfig() url.URL {
+	return e.config
 }
 
 func (e *etcdV3Storage) Help() string {

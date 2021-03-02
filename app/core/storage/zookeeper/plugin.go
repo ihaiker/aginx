@@ -17,6 +17,7 @@ var zkDir = []byte("zkdir")
 type zkStorage struct {
 	folder string
 	keeper *zk.Conn
+	config url.URL
 }
 
 func LoadStorage() *zkStorage {
@@ -33,6 +34,10 @@ func (zks *zkStorage) Name() string {
 
 func (zks *zkStorage) Version() string {
 	return "v2.0.0"
+}
+
+func (zks *zkStorage) GetConfig() url.URL {
+	return zks.config
 }
 
 func (zks *zkStorage) Help() string {

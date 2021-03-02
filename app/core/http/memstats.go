@@ -58,7 +58,7 @@ func (c *memInfoController) readMemStats() {
 			}
 		}
 		//nginx
-		if c.daemon != nil {
+		if c.daemon != nil && c.daemon.PID() != 0 {
 			p, err = process.NewProcess(c.daemon.PID())
 			if err != nil {
 				logger.Debug("获取进程信息错误：", err)
